@@ -21,6 +21,30 @@
       min-height: 100vh;
     }
 
+    /* Prototype Banner */
+    .prototype-banner {
+      max-width: 1200px;
+      margin: 0 auto 16px auto;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      line-height: var(--line-height-normal);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .prototype-badge {
+      background: #0369a1;
+      font-weight: var(--font-weight-bold);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+    }
+
     /* Showcase Toolbar */
     .showcase-toolbar {
       max-width: 1200px;
@@ -269,6 +293,12 @@
       min-height: 38px;
       display: flex;
       align-items: center;
+      outline: none;
+    }
+
+    .category-chip:focus-visible {
+      outline: 2px solid var(--tenant-primary);
+      outline-offset: 2px;
     }
 
     .category-chip.active {
@@ -309,7 +339,13 @@
       gap: var(--space-3);
       align-items: center;
       cursor: pointer;
+      outline: none;
       transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .dish-card:focus-visible {
+      outline: 2px solid var(--tenant-primary);
+      outline-offset: 2px;
     }
 
     .dish-card:hover {
@@ -397,7 +433,7 @@
     .sheet-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(0, 0, 0, 0.5);
       z-index: var(--z-backdrop);
       display: none;
       backdrop-filter: blur(2px);
@@ -419,6 +455,7 @@
       display: none;
       max-height: 85%;
       overflow-y: auto;
+      outline: none;
     }
 
     .bottom-sheet.open {
@@ -487,6 +524,11 @@
       font-weight: var(--font-weight-semibold);
       color: var(--color-text-primary);
       cursor: pointer;
+    }
+
+    .btn-close-sheet:focus-visible {
+      outline: 2px solid var(--tenant-primary);
+      outline-offset: 2px;
     }
 
     /* State Views (Empty & Loading) */
@@ -575,6 +617,12 @@
 </head>
 <body>
 
+  <!-- Top Prototype Disclaimer Banner -->
+  <aside class="prototype-banner" role="status">
+    <span class="prototype-badge">معاينة أولية (Prototype)</span>
+    <span>هذه صفحة معاينة تفاعلية مستقلة مبنية بتقنيات الويب القياسية لتدقيق معايير الوصولية والتباين وتجربة الهاتف. تطبيق القائمة الرقمية الإنتاجي الفعلي سيتم بناؤه بواسطة Angular 22+ مع Hybrid SSR و Signals و NgOptimizedImage خلال المراحل (U02, U03, U04).</span>
+  </aside>
+
   <!-- Top Navigation & Interactive Controller -->
   <header class="showcase-toolbar">
     <div class="showcase-title">
@@ -598,7 +646,7 @@
       <button class="btn-tool" id="btn-theme-burgundy" style="color: #f87171;">🔴 خمري</button>
 
       <!-- State Views Switcher -->
-      <select class="btn-tool" id="sel-state-view">
+      <select class="btn-tool" id="sel-state-view" aria-label="اختيار حالة العرض">
         <option value="normal">حالة القائمة: طبيعية (جاهزة)</option>
         <option value="empty">حالة: قائمة فارغة (قيد التجهيز)</option>
         <option value="skeleton">حالة: تحميل هيكلي (Skeleton)</option>
@@ -621,8 +669,8 @@
               <p id="brand-tagline">أشهى المشويات والمأكولات الشرقية</p>
             </div>
           </div>
-          <button class="lang-toggle-btn" id="btn-inline-lang">
-            <span>🌐</span> <span id="lbl-inline-lang">EN</span>
+          <button class="lang-toggle-btn" id="btn-inline-lang" aria-label="تبديل اللغة">
+            <span aria-hidden="true">🌐</span> <span id="lbl-inline-lang">EN</span>
           </button>
         </header>
 
@@ -632,18 +680,18 @@
             <div class="search-box">
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input type="search" class="search-input" id="search-input" placeholder="ابحث عن طبق أو مشروب..." aria-label="بحث في قائمة الطعام" />
-              <button class="search-clear" id="search-clear" style="display: none;" title="مسح البحث">✕</button>
+              <button class="search-clear" id="search-clear" style="display: none;" title="مسح البحث" aria-label="مسح البحث">✕</button>
             </div>
           </div>
 
-          <!-- Category Chips Bar -->
+          <!-- Category Chips Bar with Accessible Tabs and Keyboard Navigation -->
           <nav class="category-scroll" aria-label="أقسام القائمة" role="tablist">
-            <button class="category-chip active" data-category="all" role="tab" aria-selected="true">الكل</button>
-            <button class="category-chip" data-category="grills" role="tab" aria-selected="false">المشويات ⭐</button>
-            <button class="category-chip" data-category="appetizers" role="tab" aria-selected="false">المقبلات</button>
-            <button class="category-chip" data-category="casseroles" role="tab" aria-selected="false">الطواجن</button>
-            <button class="category-chip" data-category="desserts" role="tab" aria-selected="false">الحلويات</button>
-            <button class="category-chip" data-category="drinks" role="tab" aria-selected="false">المشروبات</button>
+            <button class="category-chip active" data-category="all" role="tab" aria-selected="true" tabindex="0">الكل</button>
+            <button class="category-chip" data-category="grills" role="tab" aria-selected="false" tabindex="-1">المشويات ⭐</button>
+            <button class="category-chip" data-category="appetizers" role="tab" aria-selected="false" tabindex="-1">المقبلات</button>
+            <button class="category-chip" data-category="casseroles" role="tab" aria-selected="false" tabindex="-1">الطواجن</button>
+            <button class="category-chip" data-category="desserts" role="tab" aria-selected="false" tabindex="-1">الحلويات</button>
+            <button class="category-chip" data-category="drinks" role="tab" aria-selected="false" tabindex="-1">المشروبات</button>
           </nav>
         </div>
 
@@ -651,13 +699,13 @@
         <div class="menu-content" id="view-normal">
           <h2 class="section-title" id="section-heading">جميع الأطباق</h2>
           <div class="dish-list" id="dish-list-container">
-            <!-- Dishes injected via JS -->
+            <!-- Dishes injected via Safe DOM APIs -->
           </div>
         </div>
 
         <!-- 4. State: Empty Menu -->
         <div class="state-view" id="view-empty">
-          <div class="state-icon">🍽️</div>
+          <div class="state-icon" aria-hidden="true">🍽️</div>
           <h2 class="state-title">القائمة قيد الإعداد</h2>
           <p class="state-desc">يقوم فريق المطعم حالياً بتحديث وتجهيز أشهى الأطباق. تفضل بزيارتنا قريباً!</p>
         </div>
@@ -694,25 +742,25 @@
 
         <!-- 6. State: Suspended / Unavailable -->
         <div class="state-view" id="view-unavailable">
-          <div class="state-icon">🔒</div>
+          <div class="state-icon" aria-hidden="true">🔒</div>
           <h2 class="state-title">هذه القائمة غير متاحة حالياً</h2>
           <p class="state-desc">نعتذر، القائمة المطلوبة غير منشورة في الوقت الراهن أو خاضعة للصيانة.</p>
         </div>
 
-        <!-- 7. Product Detail Bottom Sheet (Modal) -->
-        <div class="sheet-backdrop" id="sheet-backdrop"></div>
-        <div class="bottom-sheet" id="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
-          <div class="sheet-handle"></div>
-          <div class="sheet-hero" id="sheet-emoji">🥩</div>
+        <!-- 7. Product Detail Bottom Sheet (Modal with Keyboard Focus Management) -->
+        <div class="sheet-backdrop" id="sheet-backdrop" aria-hidden="true"></div>
+        <div class="bottom-sheet" id="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" aria-describedby="sheet-desc" aria-hidden="true" tabindex="-1">
+          <div class="sheet-handle" aria-hidden="true"></div>
+          <div class="sheet-hero" id="sheet-emoji" aria-hidden="true">🥩</div>
           <div class="sheet-title-row">
             <h2 class="sheet-title" id="sheet-title">اسم الطبق</h2>
             <span class="sheet-price" id="sheet-price">0.00 ج.م</span>
           </div>
           <p class="sheet-body" id="sheet-desc">وصف الطبق والمكونات التفصيلية وتتبيلة الشيف الخاصة...</p>
           <div style="margin-bottom: 16px;">
-            <span class="badge-pill badge-available" id="sheet-status">متوفر للطلب</span>
+            <span class="badge-pill badge-available" id="sheet-status">متوفر</span>
           </div>
-          <button class="btn-close-sheet" id="btn-close-sheet">إغلاق التفاصيل</button>
+          <button class="btn-close-sheet" id="btn-close-sheet" aria-label="إغلاق تفاصيل الطبق">إغلاق التفاصيل</button>
         </div>
 
       </div>
@@ -723,7 +771,7 @@
   <section class="admin-preview-section">
     <h2 style="font-size: var(--font-size-xl); margin-bottom: 8px;">🛠️ لوحة تحكم مالك المطعم (Admin Studio Preview)</h2>
     <p style="font-size: var(--font-size-sm); color: #94a3b8;">
-      هنا نظرة عامة على أدوات الإدارة الخاصة بالمالك، بما في ذلك إحصائيات القائمة، مولد رمز QR الدائم، وضوابط الوصولية (WCAG AA).
+      نظرة عامة على أدوات الإدارة الخاصة بمالك المطعم في الـ MVP (العرض فقط دون إدارة طلبات)، بما في ذلك إحصائيات الأطباق، مولد رمز QR الدائم، وفحص تباين الألوان (WCAG AA).
     </p>
 
     <div class="admin-grid">
@@ -753,12 +801,12 @@
         <h3>🎨 تخصيص الهوية والتباين</h3>
         <p style="color: #94a3b8; font-size: 13px;">اللون المختار: <code>#0F766E</code></p>
         <p style="color: #4ade80; font-size: 13px; margin: 8px 0;">✅ نسبة التباين: 7.4:1 (متوافق مع WCAG AAA)</p>
-        <p style="color: #94a3b8; font-size: 12px;">النظام يفحص التباين تلقائياً ويمنع الألوان الباهتة لضمان سهولة القراءة لجميع الزبائن.</p>
+        <p style="color: #94a3b8; font-size: 12px;">يفحص النظام تباين الألوان برمجياً ويمنع التخصيصات غير المطابقة للمواصفات القياسية.</p>
       </div>
     </div>
   </section>
 
-  <!-- Interactive JavaScript Engine -->
+  <!-- Interactive JavaScript Engine (Safe DOM APIs Only) -->
   <script>
     // Sample Menu Dataset
     const MENU_DATA = [
@@ -775,22 +823,146 @@
     let currentLang = 'ar';
     let currentCategory = 'all';
     let searchQuery = '';
+    let lastActiveElement = null; // For modal focus restore
 
     // DOM Elements
     const deviceFrame = document.getElementById('device-frame');
     const dishListContainer = document.getElementById('dish-list-container');
     const searchInput = document.getElementById('search-input');
     const searchClear = document.getElementById('search-clear');
-    const categoryChips = document.querySelectorAll('.category-chip');
+    const categoryChips = Array.from(document.querySelectorAll('.category-chip'));
     const bottomSheet = document.getElementById('bottom-sheet');
     const sheetBackdrop = document.getElementById('sheet-backdrop');
     const btnCloseSheet = document.getElementById('btn-close-sheet');
     const selStateView = document.getElementById('sel-state-view');
 
-    // Render Dishes
+    // Safe DOM Card Builder (No innerHTML for tenant strings)
+    function createDishCard(dish, isAr) {
+      const card = document.createElement('article');
+      card.className = `dish-card ${!dish.isAvailable ? 'sold-out' : ''}`;
+      card.setAttribute('itemscope', '');
+      card.setAttribute('itemtype', 'https://schema.org/MenuItem');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-haspopup', 'dialog');
+
+      const name = isAr ? dish.nameAr : dish.nameEn;
+      const desc = isAr ? dish.descAr : dish.descEn;
+      const currency = isAr ? 'ج.م' : 'EGP';
+      const statusLabel = dish.isAvailable ? (isAr ? 'متوفر' : 'Available') : (isAr ? 'نفد ✕' : 'Sold out');
+      const badgeClass = dish.isAvailable ? 'badge-available' : 'badge-soldout';
+
+      card.setAttribute('aria-label', `${name} - ${dish.price.toFixed(2)} ${currency} - ${statusLabel}`);
+
+      // Thumbnail
+      const thumb = document.createElement('div');
+      thumb.className = 'dish-thumb';
+      thumb.setAttribute('aria-hidden', 'true');
+      thumb.textContent = dish.emoji;
+      card.appendChild(thumb);
+
+      // Info container
+      const info = document.createElement('div');
+      info.className = 'dish-info';
+
+      // Header row
+      const header = document.createElement('div');
+      header.className = 'dish-header';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'dish-name';
+      nameEl.setAttribute('itemprop', 'name');
+      nameEl.textContent = name;
+      header.appendChild(nameEl);
+
+      const priceContainer = document.createElement('span');
+      priceContainer.className = 'dish-price';
+      priceContainer.setAttribute('itemprop', 'offers');
+      priceContainer.setAttribute('itemscope', '');
+      priceContainer.setAttribute('itemtype', 'https://schema.org/Offer');
+
+      const priceVal = document.createElement('span');
+      priceVal.setAttribute('itemprop', 'price');
+      priceVal.textContent = dish.price.toFixed(2);
+      priceContainer.appendChild(priceVal);
+      priceContainer.appendChild(document.createTextNode(' ' + currency));
+      header.appendChild(priceContainer);
+
+      info.appendChild(header);
+
+      // Description
+      const descEl = document.createElement('p');
+      descEl.className = 'dish-desc';
+      descEl.setAttribute('itemprop', 'description');
+      descEl.textContent = desc;
+      info.appendChild(descEl);
+
+      // Badge
+      const badge = document.createElement('span');
+      badge.className = `badge-pill ${badgeClass}`;
+      badge.textContent = statusLabel;
+      info.appendChild(badge);
+
+      card.appendChild(info);
+
+      // Interaction listeners
+      card.addEventListener('click', () => openDetailSheet(dish, card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openDetailSheet(dish, card);
+        }
+      });
+
+      return card;
+    }
+
+    // Safe Empty Search Renderer
+    function createEmptySearchState(isAr) {
+      const container = document.createElement('div');
+      container.style.textAlign = 'center';
+      container.style.padding = '40px 16px';
+
+      const icon = document.createElement('div');
+      icon.style.fontSize = '36px';
+      icon.style.marginBottom = '8px';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = '🔍';
+      container.appendChild(icon);
+
+      const title = document.createElement('p');
+      title.style.fontWeight = 'bold';
+      title.style.marginBottom = '6px';
+      title.textContent = isAr ? 'لم نجد أطباقاً تطابق بحثك' : 'No matching dishes found';
+      container.appendChild(title);
+
+      const desc = document.createElement('p');
+      desc.style.fontSize = '13px';
+      desc.style.color = '#64748b';
+      desc.style.marginBottom = '12px';
+      desc.textContent = isAr ? 'جرب البحث بكلمات أخرى أو تصفح الأقسام' : 'Try different keywords or browse categories';
+      container.appendChild(desc);
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'btn-tool';
+      resetBtn.style.margin = '0 auto';
+      resetBtn.style.color = 'white';
+      resetBtn.style.background = '#0f766e';
+      resetBtn.textContent = isAr ? 'مسح البحث' : 'Clear search';
+      resetBtn.addEventListener('click', resetSearch);
+      container.appendChild(resetBtn);
+
+      return container;
+    }
+
+    // Render Dishes Function
     function renderDishes() {
       const isAr = currentLang === 'ar';
-      dishListContainer.innerHTML = '';
+      
+      // Clear container safely
+      while (dishListContainer.firstChild) {
+        dishListContainer.removeChild(dishListContainer.firstChild);
+      }
 
       const filtered = MENU_DATA.filter(dish => {
         const matchesCategory = currentCategory === 'all' || dish.category === currentCategory;
@@ -802,51 +974,21 @@
       });
 
       if (filtered.length === 0) {
-        dishListContainer.innerHTML = `
-          <div style="text-align: center; padding: 40px 16px;">
-            <div style="font-size: 36px; margin-bottom: 8px;">🔍</div>
-            <p style="font-weight: bold; margin-bottom: 6px;">${isAr ? 'لم نجد أطباقاً تطابق بحثك' : 'No matching dishes found'}</p>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">${isAr ? 'جرب البحث بكلمات أخرى أو تصفح الأقسام' : 'Try different keywords or browse categories'}</p>
-            <button class="btn-tool" style="margin: 0 auto; color: white; background: #0f766e;" onclick="resetSearch()">${isAr ? 'مسح البحث' : 'Clear search'}</button>
-          </div>
-        `;
+        dishListContainer.appendChild(createEmptySearchState(isAr));
         return;
       }
 
       filtered.forEach(dish => {
-        const card = document.createElement('article');
-        card.className = `dish-card ${!dish.isAvailable ? 'sold-out' : ''}`;
-        card.setAttribute('itemscope', '');
-        card.setAttribute('itemtype', 'https://schema.org/MenuItem');
-
-        const name = isAr ? dish.nameAr : dish.nameEn;
-        const desc = isAr ? dish.descAr : dish.descEn;
-        const currency = isAr ? 'ج.م' : 'EGP';
-        const statusLabel = dish.isAvailable ? (isAr ? 'متوفر' : 'Available') : (isAr ? 'نفد ✕' : 'Sold out');
-        const badgeClass = dish.isAvailable ? 'badge-available' : 'badge-soldout';
-
-        card.innerHTML = `
-          <div class="dish-thumb" aria-hidden="true">${dish.emoji}</div>
-          <div class="dish-info">
-            <div class="dish-header">
-              <span class="dish-name" itemprop="name">${name}</span>
-              <span class="dish-price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-                <span itemprop="price">${dish.price.toFixed(2)}</span> ${currency}
-              </span>
-            </div>
-            <p class="dish-desc" itemprop="description">${desc}</p>
-            <span class="badge-pill ${badgeClass}">${statusLabel}</span>
-          </div>
-        `;
-
-        card.addEventListener('click', () => openDetailSheet(dish));
-        dishListContainer.appendChild(card);
+        dishListContainer.appendChild(createDishCard(dish, isAr));
       });
     }
 
-    // Detail Bottom Sheet
-    function openDetailSheet(dish) {
+    // Product Detail Bottom Sheet (Modal with Accessible Focus Trap & Return)
+    function openDetailSheet(dish, triggerElement) {
+      lastActiveElement = triggerElement || document.activeElement;
       const isAr = currentLang === 'ar';
+
+      // Set text contents safely
       document.getElementById('sheet-title').textContent = isAr ? dish.nameAr : dish.nameEn;
       document.getElementById('sheet-desc').textContent = isAr ? dish.descAr : dish.descEn;
       document.getElementById('sheet-price').textContent = `${dish.price.toFixed(2)} ${isAr ? 'ج.م' : 'EGP'}`;
@@ -855,7 +997,7 @@
       const statusBadge = document.getElementById('sheet-status');
       if (dish.isAvailable) {
         statusBadge.className = 'badge-pill badge-available';
-        statusBadge.textContent = isAr ? 'متوفر للطلب' : 'Available to order';
+        statusBadge.textContent = isAr ? 'متوفر' : 'Available';
       } else {
         statusBadge.className = 'badge-pill badge-soldout';
         statusBadge.textContent = isAr ? 'نفد مؤقتاً' : 'Temporarily sold out';
@@ -863,15 +1005,57 @@
 
       sheetBackdrop.classList.add('open');
       bottomSheet.classList.add('open');
+      sheetBackdrop.setAttribute('aria-hidden', 'false');
+      bottomSheet.setAttribute('aria-hidden', 'false');
+
+      // Shift focus into sheet close button
+      setTimeout(() => {
+        btnCloseSheet.focus();
+      }, 50);
     }
 
     function closeDetailSheet() {
       sheetBackdrop.classList.remove('open');
       bottomSheet.classList.remove('open');
+      sheetBackdrop.setAttribute('aria-hidden', 'true');
+      bottomSheet.setAttribute('aria-hidden', 'true');
+
+      // Return focus to caller
+      if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+        lastActiveElement.focus();
+      }
     }
 
     sheetBackdrop.addEventListener('click', closeDetailSheet);
     btnCloseSheet.addEventListener('click', closeDetailSheet);
+
+    // Keyboard Management for Bottom Sheet (Escape & Focus Trap)
+    bottomSheet.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeDetailSheet();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusable = bottomSheet.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && bottomSheet.classList.contains('open')) {
+        closeDetailSheet();
+      }
+    });
 
     // Search Handling
     searchInput.addEventListener('input', (e) => {
@@ -887,21 +1071,47 @@
       searchQuery = '';
       searchClear.style.display = 'none';
       renderDishes();
+      searchInput.focus();
     }
 
-    // Category Tabs
-    categoryChips.forEach(chip => {
+    // Accessible Category Tab Navigation (Roving Tabindex + Arrow Keys)
+    categoryChips.forEach((chip, index) => {
       chip.addEventListener('click', () => {
-        categoryChips.forEach(c => {
-          c.classList.remove('active');
-          c.setAttribute('aria-selected', 'false');
-        });
-        chip.classList.add('active');
-        chip.setAttribute('aria-selected', 'true');
-        currentCategory = chip.dataset.category;
-        renderDishes();
+        activateCategoryTab(index);
+      });
+
+      chip.addEventListener('keydown', (e) => {
+        const isRtl = document.documentElement.dir === 'rtl';
+        let targetIndex = null;
+
+        if (e.key === 'ArrowRight') {
+          targetIndex = isRtl ? (index - 1 + categoryChips.length) % categoryChips.length : (index + 1) % categoryChips.length;
+        } else if (e.key === 'ArrowLeft') {
+          targetIndex = isRtl ? (index + 1) % categoryChips.length : (index - 1 + categoryChips.length) % categoryChips.length;
+        } else if (e.key === 'Home') {
+          targetIndex = 0;
+        } else if (e.key === 'End') {
+          targetIndex = categoryChips.length - 1;
+        }
+
+        if (targetIndex !== null) {
+          e.preventDefault();
+          activateCategoryTab(targetIndex);
+          categoryChips[targetIndex].focus();
+        }
       });
     });
+
+    function activateCategoryTab(targetIndex) {
+      categoryChips.forEach((c, idx) => {
+        const isActive = idx === targetIndex;
+        c.classList.toggle('active', isActive);
+        c.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        c.setAttribute('tabindex', isActive ? '0' : '-1');
+      });
+      currentCategory = categoryChips[targetIndex].dataset.category;
+      renderDishes();
+    }
 
     // Language Toggle
     function toggleLanguage() {
