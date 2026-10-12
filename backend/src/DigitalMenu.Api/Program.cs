@@ -1,12 +1,18 @@
 using DigitalMenu.Api.Auth;
+using DigitalMenu.Api.Platform;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
+builder.Services.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>();
+builder.Services.AddSingleton<IRestaurantPublicCodeGenerator, CryptographicPublicCodeGenerator>();
+builder.Services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(options =>
+    options.TokenLifespan = TimeSpan.FromHours(1));
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
@@ -36,12 +42,12 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/api/v1/auth") && !context.Request.IsHttps)
+    if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform")) && !context.Request.IsHttps)
     {
         await Results.Problem(statusCode: 400, title: "HTTPS is required.").ExecuteAsync(context);
         return;
     }
-    if (context.Request.Path.StartsWithSegments("/api/v1/auth") &&
+    if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform")) &&
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
         bodySize.MaxRequestBodySize = 8192;
     if (context.Request.Path.StartsWithSegments("/api") &&
@@ -62,6 +68,7 @@ app.Use(async (context, next) =>
     await next(context);
 });
 app.MapMenuAuthentication();
+app.MapPlatformProvisioning();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
 app.MapHealthChecks("/api/health/ready").AllowAnonymous();

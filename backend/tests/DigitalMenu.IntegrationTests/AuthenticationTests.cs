@@ -231,7 +231,7 @@ public sealed class AuthenticationTests
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.Send(HttpMethod.Get, "/me")).StatusCode);
     }
 
-    private sealed class Browser
+    internal sealed class Browser
     {
         public HttpClient Client { get; }
         public Dictionary<string, string> Cookies { get; } = [];
@@ -247,7 +247,7 @@ public sealed class AuthenticationTests
         }
         public async Task<HttpResponseMessage> Send(HttpMethod method, string path, object? body = null)
         {
-            using var request = new HttpRequestMessage(method, "/api/v1/auth" + path);
+            using var request = new HttpRequestMessage(method, path.StartsWith("/api/", StringComparison.Ordinal) ? path : "/api/v1/auth" + path);
             if (Cookies.Count > 0) request.Headers.Add("Cookie", string.Join("; ", Cookies.Select(x => x.Key + "=" + x.Value)));
             if (Token is not null) request.Headers.Add("X-XSRF-TOKEN", Token);
             if (body is not null) request.Content = JsonContent.Create(body);
@@ -262,23 +262,24 @@ public sealed class AuthenticationTests
         }
     }
 
-    private sealed class AuthFixture : IAsyncDisposable
+    internal sealed class AuthFixture : IAsyncDisposable
     {
         public WebApplicationFactory<Program> Factory { get; private set; } = null!;
         public string Connection { get; private set; } = "";
         public TestClock Clock { get; } = new();
         public string Password { get; } = "F03!" + Guid.NewGuid().ToString("N");
-        public static async Task<AuthFixture> Create(bool empty = false)
+        public static async Task<AuthFixture> Create(bool empty = false, Action<IServiceCollection>? configure = null)
         {
             var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
             if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
                 throw new InvalidOperationException("Dedicated disposable SQL Server required.");
             connection.InitialCatalog = "DigitalMenu_Dev_F03_Test_" + Guid.NewGuid().ToString("N");
+            SqlTestStorage.Configure(connection);
             var fixture = new AuthFixture { Connection = connection.ConnectionString };
             fixture.Factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
                 b.UseEnvironment("Development").UseSetting("ConnectionStrings:MenuDatabase", connection.ConnectionString)
                  .ConfigureServices(s => s.Configure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme,
-                     o => o.TimeProvider = fixture.Clock)));
+                     o => o.TimeProvider = fixture.Clock)).ConfigureServices(s => configure?.Invoke(s)));
             using var scope = fixture.Factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
             await db.Database.MigrateAsync();
@@ -300,7 +301,7 @@ public sealed class AuthenticationTests
         }
     }
 
-    private sealed class TestClock : TimeProvider
+    internal sealed class TestClock : TimeProvider
     {
         private DateTimeOffset now = DateTimeOffset.UtcNow;
         public override DateTimeOffset GetUtcNow() => now;

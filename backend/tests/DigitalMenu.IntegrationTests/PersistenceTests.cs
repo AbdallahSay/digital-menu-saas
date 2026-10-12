@@ -25,6 +25,7 @@ public sealed class PersistenceTests
         if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
             throw new InvalidOperationException("Only dedicated F02 LocalDB or localhost disposable CI SQL Server is allowed.");
         connection.InitialCatalog = "DigitalMenu_F02_Test_" + Guid.NewGuid().ToString("N");
+        SqlTestStorage.Configure(connection);
         var options = new DbContextOptionsBuilder<MenuDbContext>().UseSqlServer(connection.ConnectionString).Options;
         await using var db = new MenuDbContext(options);
         try
