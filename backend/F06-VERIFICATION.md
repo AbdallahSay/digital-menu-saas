@@ -5,14 +5,14 @@ Branch: `feat/F06-category-api`. Draft delivery; human peer review before merge.
 
 ## Behavior and files
 
-- `src/DigitalMenu.Api/Catalog/Categories.cs`: four HTTP operations, explicit
+- `src/DigitalMenu.Api/Catalog/Categories.cs`: five HTTP operations, explicit
   DTO allowlists, bilingual names, validation, visibility and rowversion.
 - `src/DigitalMenu.Api/Program.cs`: route registration; extends the existing
   HTTPS and 8192-byte request-body protection to admin routes.
 - `src/DigitalMenu.Application/TenantAccess.cs`: bounded category projection API.
 - `src/DigitalMenu.Infrastructure/Tenancy/TenantDataSession.cs`: SQL sorting and
   offset pagination, transactional linked-item deletion guard and menu version.
-- `tests/DigitalMenu.IntegrationTests/CategoryTests.cs`: eight real SQL Server
+- `tests/DigitalMenu.IntegrationTests/CategoryTests.cs`: ten real SQL Server
   tests, with HTTP cookies/CSRF and direct session race assertions.
 - `tests/DigitalMenu.IntegrationTests/TenantSecurityTests.cs`: existing fixture
   made internal for reuse; existing F05 tests retained.
@@ -113,3 +113,37 @@ Encrypt=false is restricted to the disposable local SQL test instance.
 التعديلات. تُحفظ نسخة المنيو وaudit والتغيير داخل transaction واحدة حتى لا
 تنجح كتابة جزئية أو تتغير بيانات مطعم آخر. للتحقق شغّل الأوامر أعلاه على
 LocalDB الاختباري؛ راجع DTOs وDELETE body والعزل قبل دمج Draft PR.
+
+## PR #37 final review fix — review 5495330415
+
+Resolved P2 comment 4251772841: POST's Location now supports authenticated,
+TenantOwner GET-by-ID using the existing ITenantDataSession owned lookup and
+CategoryResponse. No new persistence interface, schema, dependency or mutation
+behavior. Successful GET does not commit or change PublishedMenuVersion/audit.
+Foreign/missing/deleted IDs use the same generic 404; HTTPS, no-store and cookie
+authorization remain enforced. No sensitive fields enter the DTO. The existing
+request-scoped tracked lookup is reused without SaveChanges; one bounded owned
+resource query, no new cache or performance-sensitive architecture.
+
+Changed files for this follow-up: Categories.cs, CategoryTests.cs,
+docs/04-API-CONTRACT.md and this report. Tests now fetch every POST Location,
+check latest rowVersion after PUT, own drafts, response field allowlist, generic
+foreign/missing/deleted 404, both A/B directions, forged scope headers/query,
+anonymous and HTTP denial, no-store and unchanged menu version/write audit.
+U02 can fetch the latest rowVersion here; DELETE still uses JSON and CSRF.
+
+Final review-fix verification uses the same disposable SQL Server environment
+and commands above; generated TRX files are `f06-review-targeted.trx` and
+`f06-review-full.trx`. Targeted SQL tests: 10 passed, zero failed/skipped,
+exit 0 (12 seconds). Locked restore, Release build (zero warnings/errors),
+EF migration consistency and vulnerability scan: exit 0; no pending model
+changes or vulnerable packages reported. Full SQL regression: 57 passed,
+zero failed/skipped, exit 0 (17 seconds); format verification and diff check:
+exit 0. CI status is recorded on the existing PR. Initial targeted runs exposed test-helper/stream mistakes
+and an overly strict header-string assertion; tests now verify the no-store
+directive while permitting the framework's additional no-cache directive.
+No application security control or test was disabled.
+
+أُصلح رابط Location بإضافة GET-by-ID مع العزل نفسه و404 عامة. يستطيع U02
+قراءة أحدث rowVersion قبل التعديل أو الحذف؛ عقد DELETE وCSRF لم يتغير.
+التغيير على الفرع وPR الموجودين فقط، ومراجعة بشرية لازمة قبل الدمج.

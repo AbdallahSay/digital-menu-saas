@@ -20,7 +20,73 @@ public sealed class CategoryTests(Xunit.Abstractions.ITestOutputHelper output)
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var category = (await response.Content.ReadFromJsonAsync<CategoryResponse>())!;
         Assert.EndsWith(category.Id.ToString(), response.Headers.Location!.ToString());
+        var fetched = await browser.Send(HttpMethod.Get, response.Headers.Location.ToString());
+        Assert.Equal(HttpStatusCode.OK, fetched.StatusCode);
+        Assert.Equal(category, await fetched.Content.ReadFromJsonAsync<CategoryResponse>());
         return category;
+    }
+
+    [SqlServerFact]
+    public async Task Detail_get_returns_current_own_dto_without_changing_menu_version()
+    {
+        await using var f = await Fixture.Create();
+        await f.A.Csrf();
+        var category = await Add(f.A);
+        var update = await f.A.Send(HttpMethod.Put, Route + "/" + category.Id,
+            new UpdateCategoryRequest("طعام", "Food", 2, true, category.RowVersion));
+        Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+        var current = (await update.Content.ReadFromJsonAsync<CategoryResponse>())!;
+        f.A.Token = null; // Safe GET needs the authenticated cookie, not a CSRF token.
+        var fetched = await f.A.Send(HttpMethod.Get, Route + "/" + category.Id);
+        Assert.Equal(HttpStatusCode.OK, fetched.StatusCode);
+        var body = await fetched.Content.ReadAsStringAsync();
+        Assert.Equal(current, System.Text.Json.JsonSerializer.Deserialize<CategoryResponse>(body, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)));
+        Assert.NotEqual(category.RowVersion, current.RowVersion);
+        Assert.Equal("no-store", fetched.Headers.CacheControl!.ToString());
+        Assert.Equal("nosniff", Assert.Single(fetched.Headers.GetValues("X-Content-Type-Options")));
+        var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(body);
+        Assert.Equal(new[] { "id", "isPublished", "nameAr", "nameEn", "rowVersion", "sortOrder" },
+            json.EnumerateObject().Select(p => p.Name).Order());
+        using var scope = f.Auth.Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+        Assert.Equal(3, (await db.Set<Restaurant>().SingleAsync(r => r.Id == f.RestaurantA)).PublishedMenuVersion);
+        Assert.Equal(2, await db.Set<AuditEntry>().CountAsync(a => a.Action == "TenantWriteCommitted"));
+    }
+
+    [SqlServerFact]
+    public async Task Detail_get_requires_cookie_and_hides_foreign_missing_and_deleted_categories()
+    {
+        await using var f = await Fixture.Create();
+        var guest = new Browser(f.Auth.Factory);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await guest.Send(HttpMethod.Get, Route + "/" + f.CategoryA.Id)).StatusCode);
+        using var insecure = new HttpRequestMessage(HttpMethod.Get, "http://localhost" + Route + "/" + f.CategoryA.Id);
+        insecure.Headers.Add("Cookie", string.Join("; ", f.A.Cookies.Select(c => c.Key + "=" + c.Value)));
+        Assert.Equal(HttpStatusCode.Forbidden, (await f.A.Client.SendAsync(insecure)).StatusCode);
+        await f.A.Csrf();
+        var deleted = await Add(f.A);
+        Assert.Equal(HttpStatusCode.NoContent, (await f.A.Send(HttpMethod.Delete, Route + "/" + deleted.Id,
+            new DeleteCategoryRequest(deleted.RowVersion))).StatusCode);
+        f.A.Client.DefaultRequestHeaders.Add("X-Restaurant-Id", f.RestaurantB.ToString());
+        f.A.Client.DefaultRequestHeaders.Add("X-Role", "PlatformAdmin");
+        string? title = null;
+        foreach (var id in new[] { f.CategoryB.Id, Guid.NewGuid(), deleted.Id })
+        {
+            var response = await f.A.Send(HttpMethod.Get, Route + "/" + id + "?restaurantId=" + f.RestaurantB);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.True(response.Headers.CacheControl!.NoStore);
+            Assert.Equal("application/problem+json", response.Content.Headers.ContentType!.MediaType);
+            var json = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            title ??= json.GetProperty("title").GetString();
+            Assert.Equal("Resource not found.", title);
+            Assert.Equal(title, json.GetProperty("title").GetString());
+            Assert.Equal(404, json.GetProperty("status").GetInt32());
+            var body = json.ToString();
+            Assert.DoesNotContain("Protected B", body);
+            Assert.DoesNotContain(id.ToString(), body);
+            Assert.DoesNotContain("restaurantId", body, StringComparison.OrdinalIgnoreCase);
+        }
+        Assert.Equal(HttpStatusCode.OK, (await f.B.Send(HttpMethod.Get, Route + "/" + f.CategoryB.Id)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await f.B.Send(HttpMethod.Get, Route + "/" + f.CategoryA.Id)).StatusCode);
     }
 
     [SqlServerFact]

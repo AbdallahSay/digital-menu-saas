@@ -209,8 +209,13 @@ server-resolved `ITenantContext`, never privileged persistence.
   blank becomes null (public English fallback remains Arabic). Control characters
   are rejected in both names. `sortOrder` is an integer 0..2147483647; ties are
   permitted. `isPublished` must be explicitly supplied. Names are plain text,
-  never HTML. 201 returns a category DTO and Location resource reference; a
-  category detail GET is not included in F06.
+  never HTML. 201 returns a category DTO and a retrievable Location resource URL.
+- GET `/{id}` returns 200 with the existing category DTO and current rowVersion
+  for an owned non-deleted category, including drafts. Foreign, missing and
+  soft-deleted IDs return indistinguishable generic 404 ProblemDetails. Successful
+  reads do not change the category, write audit or PublishedMenuVersion. U02 can
+  fetch the latest rowVersion here before PUT or DELETE; DELETE still requires
+  JSON `{ rowVersion }` and CSRF.
 - DTO: `{ id, nameAr, nameEn, sortOrder, isPublished, rowVersion }`;
   rowVersion is base64 SQL Server rowversion. No restaurant/user IDs, timestamps
   or administrative fields. Unknown JSON fields are rejected with 400.
