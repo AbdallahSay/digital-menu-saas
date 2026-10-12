@@ -7,6 +7,8 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { request } from 'node:http';
+import { gzipSync } from 'node:zlib';
+import { existsSync, readFileSync } from 'node:fs';
 
 // F01 only: this is a reversible local router, never a production hosting decision.
 const app = express();
@@ -46,6 +48,7 @@ app.use('/api', (req, res) => {
   });
   req.pipe(upstream);
 });
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.get('/m/demo-code', (_req, res) => res.redirect(302, '/r/demo'));
 app.get('/robots.txt', (_req, res) =>
   res
@@ -60,6 +63,59 @@ app.get('/sitemap.xml', (_req, res) =>
     .send(
       '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://localhost:4000/r/demo</loc></url></urlset>',
     ),
+);
+
+const compressionCache = new Map<string, { buffer: Buffer; contentType: string }>();
+
+// High-performance compressed static asset delivery
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  if (!acceptEncoding.includes('gzip')) return next();
+
+  const filePath = join(import.meta.dirname, '../browser', req.path);
+  if (/\.(js|css|html|svg|json)$/.test(req.path) && existsSync(filePath)) {
+    let cached = compressionCache.get(filePath);
+    if (!cached) {
+      const content = readFileSync(filePath);
+      const buffer = gzipSync(content);
+      const ext = req.path.split('.').pop();
+      const contentType =
+        ext === 'js'
+          ? 'text/javascript; charset=utf-8'
+          : ext === 'css'
+            ? 'text/css; charset=utf-8'
+            : ext === 'html'
+              ? 'text/html; charset=utf-8'
+              : ext === 'svg'
+                ? 'image/svg+xml'
+                : 'application/json';
+      cached = { buffer, contentType };
+      compressionCache.set(filePath, cached);
+    }
+    res.setHeader('Content-Encoding', 'gzip');
+    res.setHeader('Content-Type', cached.contentType);
+    res.setHeader('Vary', 'Accept-Encoding');
+    if (
+      req.path.startsWith('/chunk-') ||
+      req.path.startsWith('/main-') ||
+      req.path.startsWith('/styles-')
+    ) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+    return res.send(cached.buffer);
+  }
+  next();
+});
+
+app.use(
+  '/fonts',
+  express.static(join(import.meta.dirname, '../browser/fonts'), {
+    index: false,
+    redirect: false,
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    },
+  }),
 );
 app.use(
   express.static(join(import.meta.dirname, '../browser'), {
@@ -76,7 +132,23 @@ app.use((req, res, next) => {
   }
   angularApp
     .handle(req)
-    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
+    .then(async (response) => {
+      if (!response) return next();
+      const acceptEncoding = req.headers['accept-encoding'] || '';
+      if (acceptEncoding.includes('gzip')) {
+        const text = await response.text();
+        const gzipped = gzipSync(text);
+        for (const [k, v] of response.headers.entries()) {
+          res.setHeader(k, v);
+        }
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Vary', 'Accept-Encoding');
+        res.status(response.status).send(gzipped);
+      } else {
+        writeResponseToNodeResponse(response, res);
+      }
+    })
     .catch(next);
 });
 app.use((_req, res) => {
