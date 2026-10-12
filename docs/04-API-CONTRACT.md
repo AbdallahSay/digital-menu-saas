@@ -1,5 +1,36 @@
 # REST API Contract v1 — Draft to finalize before coding
 
+## F03 implemented authentication contract (local/test delivery)
+
+- Named `PlatformAdmin` and `Owner` policies require authentication and the
+  corresponding server-generated role claim. Owner claims are derived from active
+  memberships, not client input or a stale Identity Owner role. These policies do
+  not select a restaurant or authorize tenant resources (F05).
+
+- HTTPS-only `/api/v1/auth/*`. JSON login `{ "email": "...", "password": "..." }`
+  returns 204 on success, 400 for invalid input/CSRF, 401 with generic
+  `Invalid credentials.` for unknown/wrong/locked/ineligible accounts, 409 if
+  already signed in, 503 if `ConnectionStrings:MenuDatabase` is unset.
+- GET `/api/v1/auth/csrf` is anonymous and sets an HttpOnly secure antiforgery
+  cookie plus readable Secure `XSRF-TOKEN`. Send its decoded value in
+  `X-XSRF-TOKEN` on every unsafe API request, including login. Fetch a fresh
+  token after login because tokens are identity-bound.
+- POST `/api/v1/auth/logout` requires authentication and CSRF, returns 204 and
+  revokes **all sessions** for that account via SecurityStamp. GET cannot log out.
+- GET `/api/v1/auth/me` requires authentication and returns only
+  `{ role: "PlatformAdmin" | "Owner", restaurants: [{ name: "..." }] }` for the
+  authenticated user's active memberships in active restaurants (maximum 10).
+  No client RestaurantId selects scope; CRUD tenant authorization remains F05.
+- The session cookie is `__Host-DigitalMenu.Session`, Secure, HttpOnly,
+  SameSite=Strict, Path=/, no Domain, browser-session persistence, with a fixed
+  30-minute server ticket lifetime. Responses are no-store. All auth routes
+  share a per-remote-IP limit of 10 requests/minute, queue 0; rejection is 429
+  ProblemDetails. Five bad passwords lock an account for 15 minutes.
+- Unsupported MFA-enabled accounts fail closed; no MFA completion route is
+  provided. No public registration, reset, invitation or provisioning route.
+- Full decisions, bootstrap restrictions, exact verification commands and
+  release blockers: [F03 verification](../backend/F03-VERIFICATION.md).
+
 F01 implements only anonymous GET /api/health/live and /api/health/ready (200
 plain text Healthy, no dependency details), and Development-only
 /api/openapi/v1.json. Readiness equals liveness until dependencies exist.
