@@ -8,8 +8,14 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: seed-project-issues
+  cancel-in-progress: false
+
 jobs:
   seed:
+    name: Create Project Backlog
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -19,7 +25,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Create missing Issues
+      - name: Validate and create missing Issues
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -29,95 +35,224 @@ jobs:
           import json
           import os
           import subprocess
+          import textwrap
           from pathlib import Path
 
+          # --------------------------------
+          # 1. Load task manifest
+          # --------------------------------
+
+          manifest_path = Path(
+              "automation/tasks.json"
+          )
+
+          if not manifest_path.exists():
+              raise FileNotFoundError(
+                  "Task manifest not found"
+              )
+
           manifest = json.loads(
-              Path("automation/tasks.json").read_text(
+              manifest_path.read_text(
                   encoding="utf-8"
               )
           )
 
           assert manifest["schema_version"] == 1
 
+          tasks = manifest["tasks"]
+
+          assert tasks, "No tasks found"
+
+          task_ids = [
+              task["id"] for task in tasks
+          ]
+
+          assert len(task_ids) == len(
+              set(task_ids)
+          ), "Duplicate task IDs"
+
+          # --------------------------------
+          # 2. Fetch existing GitHub Issues
+          # --------------------------------
+
           existing = json.loads(
               subprocess.check_output(
                   [
-                      "gh", "issue", "list",
-                      "--repo", os.environ["GH_REPO"],
-                      "--state", "all",
-                      "--limit", "1000",
-                      "--json", "body"
+                      "gh",
+                      "issue",
+                      "list",
+                      "--repo",
+                      os.environ["GH_REPO"],
+                      "--state",
+                      "all",
+                      "--limit",
+                      "1000",
+                      "--json",
+                      "body"
                   ],
                   text=True
               )
           )
 
-          bodies = {
+          existing_bodies = {
               issue.get("body") or ""
               for issue in existing
           }
 
-          for task in manifest["tasks"]:
+          # --------------------------------
+          # 3. Create missing Issues
+          # --------------------------------
+
+          created = 0
+          skipped = 0
+
+          for task in tasks:
+
               task_id = task["id"]
+
               marker = (
-                  f"<!-- digital-menu-task:{task_id} -->"
+                  f"<!-- digital-menu-task:"
+                  f"{task_id} -->"
               )
 
-              if any(marker in body for body in bodies):
-                  print(f"SKIP {task_id}")
+              # Prevent duplicate Issues
+              if any(
+                  marker in body
+                  for body in existing_bodies
+              ):
+                  print(f"SKIP: {task_id}")
+                  skipped += 1
                   continue
 
               dependencies = ", ".join(
                   task.get("depends_on", [])
               ) or "None"
 
-              title = f"[{task_id}] {task['title']}"
+              assigned_agent = task[
+                  "implementer"
+              ]
 
-              body = f"""
-          {marker}
+              risk_level = task["risk"]
 
-          ## Task
-          {task['title']}
+              approval_required = (
+                  "Yes"
+                  if task["human_approval"]
+                  else "No"
+              )
 
-          ## Assigned Agent
-          {task['implementer']}
+              scope = ", ".join(
+                  task["scope"]
+              )
 
-          ## Dependencies
-          {dependencies}
+              acceptance_source = task[
+                  "acceptance_source"
+              ]
 
-          ## Risk
-          {task['risk']}
+              title = (
+                  f"[{task_id}] "
+                  f"{task['title']}"
+              )
 
-          ## Human Approval
-          {task['human_approval']}
+              # --------------------------------
+              # 4. Generate formatted Issue
+              # --------------------------------
 
-          ## Scope
-          {', '.join(task['scope'])}
+              body = textwrap.dedent(f"""
+                  {marker}
 
-          ## Acceptance Criteria
-          See `{task['acceptance_source']}`.
+                  # {task_id} - {task['title']}
 
-          ## Instructions
-          Read AGENTS.md and relevant docs.
+                  ## Assigned Agent
+                  {assigned_agent}
 
-          Do not start work until dependencies
-          are completed and the task is approved.
+                  ## Dependencies
+                  {dependencies}
 
-          Do not deploy or merge automatically.
-          """
+                  ## Risk Level
+                  {risk_level}
+
+                  ## Human Approval Required
+                  {approval_required}
+
+                  ## Allowed File Scope
+                  {scope}
+
+                  ## Acceptance Criteria
+                  See `{acceptance_source}`.
+
+                  ## Project Instructions
+                  Read `AGENTS.md` and all
+                  relevant project documentation.
+
+                  ## Execution Rules
+                  - Respect task dependencies.
+                  - Do not start blocked tasks.
+                  - Work on a separate branch.
+                  - Open a Pull Request.
+                  - Run appropriate tests.
+                  - Validate tenant isolation.
+                  - Respect SEO requirements.
+                  - Respect performance budgets.
+                  - Never expose secrets.
+                  - Never deploy to production.
+                  - Never bypass security checks.
+
+                  ## Definition of Done
+                  - [ ] Requirements implemented
+                  - [ ] Build successful
+                  - [ ] Automated tests passed
+                  - [ ] Security checks passed
+                  - [ ] SEO checked if applicable
+                  - [ ] Performance checked
+                  - [ ] Documentation updated
+                  - [ ] Pull Request created
+                  - [ ] Required review completed
+
+                  ## Automation Status
+                  Pending approval and dependencies.
+
+                  ## Important
+                  Do not merge automatically.
+                  Follow the repository rules.
+              """).strip()
+
+              # --------------------------------
+              # 5. Create GitHub Issue
+              # --------------------------------
 
               subprocess.run(
                   [
-                      "gh", "issue", "create",
-                      "--repo", os.environ["GH_REPO"],
-                      "--title", title,
-                      "--body", body
+                      "gh",
+                      "issue",
+                      "create",
+                      "--repo",
+                      os.environ["GH_REPO"],
+                      "--title",
+                      title,
+                      "--body",
+                      body
                   ],
                   check=True
               )
 
-              bodies.add(body)
-              print(f"CREATED {task_id}")
+              existing_bodies.add(body)
 
-          print("Backlog synchronization completed")
+              created += 1
+
+              print(
+                  f"CREATED: {task_id}"
+              )
+
+          # --------------------------------
+          # 6. Final report
+          # --------------------------------
+
+          print("-------------------------")
+          print("Backlog synchronization")
+          print("-------------------------")
+          print(f"Total tasks: {len(tasks)}")
+          print(f"Created: {created}")
+          print(f"Skipped: {skipped}")
+          print("Completed successfully")
+
           PY
