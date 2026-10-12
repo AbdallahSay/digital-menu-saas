@@ -1,5 +1,10 @@
 # Data Model v1 (SQL Server / EF Core)
 
+F02 local/test implementation and reproducible SQL evidence are documented in
+[`backend/F02-VERIFICATION.md`](../backend/F02-VERIFICATION.md). Identity tables
+are persistence preparation only; authentication and server-resolved tenant
+authorization remain F03/F05. No production migration is authorized.
+
 ## Core entities
 `Restaurant`: Id uniqueidentifier PK; Name nvarchar(150), Slug nvarchar(100) unique, PublicCode nvarchar(20) unique immutable/random, Status enum Active/Suspended, IsPublished bit, CreatedAtUtc/UpdatedAtUtc datetime2, rowversion. Slug isn't used as permanent QR target.
 
