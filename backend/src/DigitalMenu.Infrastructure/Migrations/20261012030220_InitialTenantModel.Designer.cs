@@ -734,4 +734,3 @@ namespace DigitalMenu.Infrastructure.Migrations
         }
     }
 }
-
