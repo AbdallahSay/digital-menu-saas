@@ -9,7 +9,7 @@ builder.Services.AddProblemDetails();
 builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
-builder.Services.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>();
+builder.Services.AddDevelopmentOnboarding(builder.Environment, builder.Configuration);
 builder.Services.AddSingleton<IRestaurantPublicCodeGenerator, CryptographicPublicCodeGenerator>();
 builder.Services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(options =>
     options.TokenLifespan = TimeSpan.FromHours(1));

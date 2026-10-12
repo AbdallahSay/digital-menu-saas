@@ -19,6 +19,11 @@ Ordering, cart, table-specific QRs, payment, coupons, billing automation, restau
 
 ## Business invariants
 - One owner can be scoped to a restaurant in the MVP; design membership table for extensibility.
+- Current F04 provisioning rule: an existing normalized owner email cannot be
+  assigned to a second restaurant. Existing Identity accounts are rejected with
+  409 rather than linked, including inactive or not-yet-onboarded owners. Changing
+  this rule requires explicit human approval; the extensible membership schema
+  does not authorize multi-restaurant owner provisioning.
 - Each restaurant has a permanent `PublicCode`. Changing its display name or slug doesn't break existing QR.
 - Only active and publicly published restaurants are browseable; categories/items must be published and items must be available to appear in public menu.
 - Prices stored as `decimal(18,2)` with nonnegative constraint, displayed as EGP. For truly zero-priced product, product may use 0; UI must label free if desired, but never show a fake price.

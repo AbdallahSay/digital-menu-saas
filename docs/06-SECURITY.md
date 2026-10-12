@@ -36,6 +36,17 @@ Assets: admin credentials and sessions, owner menu drafts, unpublished prices/im
 - Concurrent requests cannot escalate roles or produce duplicate unsafe provision artifacts.
 
 ## Required reviewer output
+
+F04 local onboarding: the optional Development-only IPC sink is disabled by
+default and never registered in Production/Staging. No HTTP token retrieval,
+file-based drop, plaintext password storage or email sender is provided.
+Committed invitations are available only through an OS-user-scoped pipe;
+Windows denies network logons explicitly. Consumers use trusted loopback HTTPS,
+the existing CSRF handshake and one-use Identity tokens. Pending memory is
+bounded and aborted transactions never release invitations. See
+[setup and verification](../backend/F04-LOCAL-ONBOARDING.md). Local same-user
+processes (and OS administrators) are trusted; this is not multi-user hosting.
+
 Threats considered, entry points, rejected exploit cases with tests executed, exact evidence, unresolved high risks, compensating controls. Never write '100% secure'.
 
 ## Reference

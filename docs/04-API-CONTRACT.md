@@ -95,14 +95,26 @@ settings and audit in one serializable SQL transaction. A 20-character PublicCod
 uses 80 bits of cryptographic randomness and existing immutable/unique F02
 constraints. No schema migration is needed. Delivery failure rolls all writes back.
 
-`IOwnerOnboardingDelivery` is a **test-only staging sink**, injected by local tests;
-the normal app registers an unavailable adapter. Provisioning returns 503 without
-writes unless Development has an available test adapter. Production provisioning
-is deliberately blocked. Tokens stay in test memory, never HTTP provisioning
-responses/logs/audits. A failed commit can leave an unusable staged token because
-its random user ID has no committed account. Do not substitute a real email sender
-inside this transaction; production needs a reviewed durable outbox/delivery,
-retry/expiry/resend and Data Protection key management design.
+`IOwnerOnboardingDelivery` defaults to an unavailable adapter. Development can
+explicitly enable `DevelopmentOnboarding:Enabled=true` to deliver committed
+invitations over a private OS-user pipe; no HTTP retrieval endpoint exists.
+Production/Staging never register this pipe, even when the flag is true, and
+Production provisioning remains blocked. The pipe releases an invitation only
+after transaction commit, drops aborted staging, bounds pending invitations to
+16, and validates the Identity token before delivery. Tokens remain in memory/
+private IPC, never files, API responses, application logs or audits. Windows ACL
+allows only the actual current user SID and explicitly denies network logons;
+Unix uses CurrentUserOnly peer-credential checks. The local consumer performs the
+existing anonymous CSRF + HTTPS onboarding/login flow, without certificate bypass.
+This is non-durable development tooling, not real email or a production outbox.
+Setup, actual HTTPS end-to-end evidence and restart/disconnect limitations:
+[local onboarding guide](../backend/F04-LOCAL-ONBOARDING.md). Production still
+needs reviewed delivery/outbox, retry/expiry/resend and Data Protection key management.
+
+Current business rule: an existing normalized owner email cannot provision a
+second restaurant, including a pending or inactive owner. F04 always creates a
+new Identity account and rejects existing email accounts with 409 rather than
+linking them. This rule is unchanged and requires human approval to change.
 
 POST `/api/v1/auth/onboarding` is anonymous, invitation-only and HTTPS + CSRF
 protected, sharing the F03 auth rate limiter. Body: `userId`, `token`, `password`.

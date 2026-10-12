@@ -268,7 +268,7 @@ public sealed class AuthenticationTests
         public string Connection { get; private set; } = "";
         public TestClock Clock { get; } = new();
         public string Password { get; } = "F03!" + Guid.NewGuid().ToString("N");
-        public static async Task<AuthFixture> Create(bool empty = false, Action<IServiceCollection>? configure = null)
+        public static async Task<AuthFixture> Create(bool empty = false, Action<IServiceCollection>? configure = null, string? onboardingPipe = null)
         {
             var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
             if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
@@ -278,6 +278,8 @@ public sealed class AuthenticationTests
             var fixture = new AuthFixture { Connection = connection.ConnectionString };
             fixture.Factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
                 b.UseEnvironment("Development").UseSetting("ConnectionStrings:MenuDatabase", connection.ConnectionString)
+                 .UseSetting("DevelopmentOnboarding:Enabled", onboardingPipe is null ? "false" : "true")
+                 .UseSetting("DevelopmentOnboarding:PipeName", onboardingPipe ?? "DigitalMenu.Onboarding")
                  .ConfigureServices(s => s.Configure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme,
                      o => o.TimeProvider = fixture.Clock)).ConfigureServices(s => configure?.Invoke(s)));
             using var scope = fixture.Factory.Services.CreateScope();

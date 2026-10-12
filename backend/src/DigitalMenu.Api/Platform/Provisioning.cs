@@ -11,11 +11,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DigitalMenu.Api.Platform;
 
-// Test adapters must retain secrets only in memory and must never send external mail.
+// Local/test adapters retain secrets only in memory/private IPC and never send external mail.
 public interface IOwnerOnboardingDelivery
 {
     bool IsAvailable { get; }
     Task StageAsync(Guid userId, string email, string token, CancellationToken cancellationToken);
+    void Confirm(Guid userId) { }
+    void Abort(Guid userId) { }
 }
 
 public sealed class UnconfiguredOwnerOnboardingDelivery : IOwnerOnboardingDelivery
@@ -107,28 +109,32 @@ public static partial class Provisioning
         // Explicit local/test boundary. A production delivery/outbox requires a separate reviewed increment.
         if (!environment.IsDevelopment() || !delivery.IsAvailable)
             return Problem(503, "Owner onboarding delivery is not configured for local testing.");
+        var stagedOwner = Guid.Empty;
         try
         {
             await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
             if (await db.Set<Restaurant>().AnyAsync(r => r.Slug == slug, ct) || await users.FindByEmailAsync(email) is not null)
                 return Problem(409, "Restaurant slug or owner account conflicts.");
             var owner = new ApplicationUser { Id = Guid.NewGuid(), UserName = email, Email = email };
+            stagedOwner = owner.Id;
             if (!(await users.CreateAsync(owner)).Succeeded)
                 return Problem(409, "Owner account could not be created.");
             var restaurant = new Restaurant { Name = name, Slug = slug, PublicCode = codes.Generate() };
             db.AddRange(restaurant, new RestaurantUser { RestaurantId = restaurant.Id, UserId = owner.Id },
                 new RestaurantSettings { RestaurantId = restaurant.Id }, Audit(context, restaurant.Id, "RestaurantProvisioned"));
             await db.SaveChangesAsync(ct);
-            // Stage only in a test sink: no external side effects before commit. A rollback leaves any
-            // staged token unusable because its randomly identified Identity user does not exist.
+            // Local IPC staging waits for Confirm after commit; finally Abort suppresses rollback.
+            // Test-only sinks may retain an unusable token whose user was never committed.
             var token = await users.GeneratePasswordResetTokenAsync(owner);
             try { await delivery.StageAsync(owner.Id, email, token, ct); }
             catch (Exception ex) when (ex is not OperationCanceledException) { throw new OnboardingDeliveryException(); }
             await transaction.CommitAsync(ct);
+            delivery.Confirm(owner.Id);
             return Results.Created($"/api/v1/platform/restaurants/{restaurant.Id}", Response(restaurant));
         }
         catch (Exception ex) when (IsConflict(ex)) { return Problem(409, "Provisioning conflicts with another request."); }
         catch (OnboardingDeliveryException) { return Problem(503, "Owner onboarding delivery failed."); }
+        finally { delivery.Abort(stagedOwner); }
     }
 
     private static async Task<IResult> Change(Guid id, string? status, bool? published, string? version,
