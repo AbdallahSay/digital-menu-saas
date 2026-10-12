@@ -1,0 +1,32 @@
+{
+  "profile": "Lighthouse default mobile simulated throttling; localhost production Angular build; 3 runs",
+  "results": [
+    {
+      "performance": 0.97,
+      "accessibility": 1,
+      "seo": 1,
+      "bestPractices": 1,
+      "lcpMs": 2105.2362000000003,
+      "cls": 0,
+      "tbtMs": 8.5
+    },
+    {
+      "performance": 0.97,
+      "accessibility": 1,
+      "seo": 1,
+      "bestPractices": 1,
+      "lcpMs": 2102.9587,
+      "cls": 0,
+      "tbtMs": 8.5
+    },
+    {
+      "performance": 0.97,
+      "accessibility": 1,
+      "seo": 1,
+      "bestPractices": 1,
+      "lcpMs": 2104.8267,
+      "cls": 0,
+      "tbtMs": 48.5
+    }
+  ]
+}

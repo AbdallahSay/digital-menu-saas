@@ -1,0 +1,6 @@
+
+> digital-menu@0.0.0 lint
+> prettier --check src scripts e2e playwright.config.ts
+
+Checking formatting...
+All matched files use Prettier code style!

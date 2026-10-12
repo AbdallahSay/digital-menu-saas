@@ -1,0 +1,6 @@
+  Determining projects to restore...
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Application\DigitalMenu.Application.csproj (in 105 ms).
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Domain\DigitalMenu.Domain.csproj (in 98 ms).
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Infrastructure\DigitalMenu.Infrastructure.csproj (in 105 ms).
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Api\DigitalMenu.Api.csproj (in 189 ms).
+  Restored E:\it\Menu_QR\backend\tests\DigitalMenu.IntegrationTests\DigitalMenu.IntegrationTests.csproj (in 202 ms).

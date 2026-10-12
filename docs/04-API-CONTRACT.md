@@ -1,5 +1,12 @@
 # REST API Contract v1 — Draft to finalize before coding
 
+F01 implements only anonymous GET /api/health/live and /api/health/ready (200
+plain text Healthy, no dependency details), and Development-only
+/api/openapi/v1.json. Readiness equals liveness until dependencies exist.
+All other API paths challenge anonymous requests with 401 ProblemDetails.
+There are no menu, admin, login, mutation or persistence endpoints in F01.
+The Angular demo is an immutable fake public fixture, not the F09 projection.
+
 **API base** `/api/v1`. JSON. ISO 8601 UTC timestamps. A consistent ProblemDetails error response for failures with traceId; don't leak entity existence across tenant boundaries. REST operations must be server-side authorized even if UI hides action. All mutating admin endpoints require CSRF defense when using cookies. Server responses must set restrictive caching for authenticated views.
 
 ## Authentication / profile

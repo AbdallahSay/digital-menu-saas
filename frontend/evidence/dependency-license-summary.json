@@ -1,0 +1,16 @@
+{
+  "not-declared": 1,
+  "Apache-2.0": 36,
+  "MIT": 480,
+  "(Apache-2.0 AND BSD-3-Clause)": 1,
+  "MIT-0": 2,
+  "BSD-3-Clause": 11,
+  "MPL-2.0": 13,
+  "ISC": 23,
+  "CC-BY-4.0": 1,
+  "BSD-2-Clause": 9,
+  "BlueOak-1.0.0": 1,
+  "CC0-1.0": 1,
+  "0BSD": 1,
+  "(MIT OR CC0-1.0)": 1
+}

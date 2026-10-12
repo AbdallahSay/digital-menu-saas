@@ -1,0 +1,11 @@
+HTTP/1.1 302 Found
+X-Content-Type-Options: nosniff
+Referrer-Policy: same-origin
+Cache-Control: no-store
+Location: /r/demo
+Vary: Accept
+Content-Type: text/plain; charset=utf-8
+Content-Length: 29
+Date: Mon, 12 Oct 2026 02:13:52 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5

@@ -1,5 +1,23 @@
 # Architecture Decision Records / Assumptions / Risks
 
+## ADR-009 — F01 reversible local SSR harness (2026-10-12)
+
+The human F01 request explicitly authorizes development-only SSR and defers
+production hosting. This is a narrow exception to the pre-scaffold production
+hosting prerequisite in ADR-003, README and P0, not completion of P0 or a
+production architecture approval. Angular Node on loopback port 4000 routes
+same-origin /api to .NET loopback port 5080. It requires F01_LOCAL_ONLY=1;
+canonical and sitemap origin are fixed localhost, and no service is deployed.
+Arabic is the single canonical locale; no hreflang or English canonical exists.
+No shared SSR cache, database, entities, Identity users or CRUD are implemented.
+The API cookie scheme only supplies deny-by-default challenges until F03.
+
+Before production: select an SSR-capable Node/.NET host and Egypt-serving region;
+measure regional latency/cold starts, cost and failure recovery; decide trusted
+HTTPS origin/proxy headers, production cookie/CSRF integration, and durable SQL
+and media hosting. The local proxy deliberately drops credentials and is not
+suitable for F03 authenticated traffic. See 17-F01-FOUNDATION.md for evidence.
+
 ## ADR-001 — Modular Monolith (accepted for MVP)
 One .NET deployable with clean feature/module boundaries; simplest to test, host and operate for early restaurants. No premature microservices/message broker.
 

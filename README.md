@@ -1,7 +1,15 @@
 # Digital Menu SaaS — Agent Handoff Pack
 
+## F01 local foundation
+
+The development-only skeleton and reproducible checks are documented in
+[docs/17-F01-FOUNDATION.md](docs/17-F01-FOUNDATION.md). Production hosting is
+**unresolved**. The explicit F01 request permits a reversible loopback SSR setup;
+it does not complete P0 production approval or authorize deployment.
+
 **Version:** 1.1 / 2026-10-12 (SEO + performance first)  
-**Status:** Approved planning baseline; no implementation or measurements claimed.
+**Status:** Approved planning baseline with development-only F01 skeleton and
+local fixture measurements; production hosting and deployment remain unresolved.
 
 ## Mission
 Build a secure, measurable, maintainable multi-restaurant QR digital menu SaaS. **MVP is display-only**: no online orders, POS, checkout, payment, delivery, subscriptions, or consumer accounts.
