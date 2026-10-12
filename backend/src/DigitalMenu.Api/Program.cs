@@ -1,5 +1,6 @@
 using DigitalMenu.Api.Auth;
 using DigitalMenu.Api.Catalog;
+using DigitalMenu.Api.Media;
 using DigitalMenu.Api.Platform;
 using DigitalMenu.Application;
 using DigitalMenu.Infrastructure.Tenancy;
@@ -10,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TenantProblemHandler>();
+builder.Services.AddExceptionHandler<MediaProblemHandler>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuthenticatedActor, CookieAuthenticatedActor>();
 builder.Services.AddScoped<TenantContext>();
@@ -20,6 +22,7 @@ builder.Services.AddScoped<IAuthorizationHandler, TenantRestaurantHandler>();
 builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
+builder.Services.AddMenuMedia(builder.Environment, builder.Configuration);
 builder.Services.AddDevelopmentOnboarding(builder.Environment, builder.Configuration);
 builder.Services.AddSingleton<IRestaurantPublicCodeGenerator, CryptographicPublicCodeGenerator>();
 builder.Services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(options =>
@@ -61,10 +64,17 @@ app.Use(async (context, next) =>
     }
     if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform") || context.Request.Path.StartsWithSegments("/api/v1/admin")) &&
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
-        bodySize.MaxRequestBodySize = context.Request.Path.StartsWithSegments("/api/v1/admin/items") ? 32768 : 8192;
+        bodySize.MaxRequestBodySize = context.GetEndpoint()?.Metadata.GetMetadata<MediaUploadMetadata>() is not null
+            ? MediaEndpoints.BodyLimit : context.Request.Path.StartsWithSegments("/api/v1/admin/items") ? 32768 : 8192;
     if (context.Request.Path.StartsWithSegments("/api") &&
         !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method))
     {
+        if (context.GetEndpoint()?.Metadata.GetMetadata<MediaUploadMetadata>() is not null &&
+            string.IsNullOrEmpty(context.Request.Headers["X-XSRF-TOKEN"]))
+        {
+            await Results.Problem(statusCode: 400, title: "Invalid CSRF token.").ExecuteAsync(context);
+            return;
+        }
         if (!context.Request.IsHttps)
         {
             await Results.Problem(statusCode: 400, title: "HTTPS is required.").ExecuteAsync(context);
@@ -83,6 +93,7 @@ app.MapMenuAuthentication();
 app.MapPlatformProvisioning();
 app.MapCategories();
 app.MapItems();
+app.MapMenuMedia();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
 app.MapHealthChecks("/api/health/ready").AllowAnonymous();
