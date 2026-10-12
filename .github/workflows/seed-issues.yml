@@ -1,0 +1,123 @@
+
+name: Seed Project Issues
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Create missing Issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("automation/tasks.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          assert manifest["schema_version"] == 1
+
+          existing = json.loads(
+              subprocess.check_output(
+                  [
+                      "gh", "issue", "list",
+                      "--repo", os.environ["GH_REPO"],
+                      "--state", "all",
+                      "--limit", "1000",
+                      "--json", "body"
+                  ],
+                  text=True
+              )
+          )
+
+          bodies = {
+              issue.get("body") or ""
+              for issue in existing
+          }
+
+          for task in manifest["tasks"]:
+              task_id = task["id"]
+              marker = (
+                  f"<!-- digital-menu-task:{task_id} -->"
+              )
+
+              if any(marker in body for body in bodies):
+                  print(f"SKIP {task_id}")
+                  continue
+
+              dependencies = ", ".join(
+                  task.get("depends_on", [])
+              ) or "None"
+
+              title = f"[{task_id}] {task['title']}"
+
+              body = f"""
+          {marker}
+
+          ## Task
+          {task['title']}
+
+          ## Assigned Agent
+          {task['implementer']}
+
+          ## Dependencies
+          {dependencies}
+
+          ## Risk
+          {task['risk']}
+
+          ## Human Approval
+          {task['human_approval']}
+
+          ## Scope
+          {', '.join(task['scope'])}
+
+          ## Acceptance Criteria
+          See `{task['acceptance_source']}`.
+
+          ## Instructions
+          Read AGENTS.md and relevant docs.
+
+          Do not start work until dependencies
+          are completed and the task is approved.
+
+          Do not deploy or merge automatically.
+          """
+
+              subprocess.run(
+                  [
+                      "gh", "issue", "create",
+                      "--repo", os.environ["GH_REPO"],
+                      "--title", title,
+                      "--body", body
+                  ],
+                  check=True
+              )
+
+              bodies.add(body)
+              print(f"CREATED {task_id}")
+
+          print("Backlog synchronization completed")
+          PY
