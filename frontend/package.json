@@ -10,6 +10,7 @@
     "serve:ssr:digital-menu": "node dist/digital-menu/server/server.mjs",
     "lint": "prettier --check src scripts e2e playwright.config.ts",
     "test:html": "node --test scripts/source-html.mjs",
+    "test:design": "node --test scripts/test-design-alignment.mjs",
     "test:e2e": "playwright test",
     "test:lighthouse": "node scripts/lighthouse-ci.mjs"
   },
