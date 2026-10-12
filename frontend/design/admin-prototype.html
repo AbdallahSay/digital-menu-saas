@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Menu SaaS — Admin Experience Prototype (U02-PREP)</title>
+  <link rel="stylesheet" href="./tokens.css" />
+  <style>
+    /* Standalone Showcase Viewer Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family-current);
+      background-color: #0b1329;
+      color: var(--color-text-primary);
+      padding: 16px;
+      min-height: 100vh;
+    }
+
+    /* Prototype Banner */
+    .prototype-banner {
+      max-width: 1200px;
+      margin: 0 auto 16px auto;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      line-height: var(--line-height-normal);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .prototype-badge {
+      background: #0369a1;
+      font-weight: var(--font-weight-bold);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+    }
+
+    /* Toolbar */
+    .showcase-toolbar {
+      max-width: 1200px;
+      margin: 0 auto 20px auto;
+      background: #1e293b;
+      padding: 16px 20px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: #f8fafc;
+      box-shadow: var(--shadow-md);
+    }
+
+    .showcase-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .showcase-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-tool {
+      background: #334155;
+      color: #ffffff;
+      border: 1px solid #475569;
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background var(--transition-fast);
+      min-height: var(--touch-target-min);
+    }
+
+    .btn-tool:hover {
+      background: #475569;
+    }
+
+    .btn-tool.active {
+      background: var(--color-brand-primary);
+      border-color: var(--color-brand-primary-hover);
+    }
+
+    /* Viewport Frame Container */
+    .viewport-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+
+    .device-frame {
+      width: 100%;
+      max-width: 375px;
+      background: var(--color-bg-canvas);
+      border-radius: 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 8px #334155;
+      overflow: hidden;
+      min-height: 740px;
+      transition: max-width var(--transition-normal);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .device-frame.tablet {
+      max-width: 768px;
+      border-radius: 20px;
+    }
+
+    .device-frame.desktop {
+      max-width: 1024px;
+      border-radius: 12px;
+    }
+
+    /* Admin Shell Layout */
+    .admin-app {
+      display: flex;
+      flex-direction: column;
+      min-height: 740px;
+      background: var(--color-bg-canvas);
+      position: relative;
+      flex: 1;
+    }
+
+    /* Admin Top Header */
+    .admin-header {
+      background: var(--color-surface-card);
+      border-bottom: 1px solid var(--color-border-subtle);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: var(--z-sticky);
+    }
+
+    .admin-brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .admin-logo-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--tenant-primary);
+      color: var(--tenant-on-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .admin-brand-text {
+      min-width: 0;
+    }
+
+    .admin-brand-name {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .admin-owner-email {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .admin-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .badge-status-pub {
+      background: var(--color-semantic-success-bg);
+      color: var(--color-semantic-success);
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-bold);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Main Content Area */
+    .admin-main {
+      flex: 1;
+      padding: 16px;
+      padding-bottom: 76px; /* space for mobile bottom nav */
+      overflow-y: auto;
+    }
+
+    /* Bottom Nav Bar (Mobile Default) */
+    .admin-bottom-nav {
+      position: absolute;
+      inset-inline: 0;
+      bottom: 0;
+      background: var(--color-surface-card);
+      border-top: 1px solid var(--color-border-subtle);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 4px;
+      z-index: var(--z-sticky);
+      height: 64px;
+    }
+
+    .bottom-nav-item {
+      background: none;
+      border: none;
+      color: var(--color-text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      font-family: inherit;
+      padding: 4px 8px;
+      border-radius: var(--radius-md);
+      transition: color var(--transition-fast);
+      min-height: 48px;
+      min-width: 48px;
+      justify-content: center;
+    }
+
+    .bottom-nav-item.active {
+      color: var(--tenant-primary);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .bottom-nav-icon {
+      font-size: 18px;
+    }
+
+    /* ===================================================
+       SCREEN 1: LOGIN EXPERIENCE (/login)
+       =================================================== */
+    .login-container {
+      max-width: 360px;
+      margin: 40px auto;
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .login-header-logo {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    .login-header h2 {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+    }
+
+    .login-header p {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      margin-top: 4px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      background: var(--color-surface-muted);
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+
+    .form-input:focus {
+      border-color: var(--tenant-primary);
+      background: var(--color-surface-card);
+      outline: 2px solid var(--tenant-primary);
+      outline-offset: 1px;
+    }
+
+    .form-input.is-invalid {
+      border-color: var(--color-semantic-danger);
+      background: #fef2f2;
+    }
+
+    .field-error-msg {
+      font-size: 11px;
+      color: var(--color-semantic-danger);
+      margin-top: 4px;
+      display: none;
+    }
+
+    .field-error-msg.visible {
+      display: block;
+    }
+
+    .btn-primary {
+      width: 100%;
+      height: 48px;
+      background: var(--tenant-primary);
+      color: var(--tenant-on-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background var(--transition-fast);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-brand-primary-hover);
+    }
+
+    .btn-primary:focus-visible {
+      outline: 2px solid var(--tenant-primary);
+      outline-offset: 2px;
+    }
+
+    .login-error-alert {
+      background: var(--color-semantic-danger-bg);
+      color: var(--color-semantic-danger);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #fca5a5;
+    }
+
+    .login-error-alert.visible {
+      display: flex;
+    }
+
+    /* Simulation Buttons Bar */
+    .sim-bar {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--color-border-subtle);
+    }
+
+    .sim-bar-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--color-text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .sim-btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .btn-sim {
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-sim:hover {
+      background: #cbd5e1;
+    }
+
+    /* ===================================================
+       SCREEN 2: DASHBOARD OVERVIEW (/admin)
+       =================================================== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-title {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .kpi-number {
+      font-size: 24px;
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+    }
+
+    .action-shortcuts {
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .section-headline {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: 12px;
+    }
+
+    .shortcut-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-shortcut {
+      width: 100%;
+      height: 44px;
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .btn-shortcut:hover {
+      background: #e2e8f0;
+    }
+
+    /* ===================================================
+       SCREEN 3: CATEGORY MANAGER (/admin/categories)
+       =================================================== */
+    .category-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .btn-add-cat {
+      background: var(--tenant-primary);
+      color: var(--tenant-on-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 8px 14px;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: var(--touch-target-min);
+    }
+
+    .cat-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cat-card-item {
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+      transition: background var(--transition-fast);
+    }
+
+    .cat-card-item.is-unpublished {
+      opacity: 0.7;
+      background: #fafafa;
+    }
+
+    .cat-drag-handle {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .btn-order {
+      background: none;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-sm);
+      width: 28px;
+      height: 24px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    .btn-order:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+
+    .btn-order:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .cat-meta-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cat-name-primary {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cat-name-secondary {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+
+    .cat-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .cat-items-count {
+      font-size: 11px;
+      color: var(--color-text-muted);
+    }
+
+    .cat-actions-cluster {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-icon-action {
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--color-text-primary);
+    }
+
+    .btn-icon-action:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-icon-action.destructive:hover {
+      background: var(--color-semantic-danger-bg);
+      color: var(--color-semantic-danger);
+      border-color: #fca5a5;
+    }
+
+    /* Toggle Switch */
+    .switch-label {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 22px;
+      cursor: pointer;
+    }
+
+    .switch-label input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #cbd5e1;
+      transition: .2s;
+      border-radius: 22px;
+    }
+
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      inset-inline-start: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .switch-slider {
+      background-color: var(--tenant-primary);
+    }
+
+    input:checked + .switch-slider:before {
+      transform: translateX(16px);
+    }
+
+    [dir="rtl"] input:checked + .switch-slider:before {
+      transform: translateX(-16px);
+    }
+
+    /* Modal Dialog Backdrops & Sheets */
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: var(--z-backdrop);
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-backdrop.open {
+      display: block;
+    }
+
+    .admin-dialog {
+      position: absolute;
+      inset-inline: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--color-surface-card);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      z-index: var(--z-modal);
+      box-shadow: var(--shadow-modal);
+      display: none;
+      outline: none;
+    }
+
+    .admin-dialog.open {
+      display: block;
+      animation: popIn 180ms ease-out;
+    }
+
+    @keyframes popIn {
+      from { transform: translateY(-45%) scale(0.95); opacity: 0; }
+      to { transform: translateY(-50%) scale(1); opacity: 1; }
+    }
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--color-border-subtle);
+      padding-bottom: 12px;
+    }
+
+    .dialog-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .dialog-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      height: 44px;
+      padding: 0 16px;
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      cursor: pointer;
+    }
+
+    .btn-danger {
+      height: 44px;
+      padding: 0 16px;
+      background: var(--color-semantic-danger);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: absolute;
+      top: 16px;
+      inset-inline: 16px;
+      z-index: var(--z-toast);
+      pointer-events: none;
+    }
+
+    .toast-msg {
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: fadeInDown 200ms ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Prototype Disclaimer Banner -->
+  <aside class="prototype-banner" role="status">
+    <span class="prototype-badge">معاينة لوحة الإدارة (Admin Prototype)</span>
+    <span>هذا نموذج تفاعلي لتجربة مستخدم إدارة المطاعم (U02-PREP) مبني بتقنيات الويب القياسية لاختبار تدفقات تسجيل الدخول، وحالات الأخطاء (401, 403, 429)، وإدارة الأقسام والترتيب وقواعد الحذف العلائقي (409 Conflict). التطبيق الفعلي سينفذ في Angular 22+.</span>
+  </aside>
+
+  <!-- Prototype Toolbar -->
+  <header class="showcase-toolbar">
+    <div class="showcase-title">
+      <span>🛠️ ديجيتال منيو SaaS — تجربة الإدارة والمصادقة (U02-PREP)</span>
+    </div>
+
+    <div class="showcase-controls">
+      <!-- Language Switcher -->
+      <button class="btn-tool" id="btn-toggle-lang" title="تبديل اللغة">
+        🌐 <span id="lbl-lang">English (LTR)</span>
+      </button>
+
+      <!-- Viewport Device Switcher -->
+      <button class="btn-tool active" id="btn-vp-mobile">📱 هاتف (375px)</button>
+      <button class="btn-tool" id="btn-vp-tablet">📟 تابلت (768px)</button>
+      <button class="btn-tool" id="btn-vp-desktop">💻 سطح المكتب</button>
+
+      <!-- Quick Screen Switcher -->
+      <select class="btn-tool" id="sel-screen-view" aria-label="اختيار الشاشة">
+        <option value="login">🔐 تسجيل الدخول (/login)</option>
+        <option value="dashboard">📊 لوحة التحكم الرئيسية (/admin)</option>
+        <option value="categories" selected>📁 إدارة الأقسام (/admin/categories)</option>
+        <option value="empty-categories">⚪ حالة الأقسام الفارغة</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Interactive Device Viewport Frame -->
+  <main class="viewport-container">
+    <div class="device-frame" id="device-frame">
+      <div class="admin-app" id="admin-app">
+
+        <!-- Toast Notifications Host -->
+        <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+        <!-- Admin Top Navigation Header (Present in Authenticated Views) -->
+        <header class="admin-header" id="app-header">
+          <div class="admin-brand-cluster">
+            <div class="admin-logo-badge" aria-hidden="true">🍲</div>
+            <div class="admin-brand-text">
+              <div class="admin-brand-name" id="hdr-brand-name">مطعم السرايا</div>
+              <div class="admin-owner-email" id="hdr-owner-email">owner@saraya.com</div>
+            </div>
+          </div>
+          <div class="admin-header-actions">
+            <span class="badge-status-pub" id="hdr-status-badge">🟢 منشورة</span>
+            <button class="btn-tool" id="btn-sign-out" style="padding: 6px 10px; font-size: 11px; height: 32px;" title="تسجيل الخروج">خروج ⎋</button>
+          </div>
+        </header>
+
+        <!-- SCREEN 1: LOGIN (/login) -->
+        <section class="admin-main" id="view-login" style="display: none;">
+          <div class="login-container">
+            <div class="login-header">
+              <div class="login-header-logo">🍴</div>
+              <h2 id="lbl-login-title">تسجيل الدخول للإدارة</h2>
+              <p id="lbl-login-sub">إدارة القائمة الرقمية لمالكي المطاعم</p>
+            </div>
+
+            <!-- Login Error Feedback Alert -->
+            <div class="login-error-alert" id="login-error-alert" role="alert">
+              <span>⚠️</span>
+              <span id="login-error-text">بيانات الدخول غير صحيحة</span>
+            </div>
+
+            <form id="login-form" novalidate>
+              <div class="form-group">
+                <label class="form-label" for="login-email" id="lbl-email">البريد الإلكتروني</label>
+                <input type="email" class="form-input" id="login-email" placeholder="owner@restaurant.com" required autocomplete="username" />
+                <div class="field-error-msg" id="err-email">يرجى إدخال بريد إلكتروني صحيح</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="login-password" id="lbl-password">كلمة المرور</label>
+                <div style="position: relative;">
+                  <input type="password" class="form-input" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
+                  <button type="button" id="btn-toggle-pwd" style="position: absolute; inset-inline-end: 10px; top: 12px; background: none; border: none; cursor: pointer; color: #64748b;" aria-label="إظهار كلمة المرور">👁️</button>
+                </div>
+                <div class="field-error-msg" id="err-password">كلمة المرور مطلوبة (6 أحرف على الأقل)</div>
+              </div>
+
+              <button type="submit" class="btn-primary" id="btn-submit-login">
+                <span id="lbl-btn-login">تسجيل الدخول</span>
+              </button>
+            </form>
+
+            <!-- Test Simulation Bar -->
+            <div class="sim-bar">
+              <div class="sim-bar-title">حالات الاختبار والمحاكاة:</div>
+              <div class="sim-btn-grid">
+                <button type="button" class="btn-sim" id="sim-login-ok">✅ دخول ناجح (200)</button>
+                <button type="button" class="btn-sim" id="sim-login-401">❌ بيانات خطأ (401)</button>
+                <button type="button" class="btn-sim" id="sim-login-429">⏳ حظر مؤقت (429)</button>
+                <button type="button" class="btn-sim" id="sim-login-403">🔒 مطعم معلق (403)</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 2: DASHBOARD OVERVIEW (/admin) -->
+        <section class="admin-main" id="view-dashboard" style="display: none;">
+          <h2 class="section-headline" id="lbl-dash-title">لوحة التحكم الرئيسية</h2>
+
+          <!-- Metric KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-title" id="lbl-kpi-cats">الأقسام المفعلة</div>
+              <div class="kpi-number" id="kpi-cat-count">4</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title" id="lbl-kpi-items">الأطباق المنشورة</div>
+              <div class="kpi-number" id="kpi-items-count">31</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title" id="lbl-kpi-soldout">أطباق نفدت</div>
+              <div class="kpi-number" style="color: var(--color-semantic-warning);" id="kpi-soldout-count">2</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title" id="lbl-kpi-status">حالة النشر العامة</div>
+              <div style="margin-top: 4px;">
+                <label class="switch-label">
+                  <input type="checkbox" id="chk-restaurant-published" checked />
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Shortcuts -->
+          <div class="action-shortcuts">
+            <h3 class="section-headline" id="lbl-shortcuts">إجراءات سريعة</h3>
+            <div class="shortcut-list">
+              <button class="btn-shortcut" id="sc-add-cat">
+                <span>➕ إضافة قسم جديد للقائمة</span>
+                <span>➔</span>
+              </button>
+              <button class="btn-shortcut" id="sc-goto-cats">
+                <span>📁 إدارة وترتيب الأقسام</span>
+                <span>➔</span>
+              </button>
+              <button class="btn-shortcut" id="sc-qr-download">
+                <span>📱 تحميل وتصدير رمز QR الدائم</span>
+                <span>📥</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 3: CATEGORY MANAGER (/admin/categories) -->
+        <section class="admin-main" id="view-categories">
+          <div class="category-top-bar">
+            <div>
+              <h2 class="section-headline" style="margin-bottom: 2px;" id="lbl-cat-mgr-title">إدارة الأقسام (Categories)</h2>
+              <p style="font-size: 11px; color: var(--color-text-secondary);" id="lbl-cat-mgr-sub">ترتيب الأقسام وتحديد ظهورها في القائمة</p>
+            </div>
+            <button class="btn-add-cat" id="btn-open-create-cat">
+              <span>+</span> <span id="lbl-btn-add-cat">إضافة قسم</span>
+            </button>
+          </div>
+
+          <!-- Category Stack Container -->
+          <div class="cat-list-container" id="cat-list-container">
+            <!-- Dynamically injected categories -->
+          </div>
+        </section>
+
+        <!-- SCREEN 4: EMPTY CATEGORIES STATE -->
+        <section class="admin-main" id="view-empty-categories" style="display: none; text-align: center; padding-top: 60px;">
+          <div style="font-size: 54px; margin-bottom: 12px;" aria-hidden="true">📁</div>
+          <h2 class="section-headline" id="lbl-empty-cat-title">لا توجد أقسام حتى الآن</h2>
+          <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); max-width: 280px; margin: 0 auto 20px auto;" id="lbl-empty-cat-desc">
+            ابدأ بإضافة أول قسم (مثل: المشويات، المقبلات، المشروبات) لتتمكن من إضافة الأطباق إليه.
+          </p>
+          <button class="btn-add-cat" style="margin: 0 auto;" id="btn-empty-add-cat">
+            <span>+</span> <span>إضافة أول قسم الآن</span>
+          </button>
+        </section>
+
+        <!-- Bottom Navigation Bar (Mobile / Thumb friendly) -->
+        <nav class="admin-bottom-nav" id="app-bottom-nav" aria-label="التنقل الرئيسي">
+          <button class="bottom-nav-item" id="nav-dash">
+            <span class="bottom-nav-icon" aria-hidden="true">📊</span>
+            <span id="nav-lbl-dash">الرئيسية</span>
+          </button>
+          <button class="bottom-nav-item active" id="nav-cats">
+            <span class="bottom-nav-icon" aria-hidden="true">📁</span>
+            <span id="nav-lbl-cats">الأقسام</span>
+          </button>
+          <button class="bottom-nav-item" id="nav-items">
+            <span class="bottom-nav-icon" aria-hidden="true">🍽️</span>
+            <span id="nav-lbl-items">الأطباق</span>
+          </button>
+          <button class="bottom-nav-item" id="nav-branding">
+            <span class="bottom-nav-icon" aria-hidden="true">🎨</span>
+            <span id="nav-lbl-branding">الهوية</span>
+          </button>
+          <button class="bottom-nav-item" id="nav-qr">
+            <span class="bottom-nav-icon" aria-hidden="true">📱</span>
+            <span id="nav-lbl-qr">رمز QR</span>
+          </button>
+        </nav>
+
+        <!-- MODAL 1: CREATE / EDIT CATEGORY -->
+        <div class="modal-backdrop" id="cat-modal-backdrop" aria-hidden="true"></div>
+        <div class="admin-dialog" id="cat-form-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-cat-title" tabindex="-1">
+          <div class="dialog-header">
+            <h3 class="dialog-title" id="dialog-cat-title">إضافة قسم جديد</h3>
+            <button class="dialog-close" id="btn-close-cat-dialog" aria-label="إغلاق النافذة">✕</button>
+          </div>
+
+          <form id="cat-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="inp-cat-name-ar" id="lbl-fld-name-ar">اسم القسم بالعربية (إلزامي)*</label>
+              <input type="text" class="form-input" id="inp-cat-name-ar" placeholder="مثال: المشويات" required maxlength="100" />
+              <div class="field-error-msg" id="err-cat-name-ar">اسم القسم بالعربية مطلوب</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inp-cat-name-en" id="lbl-fld-name-en">اسم القسم بالإنجليزية (اختياري)</label>
+              <input type="text" class="form-input" id="inp-cat-name-en" placeholder="Example: Grills" maxlength="100" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inp-cat-order" id="lbl-fld-order">ترتيب الظهور (رقم)</label>
+              <input type="number" class="form-input" id="inp-cat-order" min="1" value="1" required />
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="chk-cat-published" checked style="width: 18px; height: 18px;" />
+              <label for="chk-cat-published" style="font-size: var(--font-size-sm); cursor: pointer;" id="lbl-fld-pub">نشر القسم فوراً في المنيو العام</label>
+            </div>
+
+            <div class="dialog-footer">
+              <button type="button" class="btn-secondary" id="btn-cancel-cat">إلغاء</button>
+              <button type="submit" class="btn-primary" style="width: auto; padding: 0 20px;" id="btn-save-cat">حفظ القسم</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- MODAL 2: RELATIONAL INTEGRITY DELETE GUARD (409 Conflict Simulation) -->
+        <div class="modal-backdrop" id="conflict-modal-backdrop" aria-hidden="true"></div>
+        <div class="admin-dialog" id="conflict-dialog" role="dialog" aria-modal="true" aria-labelledby="conflict-dialog-title" tabindex="-1">
+          <div class="dialog-header">
+            <h3 class="dialog-title" style="color: var(--color-semantic-danger);" id="conflict-dialog-title">⚠️ تعذر حذف القسم (مرتبط بأطباق)</h3>
+            <button class="dialog-close" id="btn-close-conflict" aria-label="إغلاق">✕</button>
+          </div>
+          <div style="font-size: var(--font-size-sm); line-height: var(--line-height-relaxed); color: var(--color-text-secondary); margin-bottom: 20px;" id="conflict-dialog-desc">
+            لا يمكن حذف هذا القسم لأنه يحتوي على أطباق نشطة. للحفاظ على سلامة القائمة للعملاء، يرجى نقل الأطباق إلى قسم آخر أو حذفها أولاً.
+          </div>
+          <div class="dialog-footer">
+            <button type="button" class="btn-primary" id="btn-ack-conflict" style="width: 100%;">حسناً، فهمت</button>
+          </div>
+        </div>
+
+        <!-- MODAL 3: CONFIRM SAFE DELETE (For empty category) -->
+        <div class="modal-backdrop" id="delete-modal-backdrop" aria-hidden="true"></div>
+        <div class="admin-dialog" id="delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" tabindex="-1">
+          <div class="dialog-header">
+            <h3 class="dialog-title" style="color: var(--color-semantic-danger);" id="delete-dialog-title">تأكيد حذف القسم</h3>
+            <button class="dialog-close" id="btn-close-delete" aria-label="إغلاق">✕</button>
+          </div>
+          <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: 20px;" id="delete-dialog-desc">
+            هل أنت متأكد من حذف هذا القسم؟ لا يمكن التراجع عن هذا الإجراء.
+          </div>
+          <div class="dialog-footer">
+            <button type="button" class="btn-secondary" id="btn-cancel-delete">إلغاء</button>
+            <button type="button" class="btn-danger" id="btn-confirm-delete">تأكيد الحذف</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Interactive JavaScript Engine (Safe DOM APIs Only) -->
+  <script>
+    // Initial State Mock Dataset
+    let CATEGORIES_DATA = [
+      { id: 'cat-1', nameAr: 'المشويات والمطبوخ', nameEn: 'Charcoal Grills', order: 1, itemCount: 12, isPublished: true },
+      { id: 'cat-2', nameAr: 'المقبلات والسلطات', nameEn: 'Appetizers & Salads', order: 2, itemCount: 8, isPublished: true },
+      { id: 'cat-3', nameAr: 'الطواجن الشرقية', nameEn: 'Clay Casseroles', order: 3, itemCount: 6, isPublished: true },
+      { id: 'cat-4', nameAr: 'الحلويات الشرقية', nameEn: 'Oriental Desserts', order: 4, itemCount: 5, isPublished: true },
+      { id: 'cat-5', nameAr: 'قسم فارغ تجريبي', nameEn: 'Empty Sample Category', order: 5, itemCount: 0, isPublished: false }
+    ];
+
+    let currentLang = 'ar';
+    let currentScreen = 'categories';
+    let editingCategoryId = null;
+    let deletingCategoryId = null;
+    let lastActiveElement = null; // For modal focus return
+
+    // DOM Elements
+    const deviceFrame = document.getElementById('device-frame');
+    const selScreenView = document.getElementById('sel-screen-view');
+    const toastContainer = document.getElementById('toast-container');
+    const catListContainer = document.getElementById('cat-list-container');
+
+    // Modals
+    const catFormDialog = document.getElementById('cat-form-dialog');
+    const catModalBackdrop = document.getElementById('cat-modal-backdrop');
+    const conflictDialog = document.getElementById('conflict-dialog');
+    const conflictModalBackdrop = document.getElementById('conflict-modal-backdrop');
+    const deleteDialog = document.getElementById('delete-dialog');
+    const deleteModalBackdrop = document.getElementById('delete-modal-backdrop');
+
+    // Forms & Inputs
+    const catForm = document.getElementById('cat-form');
+    const inpCatNameAr = document.getElementById('inp-cat-name-ar');
+    const inpCatNameEn = document.getElementById('inp-cat-name-en');
+    const inpCatOrder = document.getElementById('inp-cat-order');
+    const chkCatPublished = document.getElementById('chk-cat-published');
+    const errCatNameAr = document.getElementById('err-cat-name-ar');
+
+    // Login Elements
+    const loginForm = document.getElementById('login-form');
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    const loginErrorAlert = document.getElementById('login-error-alert');
+    const loginErrorText = document.getElementById('login-error-text');
+    const errEmail = document.getElementById('err-email');
+    const errPassword = document.getElementById('err-password');
+    const btnTogglePwd = document.getElementById('btn-toggle-pwd');
+
+    // Toast Notification System
+    function showToast(message, isError = false) {
+      const toast = document.createElement('div');
+      toast.className = 'toast-msg';
+      if (isError) {
+        toast.style.background = '#991b1b';
+      }
+      toast.textContent = (isError ? '⚠️ ' : '✅ ') + message;
+      toastContainer.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 3000);
+    }
+
+    // Switch View Function
+    function setScreenView(screen) {
+      currentScreen = screen;
+      selScreenView.value = screen;
+
+      const views = ['view-login', 'view-dashboard', 'view-categories', 'view-empty-categories'];
+      views.forEach(v => {
+        const el = document.getElementById(v);
+        if (el) el.style.display = 'none';
+      });
+
+      const header = document.getElementById('app-header');
+      const bottomNav = document.getElementById('app-bottom-nav');
+
+      if (screen === 'login') {
+        document.getElementById('view-login').style.display = 'block';
+        header.style.display = 'none';
+        bottomNav.style.display = 'none';
+      } else {
+        header.style.display = 'flex';
+        bottomNav.style.display = 'flex';
+
+        // Update nav active state
+        document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+
+        if (screen === 'dashboard') {
+          document.getElementById('view-dashboard').style.display = 'block';
+          document.getElementById('nav-dash').classList.add('active');
+          updateKpis();
+        } else if (screen === 'categories') {
+          document.getElementById('view-categories').style.display = 'block';
+          document.getElementById('nav-cats').classList.add('active');
+          renderCategories();
+        } else if (screen === 'empty-categories') {
+          document.getElementById('view-empty-categories').style.display = 'block';
+          document.getElementById('nav-cats').classList.add('active');
+        }
+      }
+    }
+
+    // Update KPI Numbers
+    function updateKpis() {
+      const activeCats = CATEGORIES_DATA.filter(c => c.isPublished).length;
+      document.getElementById('kpi-cat-count').textContent = activeCats;
+    }
+
+    // Safe DOM Category Rendering (No innerHTML for tenant strings)
+    function renderCategories() {
+      while (catListContainer.firstChild) {
+        catListContainer.removeChild(catListContainer.firstChild);
+      }
+
+      if (CATEGORIES_DATA.length === 0) {
+        setScreenView('empty-categories');
+        return;
+      }
+
+      // Sort by order ascending
+      CATEGORIES_DATA.sort((a, b) => a.order - b.order);
+
+      CATEGORIES_DATA.forEach((cat, index) => {
+        const card = document.createElement('div');
+        card.className = `cat-card-item ${!cat.isPublished ? 'is-unpublished' : ''}`;
+        card.setAttribute('data-id', cat.id);
+
+        // 1. Order buttons cluster
+        const orderCluster = document.createElement('div');
+        orderCluster.className = 'cat-drag-handle';
+
+        const btnUp = document.createElement('button');
+        btnUp.className = 'btn-order';
+        btnUp.textContent = '▲';
+        btnUp.title = 'تحريك لأعلى';
+        btnUp.disabled = index === 0;
+        btnUp.addEventListener('click', () => moveCategory(index, -1));
+        orderCluster.appendChild(btnUp);
+
+        const orderNum = document.createElement('span');
+        orderNum.style.fontSize = '11px';
+        orderNum.style.fontWeight = 'bold';
+        orderNum.textContent = cat.order;
+        orderCluster.appendChild(orderNum);
+
+        const btnDown = document.createElement('button');
+        btnDown.className = 'btn-order';
+        btnDown.textContent = '▼';
+        btnDown.title = 'تحريك لأسفل';
+        btnDown.disabled = index === CATEGORIES_DATA.length - 1;
+        btnDown.addEventListener('click', () => moveCategory(index, 1));
+        orderCluster.appendChild(btnDown);
+
+        card.appendChild(orderCluster);
+
+        // 2. Meta Info
+        const info = document.createElement('div');
+        info.className = 'cat-meta-info';
+
+        const nameAr = document.createElement('div');
+        nameAr.className = 'cat-name-primary';
+        nameAr.textContent = cat.nameAr;
+        info.appendChild(nameAr);
+
+        if (cat.nameEn) {
+          const nameEn = document.createElement('div');
+          nameEn.className = 'cat-name-secondary';
+          nameEn.textContent = cat.nameEn;
+          info.appendChild(nameEn);
+        }
+
+        const badgeRow = document.createElement('div');
+        badgeRow.className = 'cat-badge-row';
+
+        const itemCount = document.createElement('span');
+        itemCount.className = 'cat-items-count';
+        itemCount.textContent = `${cat.itemCount} ${currentLang === 'ar' ? 'طبقاً' : 'items'}`;
+        badgeRow.appendChild(itemCount);
+
+        const pubLabel = document.createElement('span');
+        pubLabel.style.fontSize = '10px';
+        pubLabel.style.fontWeight = 'bold';
+        pubLabel.style.color = cat.isPublished ? '#15803d' : '#64748b';
+        pubLabel.textContent = cat.isPublished ? (currentLang === 'ar' ? '🟢 منشور' : '🟢 Published') : (currentLang === 'ar' ? '⚪ مخفي' : '⚪ Hidden');
+        badgeRow.appendChild(pubLabel);
+
+        info.appendChild(badgeRow);
+        card.appendChild(info);
+
+        // 3. Action Buttons & Switch
+        const actions = document.createElement('div');
+        actions.className = 'cat-actions-cluster';
+
+        // Toggle Switch
+        const switchLabel = document.createElement('label');
+        switchLabel.className = 'switch-label';
+        switchLabel.title = currentLang === 'ar' ? 'تبديل حالة النشر' : 'Toggle publication';
+
+        const switchInput = document.createElement('input');
+        switchInput.type = 'checkbox';
+        switchInput.checked = cat.isPublished;
+        switchInput.addEventListener('change', (e) => {
+          cat.isPublished = e.target.checked;
+          renderCategories();
+          showToast(cat.isPublished ? 'تم تفعيل نشر القسم في القائمة' : 'تم إخفاء القسم من القائمة');
+        });
+
+        const switchSlider = document.createElement('span');
+        switchSlider.className = 'switch-slider';
+
+        switchLabel.appendChild(switchInput);
+        switchLabel.appendChild(switchSlider);
+        actions.appendChild(switchLabel);
+
+        // Edit Button
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'btn-icon-action';
+        btnEdit.textContent = '✏️';
+        btnEdit.title = 'تعديل القسم';
+        btnEdit.addEventListener('click', () => openEditCategoryModal(cat, btnEdit));
+        actions.appendChild(btnEdit);
+
+        // Delete Button
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'btn-icon-action destructive';
+        btnDelete.textContent = '🗑️';
+        btnDelete.title = 'حذف القسم';
+        btnDelete.addEventListener('click', () => handleDeleteCategoryClick(cat, btnDelete));
+        actions.appendChild(btnDelete);
+
+        card.appendChild(actions);
+        catListContainer.appendChild(card);
+      });
+    }
+
+    // Move Category (Reorder simulation)
+    function moveCategory(index, delta) {
+      const targetIndex = index + delta;
+      if (targetIndex < 0 || targetIndex >= CATEGORIES_DATA.length) return;
+
+      const temp = CATEGORIES_DATA[index];
+      CATEGORIES_DATA[index] = CATEGORIES_DATA[targetIndex];
+      CATEGORIES_DATA[targetIndex] = temp;
+
+      // Recalculate order numbers
+      CATEGORIES_DATA.forEach((c, idx) => {
+        c.order = idx + 1;
+      });
+
+      renderCategories();
+      showToast(currentLang === 'ar' ? 'تم تحديث ترتيب الأقسام بنجاح' : 'Category order updated successfully');
+    }
+
+    // Handle Delete Click (409 Conflict Guard)
+    function handleDeleteCategoryClick(cat, triggerElement) {
+      lastActiveElement = triggerElement;
+
+      if (cat.itemCount > 0) {
+        // Relational Guard: Conflict!
+        document.getElementById('conflict-dialog-desc').textContent = currentLang === 'ar' ?
+          `⚠️ لا يمكن حذف قسم "${cat.nameAr}" لأنه يحتوي على ${cat.itemCount} طبقاً نشطاً. يرجى نقل الأطباق أو حذفها أولاً للحفاظ على سلامة القائمة.` :
+          `⚠️ Cannot delete category "${cat.nameEn || cat.nameAr}" because it contains ${cat.itemCount} active menu items. Please reassign or delete these items first.`;
+
+        openModal(conflictDialog, conflictModalBackdrop, document.getElementById('btn-ack-conflict'));
+      } else {
+        // Empty category: Safe confirmation
+        deletingCategoryId = cat.id;
+        document.getElementById('delete-dialog-desc').textContent = currentLang === 'ar' ?
+          `هل أنت متأكد من حذف قسم "${cat.nameAr}"؟ هذا الإجراء نهائي ولا يمكن التراجع عنه.` :
+          `Are you sure you want to delete category "${cat.nameEn || cat.nameAr}"? This action cannot be undone.`;
+
+        openModal(deleteDialog, deleteModalBackdrop, document.getElementById('btn-cancel-delete'));
+      }
+    }
+
+    // Modal Management with Focus Trap & Escape Handling
+    function openModal(dialog, backdrop, initialFocusEl) {
+      backdrop.classList.add('open');
+      dialog.classList.add('open');
+      backdrop.setAttribute('aria-hidden', 'false');
+      dialog.setAttribute('aria-hidden', 'false');
+
+      setTimeout(() => {
+        if (initialFocusEl && typeof initialFocusEl.focus === 'function') {
+          initialFocusEl.focus();
+        }
+      }, 50);
+    }
+
+    function closeModal(dialog, backdrop) {
+      backdrop.classList.remove('open');
+      dialog.classList.remove('open');
+      backdrop.setAttribute('aria-hidden', 'true');
+      dialog.setAttribute('aria-hidden', 'true');
+
+      if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+        lastActiveElement.focus();
+      }
+    }
+
+    // Modal Close Triggers
+    document.getElementById('btn-close-cat-dialog').addEventListener('click', () => closeModal(catFormDialog, catModalBackdrop));
+    document.getElementById('btn-cancel-cat').addEventListener('click', () => closeModal(catFormDialog, catModalBackdrop));
+    document.getElementById('btn-close-conflict').addEventListener('click', () => closeModal(conflictDialog, conflictModalBackdrop));
+    document.getElementById('btn-ack-conflict').addEventListener('click', () => closeModal(conflictDialog, conflictModalBackdrop));
+    document.getElementById('btn-close-delete').addEventListener('click', () => closeModal(deleteDialog, deleteModalBackdrop));
+    document.getElementById('btn-cancel-delete').addEventListener('click', () => closeModal(deleteDialog, deleteModalBackdrop));
+
+    // Confirm Delete Action
+    document.getElementById('btn-confirm-delete').addEventListener('click', () => {
+      CATEGORIES_DATA = CATEGORIES_DATA.filter(c => c.id !== deletingCategoryId);
+      // Recalculate order
+      CATEGORIES_DATA.forEach((c, idx) => { c.order = idx + 1; });
+      closeModal(deleteDialog, deleteModalBackdrop);
+      renderCategories();
+      showToast(currentLang === 'ar' ? 'تم حذف القسم بنجاح' : 'Category deleted successfully');
+    });
+
+    // Keyboard Management for Modals (Escape key)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (catFormDialog.classList.contains('open')) closeModal(catFormDialog, catModalBackdrop);
+        if (conflictDialog.classList.contains('open')) closeModal(conflictDialog, conflictModalBackdrop);
+        if (deleteDialog.classList.contains('open')) closeModal(deleteDialog, deleteModalBackdrop);
+      }
+    });
+
+    // Create Category Modal Open
+    function openCreateCategoryModal(triggerElement) {
+      lastActiveElement = triggerElement;
+      editingCategoryId = null;
+
+      document.getElementById('dialog-cat-title').textContent = currentLang === 'ar' ? 'إضافة قسم جديد' : 'Add New Category';
+      catForm.reset();
+      inpCatOrder.value = CATEGORIES_DATA.length + 1;
+      chkCatPublished.checked = true;
+      errCatNameAr.classList.remove('visible');
+
+      openModal(catFormDialog, catModalBackdrop, inpCatNameAr);
+    }
+
+    function openEditCategoryModal(cat, triggerElement) {
+      lastActiveElement = triggerElement;
+      editingCategoryId = cat.id;
+
+      document.getElementById('dialog-cat-title').textContent = currentLang === 'ar' ? 'تعديل القسم' : 'Edit Category';
+      inpCatNameAr.value = cat.nameAr;
+      inpCatNameEn.value = cat.nameEn || '';
+      inpCatOrder.value = cat.order;
+      chkCatPublished.checked = cat.isPublished;
+      errCatNameAr.classList.remove('visible');
+
+      openModal(catFormDialog, catModalBackdrop, inpCatNameAr);
+    }
+
+    document.getElementById('btn-open-create-cat').addEventListener('click', (e) => openCreateCategoryModal(e.target));
+    document.getElementById('sc-add-cat').addEventListener('click', (e) => openCreateCategoryModal(e.target));
+    document.getElementById('btn-empty-add-cat').addEventListener('click', (e) => openCreateCategoryModal(e.target));
+
+    // Category Form Submit
+    catForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const nameAr = inpCatNameAr.value.trim();
+      const nameEn = inpCatNameEn.value.trim();
+      const order = parseInt(inpCatOrder.value, 10) || 1;
+      const isPublished = chkCatPublished.checked;
+
+      if (!nameAr) {
+        errCatNameAr.classList.add('visible');
+        inpCatNameAr.classList.add('is-invalid');
+        inpCatNameAr.focus();
+        return;
+      }
+      errCatNameAr.classList.remove('visible');
+      inpCatNameAr.classList.remove('is-invalid');
+
+      if (editingCategoryId) {
+        // Edit existing
+        const cat = CATEGORIES_DATA.find(c => c.id === editingCategoryId);
+        if (cat) {
+          cat.nameAr = nameAr;
+          cat.nameEn = nameEn;
+          cat.order = order;
+          cat.isPublished = isPublished;
+        }
+        showToast(currentLang === 'ar' ? 'تم تحديث بيانات القسم بنجاح' : 'Category updated successfully');
+      } else {
+        // Create new
+        const newCat = {
+          id: `cat-${Date.now()}`,
+          nameAr: nameAr,
+          nameEn: nameEn,
+          order: order,
+          itemCount: 0,
+          isPublished: isPublished
+        };
+        CATEGORIES_DATA.push(newCat);
+        showToast(currentLang === 'ar' ? 'تم إنشاء القسم الجديد بنجاح' : 'Category created successfully');
+      }
+
+      closeModal(catFormDialog, catModalBackdrop);
+      renderCategories();
+    });
+
+    // Login Form Validation & Submission
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      loginErrorAlert.classList.remove('visible');
+
+      const email = loginEmail.value.trim();
+      const pwd = loginPassword.value;
+      let valid = true;
+
+      if (!email || !email.includes('@')) {
+        errEmail.classList.add('visible');
+        loginEmail.classList.add('is-invalid');
+        valid = false;
+      } else {
+        errEmail.classList.remove('visible');
+        loginEmail.classList.remove('is-invalid');
+      }
+
+      if (!pwd || pwd.length < 6) {
+        errPassword.classList.add('visible');
+        loginPassword.classList.add('is-invalid');
+        valid = false;
+      } else {
+        errPassword.classList.remove('visible');
+        loginPassword.classList.remove('is-invalid');
+      }
+
+      if (!valid) return;
+
+      // Simulated successful sign in
+      showToast(currentLang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Signed in successfully');
+      setScreenView('dashboard');
+    });
+
+    // Toggle Password Visibility
+    btnTogglePwd.addEventListener('click', () => {
+      const isPwd = loginPassword.type === 'password';
+      loginPassword.type = isPwd ? 'text' : 'password';
+      btnTogglePwd.textContent = isPwd ? '🙈' : '👁️';
+    });
+
+    // Login Simulation Triggers
+    document.getElementById('sim-login-ok').addEventListener('click', () => {
+      loginEmail.value = 'owner@saraya.com';
+      loginPassword.value = 'Password123!';
+      loginErrorAlert.classList.remove('visible');
+      showToast('تم تسجيل الدخول بنجاح');
+      setScreenView('dashboard');
+    });
+
+    document.getElementById('sim-login-401').addEventListener('click', () => {
+      loginErrorText.textContent = currentLang === 'ar' ?
+        'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password';
+      loginErrorAlert.classList.add('visible');
+    });
+
+    document.getElementById('sim-login-429').addEventListener('click', () => {
+      loginErrorText.textContent = currentLang === 'ar' ?
+        'تم تجاوز عدد المحاولات، يرجى الانتظار 60 ثانية قبل المحاولة مجدداً' : 'Too many attempts. Please wait 60 seconds.';
+      loginErrorAlert.classList.add('visible');
+    });
+
+    document.getElementById('sim-login-403').addEventListener('click', () => {
+      loginErrorText.textContent = currentLang === 'ar' ?
+        'حساب المطعم معلق حالياً، يرجى التواصل مع إدارة المنصة' : 'Restaurant account is suspended. Contact support.';
+      loginErrorAlert.classList.add('visible');
+    });
+
+    // Navigation item clicks
+    document.getElementById('nav-dash').addEventListener('click', () => setScreenView('dashboard'));
+    document.getElementById('nav-cats').addEventListener('click', () => setScreenView('categories'));
+    document.getElementById('sc-goto-cats').addEventListener('click', () => setScreenView('categories'));
+    document.getElementById('sc-qr-download').addEventListener('click', () => showToast('جاري تحضير ملف QR للتحميل...'));
+    document.getElementById('btn-sign-out').addEventListener('click', () => {
+      showToast(currentLang === 'ar' ? 'تم تسجيل الخروج بنجاح' : 'Signed out successfully');
+      setScreenView('login');
+    });
+
+    document.getElementById('nav-items').addEventListener('click', () => showToast('صفحة الأطباق (U03) قادمة قريباً'));
+    document.getElementById('nav-branding').addEventListener('click', () => showToast('صفحة الهوية (U03) قادمة قريباً'));
+    document.getElementById('nav-qr').addEventListener('click', () => showToast('استوديو QR (U03) قادم قريباً'));
+
+    // Screen Select Handler
+    selScreenView.addEventListener('change', (e) => {
+      setScreenView(e.target.value);
+    });
+
+    // Viewport Resizing
+    const vpButtons = [
+      { id: 'btn-vp-mobile', class: '' },
+      { id: 'btn-vp-tablet', class: 'tablet' },
+      { id: 'btn-vp-desktop', class: 'desktop' }
+    ];
+
+    vpButtons.forEach(btn => {
+      document.getElementById(btn.id).addEventListener('click', () => {
+        vpButtons.forEach(b => document.getElementById(b.id).classList.remove('active'));
+        document.getElementById(btn.id).classList.add('active');
+        deviceFrame.className = `device-frame ${btn.class}`;
+      });
+    });
+
+    // Language Toggle
+    function toggleLanguage() {
+      currentLang = currentLang === 'ar' ? 'en' : 'ar';
+      const isAr = currentLang === 'ar';
+
+      document.documentElement.lang = currentLang;
+      document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+
+      document.getElementById('lbl-lang').textContent = isAr ? 'English (LTR)' : 'العربية (RTL)';
+      document.getElementById('lbl-login-title').textContent = isAr ? 'تسجيل الدخول للإدارة' : 'Owner Sign In';
+      document.getElementById('lbl-login-sub').textContent = isAr ? 'إدارة القائمة الرقمية لمالكي المطاعم' : 'Digital menu management for owners';
+      document.getElementById('lbl-email').textContent = isAr ? 'البريد الإلكتروني' : 'Email Address';
+      document.getElementById('lbl-password').textContent = isAr ? 'كلمة المرور' : 'Password';
+      document.getElementById('lbl-btn-login').textContent = isAr ? 'تسجيل الدخول' : 'Sign In';
+
+      document.getElementById('lbl-dash-title').textContent = isAr ? 'لوحة التحكم الرئيسية' : 'Dashboard Overview';
+      document.getElementById('lbl-kpi-cats').textContent = isAr ? 'الأقسام المفعلة' : 'Active Categories';
+      document.getElementById('lbl-kpi-items').textContent = isAr ? 'الأطباق المنشورة' : 'Published Items';
+      document.getElementById('lbl-kpi-soldout').textContent = isAr ? 'أطباق نفدت' : 'Sold Out Items';
+      document.getElementById('lbl-kpi-status').textContent = isAr ? 'حالة النشر العامة' : 'Publication Status';
+
+      document.getElementById('lbl-cat-mgr-title').textContent = isAr ? 'إدارة الأقسام (Categories)' : 'Category Management';
+      document.getElementById('lbl-btn-add-cat').textContent = isAr ? 'إضافة قسم' : 'Add Category';
+
+      document.getElementById('nav-lbl-dash').textContent = isAr ? 'الرئيسية' : 'Overview';
+      document.getElementById('nav-lbl-cats').textContent = isAr ? 'الأقسام' : 'Categories';
+      document.getElementById('nav-lbl-items').textContent = isAr ? 'الأطباق' : 'Dishes';
+      document.getElementById('nav-lbl-branding').textContent = isAr ? 'الهوية' : 'Branding';
+      document.getElementById('nav-lbl-qr').textContent = isAr ? 'رمز QR' : 'QR Code';
+
+      if (currentScreen === 'categories') {
+        renderCategories();
+      }
+    }
+
+    document.getElementById('btn-toggle-lang').addEventListener('click', toggleLanguage);
+
+    // Initialize
+    setScreenView('categories');
+  </script>
+</body>
+</html>
