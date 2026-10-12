@@ -193,6 +193,49 @@ executed SQL evidence: [F05 verification](../backend/F05-VERIFICATION.md).
 - `DELETE /api/v1/admin/items/{id}/images/{imageId}` — verify both item/image belong to active owner tenant.
 - `GET /api/v1/admin/qr` — returns public URL and optional QR asset reference; QR downloadable without exposing internal credentials.
 
+### F06 implemented category contract
+
+All `/api/v1/admin/categories` operations require `TenantOwner`, the validated
+Identity cookie and HTTPS; mutations require identity-bound `X-XSRF-TOKEN`.
+Responses are no-store. The handlers use only `ITenantDataSession` and
+server-resolved `ITenantContext`, never privileged persistence.
+
+- GET accepts `page` (default 1, 1..100000) and `pageSize` (default 20, 1..100).
+  Response: `{ page, pageSize, items: [...] }`. Only own non-deleted categories
+  appear, including drafts. SQL ordering is `SortOrder`, then `Id`, before
+  pagination. Offset pagination is not a snapshot; no total count is returned.
+- POST requires `{ nameAr, nameEn?, sortOrder, isPublished }`. Arabic is required,
+  trimmed, nonblank, max 120 characters. English is optional, trimmed, max 120;
+  blank becomes null (public English fallback remains Arabic). Control characters
+  are rejected in both names. `sortOrder` is an integer 0..2147483647; ties are
+  permitted. `isPublished` must be explicitly supplied. Names are plain text,
+  never HTML. 201 returns a category DTO and a retrievable Location resource URL.
+- GET `/{id}` returns 200 with the existing category DTO and current rowVersion
+  for an owned non-deleted category, including drafts. Foreign, missing and
+  soft-deleted IDs return indistinguishable generic 404 ProblemDetails. Successful
+  reads do not change the category, write audit or PublishedMenuVersion. U02 can
+  fetch the latest rowVersion here before PUT or DELETE; DELETE still requires
+  JSON `{ rowVersion }` and CSRF.
+- DTO: `{ id, nameAr, nameEn, sortOrder, isPublished, rowVersion }`;
+  rowVersion is base64 SQL Server rowversion. No restaurant/user IDs, timestamps
+  or administrative fields. Unknown JSON fields are rejected with 400.
+- PUT `/{id}` requires the same full fields plus `rowVersion`; returns 200 DTO.
+- DELETE `/{id}` requires JSON `{ rowVersion }`; returns 204, preserving the
+  database row with `IsDeleted=true`. Any linked **non-deleted** item blocks
+  deletion with 409, even if unpublished/unavailable. Soft-deleted items do not.
+- Foreign, missing and soft-deleted category IDs return the same generic 404.
+  Malformed fields/version return 400; stale client or concurrent SQL rowversion
+  returns 412. Ownership is checked before semantic/version validation.
+  Common malformed JSON/binding failures also use ProblemDetails.
+- Every successful category mutation conservatively increments the restaurant
+  `PublishedMenuVersion` and UTC `UpdatedAtUtc`, including draft/identical PUTs.
+  Version update, category write, linked-item check and F05 audit share the
+  Serializable transaction; failed writes roll back all of them. Public caches
+  do not exist yet; F09/S03 must consume this version for freshness/invalidation.
+  No schema migration or new dependency is introduced.
+
+Verification and reproduction: [F06 report](../backend/F06-VERIFICATION.md).
+
 ## Public endpoints
 - `GET /api/v1/public/menus/{publicCode}?lang=ar|en` — active + published restaurant only; visible categories and items only; response `200`, `404` when nonexistent or intentionally hidden (exact unavailable strategy clarified before coding); cache only response safe for public reuse. Search in frontend over visible menu.
 

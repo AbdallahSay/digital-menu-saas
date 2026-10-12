@@ -13,7 +13,7 @@ namespace DigitalMenu.IntegrationTests;
 
 public sealed class TenantSecurityTests
 {
-    private sealed class Fixture : IAsyncDisposable
+    internal sealed class Fixture : IAsyncDisposable
     {
         public AuthFixture Auth { get; private set; } = null!;
         public Browser A { get; private set; } = null!;

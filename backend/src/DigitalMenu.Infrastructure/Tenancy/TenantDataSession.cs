@@ -61,6 +61,20 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
         }
         catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
     }
+    public async Task<IReadOnlyList<TResult>> ReadCategoriesAsync<TResult>(Expression<Func<Category, TResult>> projection,
+        int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await BindAsync(cancellationToken);
+            if (page < 1 || page > 100000 || pageSize < 1 || pageSize > 100)
+                throw new TenantBoundaryException(TenantFailure.InvalidRequest);
+            return await Owned<Category>().AsNoTracking().Where(c => !c.IsDeleted)
+                .OrderBy(c => c.SortOrder).ThenBy(c => c.Id).Skip((page - 1) * pageSize)
+                .Take(pageSize).Select(projection).ToListAsync(cancellationToken);
+        }
+        catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
+    }
     public async Task<TEntity> EditAsync<TEntity>(Guid id, CancellationToken cancellationToken = default) where TEntity : class
     {
         try
@@ -114,6 +128,20 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
             foreach (var entry in db.ChangeTracker.Entries().Where(e => e.State != EntityState.Unchanged).ToArray())
                 await ValidateEntryAsync(entry, cancellationToken);
             if (!db.ChangeTracker.HasChanges()) { await transaction.CommitAsync(cancellationToken); return 0; }
+            var categories = db.ChangeTracker.Entries<Category>().Where(e => e.State != EntityState.Unchanged).ToArray();
+            foreach (var entry in categories)
+            {
+                if ((entry.Entity.IsDeleted || entry.State == EntityState.Deleted) &&
+                    await Owned<MenuItem>().AnyAsync(i => i.CategoryId == entry.Entity.Id && !i.IsDeleted, cancellationToken))
+                    throw new TenantBoundaryException(TenantFailure.Conflict);
+            }
+            if (categories.Length > 0)
+            {
+                var restaurant = await Owned<Restaurant>().SingleAsync(cancellationToken);
+                restaurant.PublishedMenuVersion = checked(restaurant.PublishedMenuVersion + 1);
+                restaurant.UpdatedAtUtc = DateTime.UtcNow;
+                db.ChangeTracker.DetectChanges();
+            }
             db.Add(new AuditEntry
             {
                 ActorUserId = bound!.UserId,

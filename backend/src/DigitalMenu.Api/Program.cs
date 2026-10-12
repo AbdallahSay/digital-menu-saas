@@ -1,4 +1,5 @@
 using DigitalMenu.Api.Auth;
+using DigitalMenu.Api.Catalog;
 using DigitalMenu.Api.Platform;
 using DigitalMenu.Application;
 using DigitalMenu.Infrastructure.Tenancy;
@@ -53,12 +54,12 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.Use(async (context, next) =>
 {
-    if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform")) && !context.Request.IsHttps)
+    if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform") || context.Request.Path.StartsWithSegments("/api/v1/admin")) && !context.Request.IsHttps)
     {
         await Results.Problem(statusCode: 400, title: "HTTPS is required.").ExecuteAsync(context);
         return;
     }
-    if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform")) &&
+    if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform") || context.Request.Path.StartsWithSegments("/api/v1/admin")) &&
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
         bodySize.MaxRequestBodySize = 8192;
     if (context.Request.Path.StartsWithSegments("/api") &&
@@ -80,6 +81,7 @@ app.Use(async (context, next) =>
 });
 app.MapMenuAuthentication();
 app.MapPlatformProvisioning();
+app.MapCategories();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
 app.MapHealthChecks("/api/health/ready").AllowAnonymous();
