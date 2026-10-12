@@ -1,11 +1,21 @@
 using DigitalMenu.Api.Auth;
 using DigitalMenu.Api.Platform;
+using DigitalMenu.Application;
+using DigitalMenu.Infrastructure.Tenancy;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<TenantProblemHandler>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuthenticatedActor, CookieAuthenticatedActor>();
+builder.Services.AddScoped<TenantContext>();
+builder.Services.AddScoped<ITenantContext>(s => s.GetRequiredService<TenantContext>());
+builder.Services.AddScoped<ITenantDataSession, TenantDataSession>();
+builder.Services.AddScoped<IAuthorizationHandler, TenantOwnerHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, TenantRestaurantHandler>();
 builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
@@ -18,6 +28,7 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
     options.AddPolicy("PlatformAdmin", policy => policy.RequireAuthenticatedUser().RequireRole("PlatformAdmin"));
     options.AddPolicy("Owner", policy => policy.RequireAuthenticatedUser().RequireRole("Owner"));
+    options.AddPolicy("TenantOwner", policy => policy.RequireAuthenticatedUser().AddRequirements(new TenantOwnerRequirement()));
 });
 
 var app = builder.Build();

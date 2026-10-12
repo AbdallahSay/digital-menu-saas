@@ -24,6 +24,50 @@ Assets: admin credentials and sessions, owner menu drafts, unpublished prices/im
 11. **Production readiness:** backup restoration tested, least privilege storage/DB, HTTPS, incident playbook and rollback steps, change approvals.
 
 ## Mandatory negative tests
+
+### F05 implemented owner boundary
+
+Authenticated identity is obtained by authenticating the named Identity cookie,
+not by accepting a caller-created HttpContext.User, role claim, bearer/header
+value or RestaurantId. Account security stamp, lockout, password/MFA eligibility,
+all active Owner memberships (take 2) and restaurant status are checked from SQL.
+Exactly one active membership is required. No arbitrary first tenant is selected.
+F03 authentication and PlatformAdmin provisioning remain unchanged.
+
+Owner handlers must depend on `ITenantDataSession` and require `TenantOwner`.
+`MenuDbContext` remains the explicit privileged Identity/platform/authorization
+path and must not be injected into catalog/media/owner handlers. Its null scope
+preserves those reviewed callers. A data session owns a private context initially
+bound to an empty/denied tenant, then freezes the authenticated scope. Conditional
+global query filters are defense-in-depth: every read also has an explicit
+RestaurantId predicate, and every write verifies canonical persisted ownership,
+original/current keys, and associations. No IQueryable/DbContext/raw SQL escapes
+the session. The only unscoped catalog lookup is an internal scalar new-key
+collision check: it never materializes foreign data and rejects generically.
+
+The Serializable commit rechecks identity/stamp/memberships/status under the same
+transaction and locks as resource changes. A revoked/suspended/inactive or
+ambiguous actor cannot commit a previously loaded edit. Denial clears pending
+changes. Existing F02 composite FKs, immutable tenant/object-key triggers and
+rowversion remain the database backstop. A read already authorized/in flight can
+complete before revocation; new operations resolve fresh state, and writes are
+revalidated transactionally. Do not cache scopes across requests or use a session
+concurrently from multiple threads; concurrent requests use independent scopes.
+
+Audits persist only server-defined actions (`TenantAccessDenied` or
+`TenantWriteCommitted`), own bound actor/restaurant IDs and UTC time. No supplied
+foreign ID, resource name, description, media key, request header/body, cookie,
+password or security stamp is persisted. Auth-only policy failures use generic
+authorization diagnostics; a data-session denial records a coarse event.
+Denial audit failure never grants access and emits only a constant warning.
+Successful audit and writes share the transaction. Actor/scope ToString omits
+credentials/IDs to avoid accidental plain logging.
+
+F08 must extend the namespace guard with real storage metadata/content checks;
+F06/F07 must validate fields, soft-delete rules and expected client rowversion.
+No production upload/catalog route exists in F05. See the
+[SQL adversarial matrix and deferred HTTP checks](../backend/F05-VERIFICATION.md).
+
 - Owner A GET/PATCH/DELETE item B -> no B info, no B mutation.
 - Owner A posts B CategoryId when creating A item -> 400/404, no insert.
 - Owner A uploads to B product -> no file stored in B namespace.

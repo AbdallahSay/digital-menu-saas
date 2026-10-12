@@ -27,6 +27,14 @@
 | AC-14 | Mobile scan via real printed QR works | Manual verification on >=2 devices |
 
 ## Definition of Done for each PR
+
+F05 exception approved by the task instruction: until F06/F07/F08 routes exist,
+exercise their reusable tenant context/data boundaries directly using genuine
+F03 cookie authentication and disposable SQL Server databases. Do not expose
+production/test-only routes for the matrix. HTTP GET/POST/PUT/PATCH/DELETE and
+multipart/CSRF/contract checks must be added with each real feature; see
+[`backend/F05-VERIFICATION.md`](../backend/F05-VERIFICATION.md) for the exact matrix.
+
 Acceptance criteria satisfied; code compiles; changed-component tests pass; cross-tenant tests added if data access changes; UI mobile+RTL checked if relevant; no disabling failing tests; docs/OpenAPI synchronized; security and performance risks written down; full run command output/CI URL included.
 
 ## QA test data
