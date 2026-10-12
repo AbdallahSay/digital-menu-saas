@@ -69,21 +69,23 @@ app.use(
   }),
 );
 app.use((req, res, next) => {
-  if (!['/', '/r/demo', '/admin'].includes(req.path)) {
+  if (req.path === '/admin') {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  } else if (!['/', '/r/demo'].includes(req.path)) {
     res.setHeader('X-Robots-Tag', 'noindex');
-    res
-      .status(404)
-      .type('html')
-      .send(
-        '<!doctype html><html lang="ar" dir="rtl"><head><title>غير موجود</title><meta name="robots" content="noindex"></head><body><h1>الصفحة غير موجودة</h1></body></html>',
-      );
-    return;
   }
-  if (req.path === '/admin') res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   angularApp
     .handle(req)
     .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next);
+});
+app.use((_req, res) => {
+  res
+    .status(404)
+    .type('html')
+    .send(
+      '<!doctype html><html lang="ar" dir="rtl"><head><title>الصفحة غير موجودة</title><meta name="robots" content="noindex"></head><body><h1>الصفحة غير موجودة</h1></body></html>',
+    );
 });
 if (isMainModule(import.meta.url)) {
   if (process.env['F01_LOCAL_ONLY'] !== '1')
