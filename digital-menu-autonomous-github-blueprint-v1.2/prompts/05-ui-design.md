@@ -1,0 +1,5 @@
+# U01 — UI/UX Design first (Antigravity preferred)
+
+Read AGENTS and docs 01, 04, 05, 07 and 08. **Design before coding**. Build UX plan for Arabic-first (RTL), bilingual English, small-screen QR customers, restaurant admin, platform admin. Create wireframe/screen inventory and a cohesive design-token proposal; use existing workspace/design tools if available. If design tool unavailable, create reviewable diagrams and markdown specs; don't claim Figma artifacts exist.
+
+Deliver screenshot/mockup review assets as actually created, states for loading/empty/error/unavailable, touch/keyboard accessibility checklist, product component inventory, **SSR-first semantic HTML layout** (restaurant name/items visible without JS), unique SEO metadata placement, light above-fold treatment, image dimensions and LCP image priority, and measurable risks (images/fonts/scripts). If the task includes implementation, propose phase U02/U03/U04 split but don't build it until design approval. No fabricated browser screenshots or performance scores.

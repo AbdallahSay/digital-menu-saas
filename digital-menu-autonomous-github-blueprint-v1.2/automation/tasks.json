@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "project": "Digital Menu SaaS",
+  "mode": "bootstrap-only; activation requires security review",
+  "selection": "dependency-topological",
+  "max_parallel_implementation": 2,
+  "max_repair_cycles": 2,
+  "never_automerge_risks": [
+    "critical",
+    "high"
+  ],
+  "requires_production_human_approval": true,
+  "tasks": [
+    {
+      "id": "P0",
+      "title": "Approve architecture and agent execution contract",
+      "implementer": "human",
+      "depends_on": [],
+      "risk": "critical",
+      "scope": [
+        "docs/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "F01",
+      "title": "Bootstrap .NET and Angular hybrid SSR skeleton plus first SEO CI baseline",
+      "implementer": "codex",
+      "depends_on": [
+        "P0"
+      ],
+      "risk": "high",
+      "scope": [
+        "backend/**",
+        "frontend/**",
+        ".github/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "F02",
+      "title": "SQL data model migrations and relational tenant constraints",
+      "implementer": "codex",
+      "depends_on": [
+        "F01"
+      ],
+      "risk": "high",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "F03",
+      "title": "Identity sessions authentication CSRF and rate limits",
+      "implementer": "codex",
+      "depends_on": [
+        "F02"
+      ],
+      "risk": "critical",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "F04",
+      "title": "Platform restaurant and owner provisioning endpoints",
+      "implementer": "codex",
+      "depends_on": [
+        "F03"
+      ],
+      "risk": "high",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "F05",
+      "title": "Tenant context and adversarial cross tenant guards",
+      "implementer": "codex",
+      "depends_on": [
+        "F04"
+      ],
+      "risk": "critical",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "F06",
+      "title": "Category management APIs",
+      "implementer": "codex",
+      "depends_on": [
+        "F05"
+      ],
+      "risk": "medium",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": false
+    },
+    {
+      "id": "F07",
+      "title": "Menu item management APIs",
+      "implementer": "codex",
+      "depends_on": [
+        "F06"
+      ],
+      "risk": "medium",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": false
+    },
+    {
+      "id": "F08",
+      "title": "Media upload validation and image processing",
+      "implementer": "codex",
+      "depends_on": [
+        "F07"
+      ],
+      "risk": "high",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "F09",
+      "title": "Public menu projection, cache isolation and SQL performance",
+      "implementer": "codex",
+      "depends_on": [
+        "F08"
+      ],
+      "risk": "high",
+      "scope": [
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "U01",
+      "title": "Mobile-first Figma-like frontend design system UX specs",
+      "implementer": "antigravity",
+      "depends_on": [
+        "P0"
+      ],
+      "risk": "low",
+      "scope": [
+        "docs/05-UX.md",
+        "frontend/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": false
+    },
+    {
+      "id": "U02",
+      "title": "Admin auth category forms and states",
+      "implementer": "antigravity",
+      "depends_on": [
+        "F06",
+        "U01"
+      ],
+      "risk": "medium",
+      "scope": [
+        "frontend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": false
+    },
+    {
+      "id": "U03",
+      "title": "Item editor, image manager and QR screens",
+      "implementer": "antigravity",
+      "depends_on": [
+        "F08",
+        "U02"
+      ],
+      "risk": "medium",
+      "scope": [
+        "frontend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": false
+    },
+    {
+      "id": "S01",
+      "title": "Canonical SSR public menu, QR redirect, response statuses",
+      "implementer": "antigravity",
+      "depends_on": [
+        "F09",
+        "U01"
+      ],
+      "risk": "high",
+      "scope": [
+        "frontend/**",
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "S02",
+      "title": "Restaurant metadata schema and SEO sitemap robots index policy",
+      "implementer": "antigravity",
+      "depends_on": [
+        "S01"
+      ],
+      "risk": "high",
+      "scope": [
+        "frontend/**",
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "S03",
+      "title": "SSR image optimization caching/hydration performance gates",
+      "implementer": "antigravity",
+      "depends_on": [
+        "S02"
+      ],
+      "risk": "high",
+      "scope": [
+        "frontend/**",
+        "backend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "U04",
+      "title": "Public responsive menu search i18n and QR entry",
+      "implementer": "antigravity",
+      "depends_on": [
+        "S03",
+        "U03"
+      ],
+      "risk": "medium",
+      "scope": [
+        "frontend/**",
+        "tests/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": false
+    },
+    {
+      "id": "Q01",
+      "title": "Full QA tenant privacy browser journeys",
+      "implementer": "codex",
+      "depends_on": [
+        "U04"
+      ],
+      "risk": "high",
+      "scope": [
+        "tests/**",
+        "docs/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "Q02",
+      "title": "Load smoke tests real performance/SEO benchmarks",
+      "implementer": "antigravity",
+      "depends_on": [
+        "Q01"
+      ],
+      "risk": "high",
+      "scope": [
+        "tests/**",
+        "docs/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    },
+    {
+      "id": "R01",
+      "title": "Staging hardening backup restore & release readiness",
+      "implementer": "human",
+      "depends_on": [
+        "Q02"
+      ],
+      "risk": "critical",
+      "scope": [
+        "docs/**",
+        ".github/**",
+        "backend/**",
+        "frontend/**"
+      ],
+      "acceptance_source": "docs/10-BACKLOG.md",
+      "human_approval": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# F01 — Foundation (Codex preferred)
+
+Read `AGENTS.md`, PRD, Architecture, Backlog and ADRs. Implement **only** issue F01 on a new branch. First present a short plan (files touched, versions, compatibility, risks).
+
+Initialize .NET 10 clean layered API and **Angular hybrid SSR app** (current compatible stable, pinned versions), editorconfig, gitignore, README, OpenAPI/health checks, same-origin `/api`, SSR public `/r/demo`, QR redirect resolver `/m/demo-code`, CSR admin route and prerender marketing placeholder. Prove server **source HTML** for `/r/demo` contains seeded fake restaurant name + visible product text + unique title + canonical + correct 200 (no browser JS). Provide 404 for missing route (no app-shell 200). SSR Node host and reverse proxy feasibility/regions are BLOCKING assumptions to validate. Establish first Lighthouse CI baseline + source HTML tests in CI and record scores without fabrication. No production credentials, entity CRUD or customer orders.
+
+Must show: exact `dotnet build`, Angular production SSR build/run, test/lint commands and exit codes; `curl` raw rendered HTML and correct status/canonical (with JavaScript never executed); QR single-hop 302; initial LHCI report on running production build (or clearly NOT RUN + why); CI gates configuration and reproducible local commands; clear AR explanation of why SSR vs CSR and hosting overhead. Update docs for real decisions and record NOT RUN checks. Stop after PR, no production deployment.
