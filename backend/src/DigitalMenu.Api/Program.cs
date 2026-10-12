@@ -7,8 +7,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
-builder.Services.AddAuthorization(options => options.FallbackPolicy =
-    new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    options.AddPolicy("PlatformAdmin", policy => policy.RequireAuthenticatedUser().RequireRole("PlatformAdmin"));
+    options.AddPolicy("Owner", policy => policy.RequireAuthenticatedUser().RequireRole("Owner"));
+});
 
 var app = builder.Build();
 if (args.Contains("--bootstrap-admin=true", StringComparer.Ordinal))

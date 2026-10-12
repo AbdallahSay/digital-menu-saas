@@ -2,6 +2,11 @@
 
 ## F03 implemented authentication contract (local/test delivery)
 
+- Named `PlatformAdmin` and `Owner` policies require authentication and the
+  corresponding server-generated role claim. Owner claims are derived from active
+  memberships, not client input or a stale Identity Owner role. These policies do
+  not select a restaurant or authorize tenant resources (F05).
+
 - HTTPS-only `/api/v1/auth/*`. JSON login `{ "email": "...", "password": "..." }`
   returns 204 on success, 400 for invalid input/CSRF, 401 with generic
   `Invalid credentials.` for unknown/wrong/locked/ineligible accounts, 409 if

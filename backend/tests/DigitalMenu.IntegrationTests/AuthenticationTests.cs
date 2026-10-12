@@ -16,6 +16,39 @@ namespace DigitalMenu.IntegrationTests;
 public sealed class AuthenticationTests
 {
     [SqlServerFact]
+    public async Task Signed_sessions_enforce_platform_and_owner_policies_without_role_escalation()
+    {
+        await using var fixture = await AuthFixture.Create();
+        var browser = new Browser(fixture.Factory);
+        await browser.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await browser.Send(HttpMethod.Post, "/login",
+            new { email = "owner@example.test", password = fixture.Password, role = "PlatformAdmin", restaurantId = Guid.NewGuid() })).StatusCode);
+        using var scope = fixture.Factory.Services.CreateScope();
+        var authorization = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Authorization.IAuthorizationService>();
+        var cookieOptions = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>>()
+            .Get(IdentityConstants.ApplicationScheme);
+        var owner = cookieOptions.TicketDataFormat.Unprotect(browser.Cookies["__Host-DigitalMenu.Session"])!.Principal;
+        Assert.True((await authorization.AuthorizeAsync(owner, null, "Owner")).Succeeded);
+        Assert.False((await authorization.AuthorizeAsync(owner, null, "PlatformAdmin")).Succeeded);
+        var anonymous = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity());
+        Assert.False((await authorization.AuthorizeAsync(anonymous, null, "Owner")).Succeeded);
+        Assert.False((await authorization.AuthorizeAsync(anonymous, null, "PlatformAdmin")).Succeeded);
+
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+        Assert.True((await roles.CreateAsync(new IdentityRole<Guid>("PlatformAdmin"))).Succeeded);
+        var admin = new ApplicationUser { Id = Guid.NewGuid(), UserName = "admin@example.test", Email = "admin@example.test" };
+        Assert.True((await users.CreateAsync(admin, fixture.Password)).Succeeded);
+        Assert.True((await users.AddToRoleAsync(admin, "PlatformAdmin")).Succeeded);
+        var adminBrowser = new Browser(fixture.Factory);
+        await adminBrowser.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await adminBrowser.Login(fixture.Password, admin.Email)).StatusCode);
+        var principal = cookieOptions.TicketDataFormat.Unprotect(adminBrowser.Cookies["__Host-DigitalMenu.Session"])!.Principal;
+        Assert.True((await authorization.AuthorizeAsync(principal, null, "PlatformAdmin")).Succeeded);
+        Assert.False((await authorization.AuthorizeAsync(principal, null, "Owner")).Succeeded);
+    }
+
+    [SqlServerFact]
     public async Task Secure_session_csrf_logout_and_replay_are_enforced()
     {
         await using var fixture = await AuthFixture.Create();

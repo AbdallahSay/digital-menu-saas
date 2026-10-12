@@ -5,6 +5,7 @@
 ## Decisions and boundaries
 
 - Explicit login/logout/me/csrf routes only; no `MapIdentityApi`, bearer tokens, client session storage or self-selected roles. Login accepts only email/password. Password policy: 12 characters, Identity defaults for case/digit/symbol; unique email validation.
+- Named PlatformAdmin and Owner policies require an authenticated server-generated role claim. PlatformAdmin comes from Identity roles; Owner is generated exclusively from active membership in an active restaurant. A stale stored Identity Owner role is removed during claim generation. SQL-backed tests authorize actual signed cookie principals against both policies, deny anonymous/opposite-role principals, and show injected login role/RestaurantId fields cannot grant platform authority. No F04/F05 endpoint is added.
 - Secure/HttpOnly `__Host-DigitalMenu.Session`, SameSite Strict, root path, no Domain, nonpersistent browser cookie and fixed 30-minute ticket expiry. SecurityStamp validation runs on every authenticated request and does not renew the lifetime. Logout changes the stamp, revoking every existing session for that user. Password/stamp changes are checked on the next request.
 - Lockout: five failed passwords, 15 minutes. Administrative account disablement can use `LockoutEnd=DateTimeOffset.MaxValue` with `LockoutEnabled=true` and SecurityStamp rotation; F04 will own that operation. The login response does not distinguish wrong/absent/locked/inactive/suspended accounts. Unknown accounts perform a password hash to consume the work factor; exact constant-time behavior is not claimed.
 - Session eligibility requires PlatformAdmin or an active Owner membership in an Active restaurant. This is a login/session eligibility check, not the F05 tenant CRUD authorization layer. `/me` joins only memberships for the authenticated user and projects restaurant names without user IDs/private email. Deleted/ineligible users are rejected on the next request.
@@ -86,8 +87,8 @@ browser Angular login flow, load/real mobile benchmarks, Docker/Linux execution.
 ## Executed evidence — 2026-10-12
 
 Environment: .NET SDK 10.0.400/runtime 10.0.11; Windows; dedicated SQL Server
-LocalDB 17.0.4025.3. Final SQL-backed run passed **16 tests, 0 failures, 0 skips**:
-six F01 tests, F02's SQL migration/constraint scenario, seven F03 SQL/API scenarios,
+LocalDB 17.0.4025.3. Final SQL-backed run passed **17 tests, 0 failures, 0 skips**:
+six F01 tests, F02's SQL migration/constraint scenario, eight F03 SQL/API scenarios,
 and two database-free guard tests. Bootstrap services were tested through the
 actual Identity store, including rollback and repeat rejection; the standalone
 CLI invocation was not run separately.
@@ -98,8 +99,8 @@ CLI invocation was not run separately.
 | `dotnet build backend/DigitalMenu.slnx -c Release --no-restore -m:1 -p:UseSharedCompilation=false` | 0; 0 warnings/errors |
 | `dotnet format backend/DigitalMenu.slnx --verify-no-changes --no-restore` | 0 |
 | `dotnet ef migrations has-pending-model-changes --project backend/src/DigitalMenu.Infrastructure --no-build` | 0; no pending changes |
-| `dotnet test backend/DigitalMenu.slnx -c Release --no-restore -m:1 --logger trx` with SQL environment | 0; 16 passed, 0 skipped |
-| `dotnet vstest backend/tests/DigitalMenu.IntegrationTests/bin/Release/net10.0/DigitalMenu.IntegrationTests.dll /Logger:trx` without SQL environment | 0; 8 passed, 8 SQL tests skipped as expected |
+| `dotnet test backend/DigitalMenu.slnx -c Release --no-restore -m:1 --logger trx` with SQL environment | 0; 17 passed, 0 skipped |
+| `dotnet vstest backend/tests/DigitalMenu.IntegrationTests/bin/Release/net10.0/DigitalMenu.IntegrationTests.dll /Logger:trx` without SQL environment | 0; 8 passed, 9 SQL tests skipped as expected |
 | `dotnet list backend/DigitalMenu.slnx package --vulnerable --include-transitive` | 0; no vulnerable packages reported across five projects |
 
 Local resource controls for the final lightweight checks:
@@ -114,8 +115,15 @@ namespace was fixed after a compiler failure. Final checks above are green.
 Files changed: `backend/src/DigitalMenu.Api/Program.cs`,
 `backend/src/DigitalMenu.Api/Auth/Authentication.cs`,
 `backend/src/DigitalMenu.Api/Auth/DevelopmentBootstrap.cs`,
+`backend/src/DigitalMenu.Api/Auth/MenuClaimsPrincipalFactory.cs`,
 `backend/tests/DigitalMenu.IntegrationTests/AuthenticationTests.cs`,
 `backend/.env.example`, this report, and `docs/04-API-CONTRACT.md`.
 F01/F02 CI, frontend, design assets, existing migrations and package locks are unchanged.
 
 CSRF implementation reference: [Microsoft's antiforgery documentation](https://learn.microsoft.com/aspnet/core/security/anti-request-forgery).
+
+Latest delivery branch: `feat/F03-identity-auth`, based on main `129f710` (merged
+F02). The earlier session implementation created in this same chat was retained
+and expanded with the explicitly requested named role policies and signed-session
+authorization tests; no missing external work was recovered. The earlier PR #29
+is superseded by this delivery. All F01/F02 workflow gates remain unchanged.
