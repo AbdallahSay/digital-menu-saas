@@ -287,6 +287,59 @@ Only ITenantDataSession is used for data operations and the server resolves scop
 
 Evidence and local commands: [F07 verification](../backend/F07-VERIFICATION.md).
 
+### F08 implemented media contract (local/test storage)
+
+- POST `/api/v1/admin/items/{id}/images`: TenantOwner, validated Identity cookie,
+  HTTPS and identity-bound `X-XSRF-TOKEN` header required before body parsing.
+  Multipart/form-data contains exactly one `file`, no extra fields. No URL,
+  object key, tenant/role/id, sort or storage selector accepted; filenames ignored.
+- Exactly JPEG (`image/jpeg`), PNG (`image/png`) or WebP (`image/webp`) with matching
+  signature, codec and complete decode. SVG/other MIME or spoofing returns 415;
+  invalid/corrupted/animated inputs return 400. JPEG EOI, PNG chunk lengths/CRC/IEND,
+  WebP RIFF length are checked. Pixel limits are checked before raster allocation:
+  each dimension 1..6000 and total <=12,000,000 pixels. Max file 5 MiB, oversize 413.
+- Successful normalization applies EXIF orientation, strips metadata by encoding
+  fresh WebP quality 80, creates main max side 1600 and thumbnail max side 480,
+  maintains aspect ratio and never upscales. Original bytes are not stored.
+- Total multipart cap is 5 MiB +64 KiB including framing, enforced by endpoint
+  metadata/Kestrel size feature and a counted body stream (including chunked).
+  Existing item JSON cap remains 32 KiB. Uploads allow 10/minute per authenticated
+  account, queue 0, and at most two concurrent upload requests per process, queue 0;
+  saturation returns existing generic 429 ProblemDetails. Decoder also bounds
+  native concurrency to two. Boundaries max 128 chars, form value limits bounded.
+- 201 returns `{ id, menuItemId, width, height, contentType: "image/webp", sortOrder: 0 }`.
+  No Location for an unimplemented image GET, public URL, object key, restaurant/user
+  ID, private path or original filename. Images are not publicly served by F08.
+- DELETE `/api/v1/admin/items/{id}/images/{imageId}` requires the same cookie,
+  TenantOwner, HTTPS and CSRF; no request body. Checks owned non-deleted item,
+  owned image and exact item/image relationship. Foreign/missing/deleted item,
+  foreign/missing image and wrong same-tenant parent return indistinguishable
+  generic 404. Success 204 removes metadata (physical cleanup follows).
+- Both operations use ITenantDataSession only. Successful metadata mutation,
+  item UpdatedAtUtc/rowversion, restaurant PublishedMenuVersion/timestamp and
+  F05 redacted audit commit atomically in the existing Serializable transaction.
+  Current item rowversion serializes gallery mutations with item edits/deletion;
+  stale in-flight writes return 412, SQL deadlock contention 409 (fresh retry).
+  Clients should refetch item DTO before later PUT/DELETE. No schema migration.
+- `IImageStorage` is injectable; the private local adapter requires an absolute
+  `Media:LocalRoot` outside application directories, explicitly enabled only in
+  Development. Default/Production/Staging storage is unavailable (503), with no
+  production credentials or cloud provisioning. Keys are server-generated
+  `{serverTenantGuid}/{randomGuidN}.webp`; adapter validates canonical segments,
+  confines paths, rejects filesystem links, and writes immutable private bundles.
+  No static mapping, remote fetch, or user-provided filesystem path exists.
+- Upload persists normalized blobs before metadata commit. Known absent metadata
+  after failure triggers cleanup; ambiguous commit/authorization loss retains
+  private files for reconciliation rather than risking deletion of a committed
+  image. Delete commits metadata first, then idempotent blob cleanup. Failed cleanup
+  emits only a generic warning; committed DELETE still returns 204. Local durable
+  deletion markers permit retry on later uploads (up to 100 marked bundles/pass).
+  Unmarked files are never swept automatically; crash/ambiguous outcomes require
+  trusted operator metadata reconciliation before production use. No distributed
+  transaction or automatic recovery is claimed. Public cache consumers remain F09/S03.
+
+Setup, licensing, SQL evidence and limits: [F08 report](../backend/F08-VERIFICATION.md).
+
 ## Public endpoints
 - `GET /api/v1/public/menus/{publicCode}?lang=ar|en` — active + published restaurant only; visible categories and items only; response `200`, `404` when nonexistent or intentionally hidden (exact unavailable strategy clarified before coding); cache only response safe for public reuse. Search in frontend over visible menu.
 

@@ -159,7 +159,8 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
                     await Owned<MenuItem>().AnyAsync(i => i.CategoryId == entry.Entity.Id && !i.IsDeleted, cancellationToken))
                     throw new TenantBoundaryException(TenantFailure.Conflict);
             }
-            if (categories.Length > 0 || db.ChangeTracker.Entries<MenuItem>().Any(e => e.State != EntityState.Unchanged))
+            if (categories.Length > 0 || db.ChangeTracker.Entries<MenuItem>().Any(e => e.State != EntityState.Unchanged) ||
+                db.ChangeTracker.Entries<MenuItemImage>().Any(e => e.State != EntityState.Unchanged))
             {
                 var restaurant = await Owned<Restaurant>().SingleAsync(cancellationToken);
                 restaurant.PublishedMenuVersion = checked(restaurant.PublishedMenuVersion + 1);

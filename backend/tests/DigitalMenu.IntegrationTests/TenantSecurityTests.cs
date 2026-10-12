@@ -28,9 +28,9 @@ public sealed class TenantSecurityTests
         public MenuItemImage ImageA { get; } = new() { Width = 100, Height = 100 };
         public MenuItemImage ImageB { get; } = new() { Width = 100, Height = 100 };
 
-        public static async Task<Fixture> Create()
+        public static async Task<Fixture> Create(Action<IServiceCollection>? configure = null)
         {
-            var fixture = new Fixture { Auth = await AuthFixture.Create() };
+            var fixture = new Fixture { Auth = await AuthFixture.Create(configure: configure) };
             using var scope = fixture.Auth.Factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
             var users = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
