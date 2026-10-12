@@ -27,7 +27,8 @@
   share a per-remote-IP limit of 10 requests/minute, queue 0; rejection is 429
   ProblemDetails. Five bad passwords lock an account for 15 minutes.
 - Unsupported MFA-enabled accounts fail closed; no MFA completion route is
-  provided. No public registration, reset, invitation or provisioning route.
+  provided. No public registration or general password reset. F04 adds the
+  invitation-only onboarding endpoint and privileged provisioning described below.
 - Full decisions, bootstrap restrictions, exact verification commands and
   release blockers: [F03 verification](../backend/F03-VERIFICATION.md).
 
@@ -52,6 +53,86 @@ The Angular demo is an immutable fake public fixture, not the F09 projection.
 - `GET /api/v1/platform/restaurants/{id}` — details.
 - `PATCH /api/v1/platform/restaurants/{id}/status` — suspend/reactivate, audit change.
 - `PATCH /api/v1/platform/restaurants/{id}/publication` — publish/unpublish, audit change.
+
+### F04 implemented contract (local/test only)
+
+All five endpoints require the existing `PlatformAdmin` policy and HTTPS, return
+`Cache-Control: no-store`, and apply the F03 CSRF handshake to every mutation.
+Only the server assigns ownership. Unknown JSON properties (including `role`,
+`PublicCode`, or a client password in provisioning) are rejected with 400.
+
+- POST body: `{ "name": "مطعم مثال", "slug": "example", "ownerEmail": "owner@example.test" }`.
+  Name is trimmed, required, max 150, without control characters. Slug is trimmed
+  and lowercased, max 100, ASCII lowercase letters/digits with single interior
+  hyphens. Email is trimmed, validated, max 256. Existing email accounts are
+  rejected rather than linked or granted privileges. 201 returns a Location and
+  the restaurant DTO. Slug, email, generated PublicCode collisions and SQL deadlock
+  contention return 409; retry requires a fresh request. This is duplicate-safe,
+  not an idempotency-key API.
+- Response DTO: `id`, `name`, `slug`, `publicCode`, `status`, `isPublished`,
+  `publishedMenuVersion`, `rowVersion` (base64 SQL rowversion). No owner ID/email,
+  credentials or invitation token. New restaurants are Active and unpublished;
+  settings default to Arabic and `#0F766E`; membership is active Owner.
+- GET list defaults to page 1 / pageSize 20; bounds page 1..100000, pageSize 1..100,
+  search max 150. Search is a literal substring over name/slug using SQL collation.
+  Stable ordering is CreatedAtUtc then Id. Response: `page`, `pageSize`, `total`,
+  `items` (restaurant DTOs). Pagination is offset-based, not a snapshot.
+- GET details returns the same DTO; unknown Guid returns 404 ProblemDetails.
+- Status PATCH: `{ "status": "Active" | "Suspended", "rowVersion": "..." }`.
+  Publication PATCH: `{ "isPublished": true | false, "rowVersion": "..." }`.
+  Both require the last-read 8-byte base64 rowversion; invalid input is 400, stale
+  version/concurrent writes 412, success 200 with the current DTO. Identical state
+  is a no-op after version validation. State changes atomically persist an audit,
+  increment PublishedMenuVersion and update UpdatedAtUtc. Suspension preserves
+  the publication choice. Public visibility must require both Active and published
+  in F09. Reactivation does not activate memberships or unlock accounts.
+- Audits: RestaurantProvisioned, RestaurantSuspended, RestaurantReactivated,
+  RestaurantPublished, RestaurantUnpublished. Only actor/resource IDs, action,
+  UTC timestamp and safe correlation ID are persisted, never email/password/token.
+
+Provisioning creates a passwordless Identity account, restaurant, membership,
+settings and audit in one serializable SQL transaction. A 20-character PublicCode
+uses 80 bits of cryptographic randomness and existing immutable/unique F02
+constraints. No schema migration is needed. Delivery failure rolls all writes back.
+
+`IOwnerOnboardingDelivery` defaults to an unavailable adapter. Development can
+explicitly enable `DevelopmentOnboarding:Enabled=true` to deliver committed
+invitations over a private OS-user pipe; no HTTP retrieval endpoint exists.
+Production/Staging never register this pipe, even when the flag is true, and
+Production provisioning remains blocked. The pipe releases an invitation only
+after transaction commit, drops aborted staging, bounds pending invitations to
+16, and validates the Identity token before delivery. Tokens remain in memory/
+private IPC, never files, API responses, application logs or audits. Windows ACL
+allows only the actual current user SID and explicitly denies network logons;
+Unix uses CurrentUserOnly peer-credential checks. The local consumer performs the
+existing anonymous CSRF + HTTPS onboarding/login flow, without certificate bypass.
+This is non-durable development tooling, not real email or a production outbox.
+Setup, actual HTTPS end-to-end evidence and restart/disconnect limitations:
+[local onboarding guide](../backend/F04-LOCAL-ONBOARDING.md). Production still
+needs reviewed delivery/outbox, retry/expiry/resend and Data Protection key management.
+
+Current business rule: an existing normalized owner email cannot provision a
+second restaurant, including a pending or inactive owner. F04 always creates a
+new Identity account and rejects existing email accounts with 409 rather than
+linking them. This rule is unchanged and requires human approval to change.
+
+POST `/api/v1/auth/onboarding` is anonymous, invitation-only and HTTPS + CSRF
+protected, sharing the F03 auth rate limiter. Body: `userId`, `token`, `password`.
+UserId must be a nonempty Guid, token max 4096, password max 256 and must satisfy
+the existing Identity password policy. The token expires after one hour. Only
+passwordless, unlocked, non-MFA, non-platform accounts with active ownership in
+an Active restaurant can complete it. Success 204 sets a hashed password and
+rotates the security stamp; replay/concurrent reuse, expired/forged tokens and
+invalid credentials return 400. An authenticated caller must sign out first (409).
+It never signs in, creates accounts, changes roles or reactivates membership.
+Obtain a fresh anonymous CSRF token, complete onboarding, then use normal login.
+
+F03 session validation already rechecks current account/membership/restaurant
+state on every authenticated request. A suspended owner loses the current session;
+reactivation requires a fresh login and still requires active membership and an
+unlocked account. F05 will authorize individual tenant resources; none are added here.
+
+Verification and production dependencies: [F04 report](../backend/F04-VERIFICATION.md).
 
 ## Owner endpoints (server-derived restaurant scope, no arbitrary tenant input)
 - `GET /api/v1/admin/restaurant` / `PATCH /api/v1/admin/restaurant` — details/branding/basic contact.
