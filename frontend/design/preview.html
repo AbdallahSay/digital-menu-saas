@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Menu SaaS — UI/UX Design System Showcase</title>
+  <link rel="stylesheet" href="./tokens.css" />
+  <style>
+    /* Standalone Showcase Viewer Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family-current);
+      background-color: #0f172a;
+      color: var(--color-text-primary);
+      padding: 16px;
+      min-height: 100vh;
+    }
+
+    /* Showcase Toolbar */
+    .showcase-toolbar {
+      max-width: 1200px;
+      margin: 0 auto 20px auto;
+      background: #1e293b;
+      padding: 16px 20px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: #f8fafc;
+      box-shadow: var(--shadow-md);
+    }
+
+    .showcase-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .showcase-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-tool {
+      background: #334155;
+      color: #ffffff;
+      border: 1px solid #475569;
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background var(--transition-fast);
+      min-height: var(--touch-target-min);
+    }
+
+    .btn-tool:hover {
+      background: #475569;
+    }
+
+    .btn-tool.active {
+      background: var(--color-brand-primary);
+      border-color: var(--color-brand-primary-hover);
+    }
+
+    /* Viewport Frame Wrapper */
+    .viewport-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+
+    .device-frame {
+      width: 100%;
+      max-width: 375px;
+      background: var(--color-bg-canvas);
+      border-radius: 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 8px #334155;
+      overflow: hidden;
+      min-height: 720px;
+      transition: max-width var(--transition-normal);
+      position: relative;
+    }
+
+    .device-frame.tablet {
+      max-width: 768px;
+      border-radius: 20px;
+    }
+
+    .device-frame.desktop {
+      max-width: 1024px;
+      border-radius: 12px;
+    }
+
+    /* ===================================================
+       APP EXPERIENCE: PUBLIC MENU COMPONENT IMPLEMENTATION
+       =================================================== */
+    .menu-app {
+      background: var(--color-bg-canvas);
+      color: var(--color-text-primary);
+      min-height: 720px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Brand Header */
+    .brand-header {
+      background: var(--color-surface-card);
+      border-bottom: 1px solid var(--color-border-subtle);
+      padding: var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+
+    .brand-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      background: var(--tenant-primary);
+      color: var(--tenant-on-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .brand-titles h1 {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      line-height: var(--line-height-tight);
+    }
+
+    .brand-titles p {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+
+    .lang-toggle-btn {
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-full);
+      padding: 6px 12px;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      cursor: pointer;
+      min-height: var(--touch-target-min);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Sticky Search & Filter Bar */
+    .menu-sticky-nav {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background: var(--color-surface-card);
+      box-shadow: var(--shadow-sm);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .search-container {
+      padding: var(--space-3) var(--space-4) var(--space-2) var(--space-4);
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 44px;
+      padding-inline-start: 40px;
+      padding-inline-end: 40px;
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-full);
+      background: var(--color-surface-muted);
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+
+    .search-input:focus {
+      border-color: var(--tenant-primary);
+      background: var(--color-surface-card);
+    }
+
+    .search-icon {
+      position: absolute;
+      inset-inline-start: 14px;
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    .search-clear {
+      position: absolute;
+      inset-inline-end: 10px;
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-full);
+    }
+
+    /* Category Chips Nav */
+    .category-scroll {
+      display: flex;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4) var(--space-3) var(--space-4);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .category-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-chip {
+      background: var(--color-surface-muted);
+      color: var(--color-text-secondary);
+      border: 1px solid transparent;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      white-space: nowrap;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition-fast);
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+    }
+
+    .category-chip.active {
+      background: var(--tenant-primary);
+      color: var(--tenant-on-primary);
+      font-weight: var(--font-weight-semibold);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Menu Catalog Container */
+    .menu-content {
+      padding: var(--space-4);
+      flex: 1;
+    }
+
+    .section-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-3);
+      padding-inline-start: var(--space-1);
+    }
+
+    .dish-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+
+    /* Product Card */
+    .dish-card {
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+      cursor: pointer;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .dish-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .dish-card.sold-out {
+      opacity: 0.65;
+    }
+
+    .dish-thumb {
+      width: 76px;
+      height: 76px;
+      border-radius: var(--radius-md);
+      background: var(--color-surface-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dish-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .dish-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-2);
+    }
+
+    .dish-name {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dish-price {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      color: var(--tenant-primary);
+      white-space: nowrap;
+    }
+
+    .dish-desc {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      margin: 4px 0 6px 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: var(--line-height-normal);
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .badge-available {
+      background: var(--color-semantic-success-bg);
+      color: var(--color-semantic-success);
+    }
+
+    .badge-soldout {
+      background: var(--color-status-soldout-bg);
+      color: var(--color-status-soldout-text);
+    }
+
+    /* Product Detail Bottom Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: var(--z-backdrop);
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+
+    .sheet-backdrop.open {
+      display: block;
+    }
+
+    .bottom-sheet {
+      position: absolute;
+      inset-inline: 0;
+      bottom: 0;
+      background: var(--color-surface-card);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      padding: var(--space-4);
+      z-index: var(--z-modal);
+      box-shadow: var(--shadow-sheet);
+      display: none;
+      max-height: 85%;
+      overflow-y: auto;
+    }
+
+    .bottom-sheet.open {
+      display: block;
+      animation: slideUp 200ms ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--color-border-strong);
+      border-radius: var(--radius-full);
+      margin: 0 auto var(--space-3) auto;
+    }
+
+    .sheet-hero {
+      width: 100%;
+      height: 180px;
+      background: var(--color-surface-muted);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+      margin-bottom: var(--space-4);
+    }
+
+    .sheet-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: var(--space-2);
+    }
+
+    .sheet-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .sheet-price {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--tenant-primary);
+    }
+
+    .sheet-body {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-relaxed);
+      margin-bottom: var(--space-4);
+    }
+
+    .btn-close-sheet {
+      width: 100%;
+      height: 48px;
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      cursor: pointer;
+    }
+
+    /* State Views (Empty & Loading) */
+    .state-view {
+      padding: var(--space-10) var(--space-4);
+      text-align: center;
+      display: none;
+    }
+
+    .state-view.active {
+      display: block;
+    }
+
+    .state-icon {
+      font-size: 48px;
+      margin-bottom: var(--space-3);
+    }
+
+    .state-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--space-2);
+    }
+
+    .state-desc {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    /* Skeleton Loading Placeholder */
+    .skeleton {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius-md);
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ===================================================
+       ADMIN DASHBOARD SHOWCASE PANEL
+       =================================================== */
+    .admin-preview-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #1e293b;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      color: #f8fafc;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 16px;
+    }
+
+    .admin-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .admin-card h3 {
+      font-size: var(--font-size-base);
+      color: #38bdf8;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-counter {
+      font-size: 28px;
+      font-weight: bold;
+      color: #ffffff;
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation & Interactive Controller -->
+  <header class="showcase-toolbar">
+    <div class="showcase-title">
+      <span>🍽️ ديجيتال منيو SaaS — نظام التصميم الموحد</span>
+    </div>
+
+    <div class="showcase-controls">
+      <!-- Language Switcher -->
+      <button class="btn-tool" id="btn-toggle-lang" title="تبديل الاتجاه واللغة">
+        🌐 <span id="lbl-lang">English (LTR)</span>
+      </button>
+
+      <!-- Viewport Device Switcher -->
+      <button class="btn-tool active" id="btn-vp-mobile" title="شاشة هاتف (375px)">📱 هاتف (375px)</button>
+      <button class="btn-tool" id="btn-vp-tablet" title="شاشة تابلت (768px)">📟 تابلت (768px)</button>
+      <button class="btn-tool" id="btn-vp-desktop" title="شاشة سطح المكتب">💻 سطح المكتب</button>
+
+      <!-- Theme Switcher -->
+      <button class="btn-tool" id="btn-theme-teal" style="color: #2dd4bf;">🟢 زمردي</button>
+      <button class="btn-tool" id="btn-theme-amber" style="color: #fbbf24;">🟡 دافئ</button>
+      <button class="btn-tool" id="btn-theme-burgundy" style="color: #f87171;">🔴 خمري</button>
+
+      <!-- State Views Switcher -->
+      <select class="btn-tool" id="sel-state-view">
+        <option value="normal">حالة القائمة: طبيعية (جاهزة)</option>
+        <option value="empty">حالة: قائمة فارغة (قيد التجهيز)</option>
+        <option value="skeleton">حالة: تحميل هيكلي (Skeleton)</option>
+        <option value="unavailable">حالة: معلقة / غير متاحة (404/410)</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Interactive Device Viewport Frame -->
+  <main class="viewport-container">
+    <div class="device-frame" id="device-frame">
+      <div class="menu-app" id="menu-app">
+
+        <!-- 1. Brand Header Component -->
+        <header class="brand-header">
+          <div class="brand-info">
+            <div class="brand-logo" aria-hidden="true">🍲</div>
+            <div class="brand-titles">
+              <h1 id="brand-name">مطعم السرايا الفاخر</h1>
+              <p id="brand-tagline">أشهى المشويات والمأكولات الشرقية</p>
+            </div>
+          </div>
+          <button class="lang-toggle-btn" id="btn-inline-lang">
+            <span>🌐</span> <span id="lbl-inline-lang">EN</span>
+          </button>
+        </header>
+
+        <!-- 2. Sticky Search & Filter Navigation -->
+        <div class="menu-sticky-nav">
+          <div class="search-container">
+            <div class="search-box">
+              <span class="search-icon" aria-hidden="true">🔍</span>
+              <input type="search" class="search-input" id="search-input" placeholder="ابحث عن طبق أو مشروب..." aria-label="بحث في قائمة الطعام" />
+              <button class="search-clear" id="search-clear" style="display: none;" title="مسح البحث">✕</button>
+            </div>
+          </div>
+
+          <!-- Category Chips Bar -->
+          <nav class="category-scroll" aria-label="أقسام القائمة" role="tablist">
+            <button class="category-chip active" data-category="all" role="tab" aria-selected="true">الكل</button>
+            <button class="category-chip" data-category="grills" role="tab" aria-selected="false">المشويات ⭐</button>
+            <button class="category-chip" data-category="appetizers" role="tab" aria-selected="false">المقبلات</button>
+            <button class="category-chip" data-category="casseroles" role="tab" aria-selected="false">الطواجن</button>
+            <button class="category-chip" data-category="desserts" role="tab" aria-selected="false">الحلويات</button>
+            <button class="category-chip" data-category="drinks" role="tab" aria-selected="false">المشروبات</button>
+          </nav>
+        </div>
+
+        <!-- 3. Primary Content View: Normal Dish List -->
+        <div class="menu-content" id="view-normal">
+          <h2 class="section-title" id="section-heading">جميع الأطباق</h2>
+          <div class="dish-list" id="dish-list-container">
+            <!-- Dishes injected via JS -->
+          </div>
+        </div>
+
+        <!-- 4. State: Empty Menu -->
+        <div class="state-view" id="view-empty">
+          <div class="state-icon">🍽️</div>
+          <h2 class="state-title">القائمة قيد الإعداد</h2>
+          <p class="state-desc">يقوم فريق المطعم حالياً بتحديث وتجهيز أشهى الأطباق. تفضل بزيارتنا قريباً!</p>
+        </div>
+
+        <!-- 5. State: Skeleton Loading -->
+        <div class="menu-content state-view" id="view-skeleton">
+          <div class="dish-list">
+            <div class="dish-card">
+              <div class="dish-thumb skeleton"></div>
+              <div class="dish-info">
+                <div class="skeleton" style="height: 16px; width: 60%; margin-bottom: 8px;"></div>
+                <div class="skeleton" style="height: 12px; width: 90%; margin-bottom: 6px;"></div>
+                <div class="skeleton" style="height: 14px; width: 30%;"></div>
+              </div>
+            </div>
+            <div class="dish-card">
+              <div class="dish-thumb skeleton"></div>
+              <div class="dish-info">
+                <div class="skeleton" style="height: 16px; width: 50%; margin-bottom: 8px;"></div>
+                <div class="skeleton" style="height: 12px; width: 85%; margin-bottom: 6px;"></div>
+                <div class="skeleton" style="height: 14px; width: 25%;"></div>
+              </div>
+            </div>
+            <div class="dish-card">
+              <div class="dish-thumb skeleton"></div>
+              <div class="dish-info">
+                <div class="skeleton" style="height: 16px; width: 70%; margin-bottom: 8px;"></div>
+                <div class="skeleton" style="height: 12px; width: 80%; margin-bottom: 6px;"></div>
+                <div class="skeleton" style="height: 14px; width: 35%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. State: Suspended / Unavailable -->
+        <div class="state-view" id="view-unavailable">
+          <div class="state-icon">🔒</div>
+          <h2 class="state-title">هذه القائمة غير متاحة حالياً</h2>
+          <p class="state-desc">نعتذر، القائمة المطلوبة غير منشورة في الوقت الراهن أو خاضعة للصيانة.</p>
+        </div>
+
+        <!-- 7. Product Detail Bottom Sheet (Modal) -->
+        <div class="sheet-backdrop" id="sheet-backdrop"></div>
+        <div class="bottom-sheet" id="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+          <div class="sheet-handle"></div>
+          <div class="sheet-hero" id="sheet-emoji">🥩</div>
+          <div class="sheet-title-row">
+            <h2 class="sheet-title" id="sheet-title">اسم الطبق</h2>
+            <span class="sheet-price" id="sheet-price">0.00 ج.م</span>
+          </div>
+          <p class="sheet-body" id="sheet-desc">وصف الطبق والمكونات التفصيلية وتتبيلة الشيف الخاصة...</p>
+          <div style="margin-bottom: 16px;">
+            <span class="badge-pill badge-available" id="sheet-status">متوفر للطلب</span>
+          </div>
+          <button class="btn-close-sheet" id="btn-close-sheet">إغلاق التفاصيل</button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Interactive Admin Feature Showcase Section -->
+  <section class="admin-preview-section">
+    <h2 style="font-size: var(--font-size-xl); margin-bottom: 8px;">🛠️ لوحة تحكم مالك المطعم (Admin Studio Preview)</h2>
+    <p style="font-size: var(--font-size-sm); color: #94a3b8;">
+      هنا نظرة عامة على أدوات الإدارة الخاصة بالمالك، بما في ذلك إحصائيات القائمة، مولد رمز QR الدائم، وضوابط الوصولية (WCAG AA).
+    </p>
+
+    <div class="admin-grid">
+      <!-- Metric Cards -->
+      <div class="admin-card">
+        <h3>📊 حالة القائمة والأطباق</h3>
+        <p style="color: #94a3b8; font-size: 13px;">حالة النشر الحالية: <strong style="color: #4ade80;">🟢 منشورة للعامة</strong></p>
+        <div class="stat-counter">42 <span style="font-size: 14px; font-weight: normal; color: #94a3b8;">طبقاً فعالاً</span></div>
+        <p style="color: #94a3b8; font-size: 13px;">الأقسام: 6 أقسام | أطباق نفدت: 2 طبق</p>
+      </div>
+
+      <!-- QR Studio Card -->
+      <div class="admin-card">
+        <h3>📱 رمز QR الدائم للطباعة</h3>
+        <p style="color: #94a3b8; font-size: 13px;">الرابط الثابت: <code>/m/7F82A9C</code></p>
+        <div style="background: white; color: black; padding: 12px; border-radius: 8px; width: fit-content; margin: 10px 0; font-weight: bold; text-align: center;">
+          [ QR CODE SVG ]<br><span style="font-size: 11px;">مطعم السرايا</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-tool" style="font-size: 12px;">تحميل PNG 📥</button>
+          <button class="btn-tool" style="font-size: 12px;">تحميل فيكتور SVG 📥</button>
+        </div>
+      </div>
+
+      <!-- Theme & Accessibility Card -->
+      <div class="admin-card">
+        <h3>🎨 تخصيص الهوية والتباين</h3>
+        <p style="color: #94a3b8; font-size: 13px;">اللون المختار: <code>#0F766E</code></p>
+        <p style="color: #4ade80; font-size: 13px; margin: 8px 0;">✅ نسبة التباين: 7.4:1 (متوافق مع WCAG AAA)</p>
+        <p style="color: #94a3b8; font-size: 12px;">النظام يفحص التباين تلقائياً ويمنع الألوان الباهتة لضمان سهولة القراءة لجميع الزبائن.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    // Sample Menu Dataset
+    const MENU_DATA = [
+      { id: '1', category: 'grills', nameAr: 'كباب لحم بلدي مشوي', nameEn: 'Grilled Lamb Kebab', descAr: 'لحم ضاني وعجالي بلدي متبل بخلطة السرايا ومشوي على الفحم، يقدم مع الطحينة والخبز الساخن.', descEn: 'Tender Egyptian lamb seasoned with authentic spices, served with tahini and hot bread.', price: 185, emoji: '🥩', isAvailable: true },
+      { id: '2', category: 'grills', nameAr: 'شيش طاووق على الفحم', nameEn: 'Charcoal Shish Tawook', descAr: 'قطع صدور دجاج متبلة بخلطة الزبادي والليمون والأعشاب الطازجة.', descEn: 'Marinated chicken breast skewers grilled over natural charcoal.', price: 140, emoji: '🍗', isAvailable: true },
+      { id: '3', category: 'grills', nameAr: 'ريش ضاني فاخرة', nameEn: 'Prime Lamb Chops', descAr: 'ريش ضاني مشوية على الفحم بنكهة الحطب المميزة.', descEn: 'Succulent lamb chops marinated in house herbs and flame grilled.', price: 240, emoji: '🍖', isAvailable: false },
+      { id: '4', category: 'appetizers', nameAr: 'حمص بيروتي بالصنوبر', nameEn: 'Beiruti Hummus with Pine Nuts', descAr: 'حمص كريمي ناعم مع زيت الزيتون البكر والصنوبر المحمص.', descEn: 'Silky smooth hummus topped with extra virgin olive oil and toasted pine nuts.', price: 65, emoji: '🥣', isAvailable: true },
+      { id: '5', category: 'appetizers', nameAr: 'متبل باذنجان مشوي', nameEn: 'Smoked Mutabbal', descAr: 'باذنجان مشوي على الفحم مع الطحينة والثوم والرمان.', descEn: 'Charred eggplant puree blended with tahini, garlic, and pomegranate.', price: 55, emoji: '🍆', isAvailable: true },
+      { id: '6', category: 'casseroles', nameAr: 'طاجن لحمة بالبصل الأورما', nameEn: 'Shallot Beef Casserole', descAr: 'قطع لحم طرية مطهوة ببطء في الفرن الفخاري مع البصل الأورما المكرمل.', descEn: 'Slow-cooked beef baked in traditional clay tagine with caramelized shallots.', price: 195, emoji: '🥘', isAvailable: true },
+      { id: '7', category: 'desserts', nameAr: 'أم علي بالمكسرات والقشطة', nameEn: 'Om Ali with Clotted Cream', descAr: 'حلوى أم علي المصرية الأصيلة مع الحليب والمكسرات المحمصة والقشطة البلدي.', descEn: 'Traditional Egyptian bread pudding with rich milk, toasted nuts, and clotted cream.', price: 70, emoji: '🍨', isAvailable: true },
+      { id: '8', category: 'drinks', nameAr: 'عصير رمان طبيعي مثلج', nameEn: 'Fresh Pomegranate Juice', descAr: 'عصير رمان فريش 100% بدون سكر مضاف.', descEn: 'Pure freshly squeezed pomegranate juice over ice.', price: 45, emoji: '🍹', isAvailable: true }
+    ];
+
+    let currentLang = 'ar';
+    let currentCategory = 'all';
+    let searchQuery = '';
+
+    // DOM Elements
+    const deviceFrame = document.getElementById('device-frame');
+    const dishListContainer = document.getElementById('dish-list-container');
+    const searchInput = document.getElementById('search-input');
+    const searchClear = document.getElementById('search-clear');
+    const categoryChips = document.querySelectorAll('.category-chip');
+    const bottomSheet = document.getElementById('bottom-sheet');
+    const sheetBackdrop = document.getElementById('sheet-backdrop');
+    const btnCloseSheet = document.getElementById('btn-close-sheet');
+    const selStateView = document.getElementById('sel-state-view');
+
+    // Render Dishes
+    function renderDishes() {
+      const isAr = currentLang === 'ar';
+      dishListContainer.innerHTML = '';
+
+      const filtered = MENU_DATA.filter(dish => {
+        const matchesCategory = currentCategory === 'all' || dish.category === currentCategory;
+        const name = isAr ? dish.nameAr : dish.nameEn;
+        const desc = isAr ? dish.descAr : dish.descEn;
+        const query = searchQuery.toLowerCase().trim();
+        const matchesSearch = !query || name.toLowerCase().includes(query) || desc.toLowerCase().includes(query);
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        dishListContainer.innerHTML = `
+          <div style="text-align: center; padding: 40px 16px;">
+            <div style="font-size: 36px; margin-bottom: 8px;">🔍</div>
+            <p style="font-weight: bold; margin-bottom: 6px;">${isAr ? 'لم نجد أطباقاً تطابق بحثك' : 'No matching dishes found'}</p>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">${isAr ? 'جرب البحث بكلمات أخرى أو تصفح الأقسام' : 'Try different keywords or browse categories'}</p>
+            <button class="btn-tool" style="margin: 0 auto; color: white; background: #0f766e;" onclick="resetSearch()">${isAr ? 'مسح البحث' : 'Clear search'}</button>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(dish => {
+        const card = document.createElement('article');
+        card.className = `dish-card ${!dish.isAvailable ? 'sold-out' : ''}`;
+        card.setAttribute('itemscope', '');
+        card.setAttribute('itemtype', 'https://schema.org/MenuItem');
+
+        const name = isAr ? dish.nameAr : dish.nameEn;
+        const desc = isAr ? dish.descAr : dish.descEn;
+        const currency = isAr ? 'ج.م' : 'EGP';
+        const statusLabel = dish.isAvailable ? (isAr ? 'متوفر' : 'Available') : (isAr ? 'نفد ✕' : 'Sold out');
+        const badgeClass = dish.isAvailable ? 'badge-available' : 'badge-soldout';
+
+        card.innerHTML = `
+          <div class="dish-thumb" aria-hidden="true">${dish.emoji}</div>
+          <div class="dish-info">
+            <div class="dish-header">
+              <span class="dish-name" itemprop="name">${name}</span>
+              <span class="dish-price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                <span itemprop="price">${dish.price.toFixed(2)}</span> ${currency}
+              </span>
+            </div>
+            <p class="dish-desc" itemprop="description">${desc}</p>
+            <span class="badge-pill ${badgeClass}">${statusLabel}</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => openDetailSheet(dish));
+        dishListContainer.appendChild(card);
+      });
+    }
+
+    // Detail Bottom Sheet
+    function openDetailSheet(dish) {
+      const isAr = currentLang === 'ar';
+      document.getElementById('sheet-title').textContent = isAr ? dish.nameAr : dish.nameEn;
+      document.getElementById('sheet-desc').textContent = isAr ? dish.descAr : dish.descEn;
+      document.getElementById('sheet-price').textContent = `${dish.price.toFixed(2)} ${isAr ? 'ج.م' : 'EGP'}`;
+      document.getElementById('sheet-emoji').textContent = dish.emoji;
+
+      const statusBadge = document.getElementById('sheet-status');
+      if (dish.isAvailable) {
+        statusBadge.className = 'badge-pill badge-available';
+        statusBadge.textContent = isAr ? 'متوفر للطلب' : 'Available to order';
+      } else {
+        statusBadge.className = 'badge-pill badge-soldout';
+        statusBadge.textContent = isAr ? 'نفد مؤقتاً' : 'Temporarily sold out';
+      }
+
+      sheetBackdrop.classList.add('open');
+      bottomSheet.classList.add('open');
+    }
+
+    function closeDetailSheet() {
+      sheetBackdrop.classList.remove('open');
+      bottomSheet.classList.remove('open');
+    }
+
+    sheetBackdrop.addEventListener('click', closeDetailSheet);
+    btnCloseSheet.addEventListener('click', closeDetailSheet);
+
+    // Search Handling
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      searchClear.style.display = searchQuery ? 'flex' : 'none';
+      renderDishes();
+    });
+
+    searchClear.addEventListener('click', resetSearch);
+
+    function resetSearch() {
+      searchInput.value = '';
+      searchQuery = '';
+      searchClear.style.display = 'none';
+      renderDishes();
+    }
+
+    // Category Tabs
+    categoryChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        categoryChips.forEach(c => {
+          c.classList.remove('active');
+          c.setAttribute('aria-selected', 'false');
+        });
+        chip.classList.add('active');
+        chip.setAttribute('aria-selected', 'true');
+        currentCategory = chip.dataset.category;
+        renderDishes();
+      });
+    });
+
+    // Language Toggle
+    function toggleLanguage() {
+      currentLang = currentLang === 'ar' ? 'en' : 'ar';
+      const isAr = currentLang === 'ar';
+
+      document.documentElement.lang = currentLang;
+      document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+
+      document.getElementById('lbl-lang').textContent = isAr ? 'English (LTR)' : 'العربية (RTL)';
+      document.getElementById('lbl-inline-lang').textContent = isAr ? 'EN' : 'عربي';
+
+      document.getElementById('brand-name').textContent = isAr ? 'مطعم السرايا الفاخر' : 'Al-Saraya Luxury Restaurant';
+      document.getElementById('brand-tagline').textContent = isAr ? 'أشهى المشويات والمأكولات الشرقية' : 'Fine Middle Eastern Grills & Delicacies';
+      document.getElementById('section-heading').textContent = isAr ? 'جميع الأطباق' : 'All Menu Items';
+      searchInput.placeholder = isAr ? 'ابحث عن طبق أو مشروب...' : 'Search for a dish or drink...';
+
+      renderDishes();
+    }
+
+    document.getElementById('btn-toggle-lang').addEventListener('click', toggleLanguage);
+    document.getElementById('btn-inline-lang').addEventListener('click', toggleLanguage);
+
+    // Viewport Resizing
+    const vpButtons = [
+      { id: 'btn-vp-mobile', class: '' },
+      { id: 'btn-vp-tablet', class: 'tablet' },
+      { id: 'btn-vp-desktop', class: 'desktop' }
+    ];
+
+    vpButtons.forEach(btn => {
+      document.getElementById(btn.id).addEventListener('click', () => {
+        vpButtons.forEach(b => document.getElementById(b.id).classList.remove('active'));
+        document.getElementById(btn.id).classList.add('active');
+        deviceFrame.className = `device-frame ${btn.class}`;
+      });
+    });
+
+    // Color Theme Switching
+    document.getElementById('btn-theme-teal').addEventListener('click', () => {
+      document.documentElement.style.setProperty('--tenant-primary', '#0F766E');
+      document.documentElement.style.setProperty('--tenant-on-primary', '#FFFFFF');
+    });
+
+    document.getElementById('btn-theme-amber').addEventListener('click', () => {
+      document.documentElement.style.setProperty('--tenant-primary', '#B45309');
+      document.documentElement.style.setProperty('--tenant-on-primary', '#FFFFFF');
+    });
+
+    document.getElementById('btn-theme-burgundy').addEventListener('click', () => {
+      document.documentElement.style.setProperty('--tenant-primary', '#991B1B');
+      document.documentElement.style.setProperty('--tenant-on-primary', '#FFFFFF');
+    });
+
+    // State View Switcher
+    selStateView.addEventListener('change', (e) => {
+      const val = e.target.value;
+      const views = ['view-normal', 'view-empty', 'view-skeleton', 'view-unavailable'];
+      views.forEach(v => {
+        const el = document.getElementById(v);
+        if (el) el.style.display = 'none';
+      });
+
+      if (val === 'normal') {
+        document.getElementById('view-normal').style.display = 'block';
+      } else if (val === 'empty') {
+        document.getElementById('view-empty').style.display = 'block';
+      } else if (val === 'skeleton') {
+        document.getElementById('view-skeleton').style.display = 'block';
+      } else if (val === 'unavailable') {
+        document.getElementById('view-unavailable').style.display = 'block';
+      }
+    });
+
+    // Initialize
+    renderDishes();
+  </script>
+</body>
+</html>
