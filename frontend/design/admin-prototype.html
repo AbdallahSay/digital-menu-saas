@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Digital Menu SaaS — Complete Admin Experience Prototype</title>
   <link rel="stylesheet" href="./tokens.css" />
+  <script src="./wcag-contrast.js"></script>
+  <script src="./qr-code.js"></script>
   <style>
     /* Reset & Base Setup */
     * {
@@ -763,6 +765,12 @@
       color: var(--color-semantic-success);
     }
 
+    .contrast-badge.warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+    }
+
     .contrast-badge.fail {
       background: var(--color-semantic-danger-bg);
       color: var(--color-semantic-danger);
@@ -947,17 +955,17 @@
               <form id="login-form" novalidate>
                 <div class="form-group">
                   <label class="form-label" for="login-email" id="lbl-email">البريد الإلكتروني</label>
-                  <input type="email" class="form-input" id="login-email" placeholder="owner@restaurant.com" required autocomplete="username" />
+                  <input type="email" class="form-input" id="login-email" placeholder="owner@restaurant.com" required autocomplete="username" maxlength="256" />
                   <div class="field-error-msg" id="err-email">يرجى إدخال بريد إلكتروني صحيح</div>
                 </div>
 
                 <div class="form-group">
                   <label class="form-label" for="login-password" id="lbl-password">كلمة المرور</label>
                   <div style="position: relative;">
-                    <input type="password" class="form-input" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
+                    <input type="password" class="form-input" id="login-password" placeholder="••••••••••••" required autocomplete="current-password" maxlength="256" />
                     <button type="button" id="btn-toggle-pwd" style="position: absolute; inset-inline-end: 10px; top: 12px; background: none; border: none; cursor: pointer; color: #64748b;" aria-label="إظهار كلمة المرور">👁️</button>
                   </div>
-                  <div class="field-error-msg" id="err-password">كلمة المرور مطلوبة (6 أحرف على الأقل)</div>
+                  <div class="field-error-msg" id="err-password">كلمة المرور مطلوبة (12 حرفاً على الأقل)</div>
                 </div>
 
                 <button type="submit" class="btn-primary" style="width: 100%;" id="btn-submit-login">
@@ -967,12 +975,15 @@
 
               <!-- Simulation Triggers Bar -->
               <div style="margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--color-border-subtle);">
-                <div style="font-size: 11px; font-weight: bold; color: var(--color-text-secondary); margin-bottom: 8px;">محاكاة استجابات الخادم (HTTP States):</div>
+                <div style="font-size: 11px; font-weight: bold; color: var(--color-text-secondary); margin-bottom: 8px;">محاكاة استجابات الخادم المعتمدة (F03 Identity Contract):</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-ok">✅ دخول ناجح</button>
-                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-401">❌ بيانات خطأ (401)</button>
-                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-429">⏳ حظر مؤقت (429)</button>
-                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-403">🔒 مطعم معلق (403)</button>
+                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-owner" title="204 No Content -> CSRF Refresh -> /me: Owner">✅ مالك مطعم (204)</button>
+                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-admin" title="204 No Content -> CSRF Refresh -> /me: PlatformAdmin">🛡️ مدير منصة (204)</button>
+                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-401" title="Generic 401 ProblemDetails (Invalid credentials)">❌ بيانات خطأ/معلق (401)</button>
+                  <button type="button" class="btn-secondary" style="font-size: 11px; height: 34px; padding: 0;" id="sim-login-429" title="429 Too Many Requests">⏳ تجاوز المعدل (429)</button>
+                </div>
+                <div style="font-size: 10px; color: var(--color-text-secondary); margin-top: 8px; line-height: 1.4;">
+                  جلسة آمنة: <code>__Host-DigitalMenu.Session</code> (SameSite=Strict, HttpOnly, Secure, 30 دقيقة ثابتة). الحسابات غير الصالحة أو المعلقة تُرجع 401 عاماً دون كشف وجود الحساب.
                 </div>
               </div>
             </div>
@@ -1112,7 +1123,10 @@
                     <div style="font-size: 13px; font-weight: bold;">كباب لحم بلدي فاخر</div>
                     <div style="font-size: 12px; font-weight: bold; color: var(--tenant-primary);" id="preview-price-tag">185.00 ج.م</div>
                   </div>
-                  <button class="btn-primary" style="height: 32px; font-size: 11px; padding: 0 10px;">طلب استعراض</button>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: bold; background: #dcfce7; color: #15803d; padding: 4px 8px; border-radius: 4px;">متوفر</span>
+                    <button type="button" class="btn-secondary" style="height: 32px; font-size: 11px; padding: 0 8px;" id="btn-preview-details">عرض التفاصيل</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1129,24 +1143,13 @@
               <div style="font-size: var(--font-size-sm); font-weight: bold; color: #0f172a;" id="qr-preview-name">مطعم السرايا</div>
               <div style="font-size: 11px; color: #64748b; margin-top: 2px;">امسح للاطلاع على المنيو الرقمي</div>
               
-              <!-- Standalone Vector SVG Graphic Mockup -->
-              <div class="qr-code-graphic">
-                <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="100" height="100" fill="white"/>
-                  <rect x="10" y="10" width="25" height="25" fill="#0f172a"/>
-                  <rect x="15" y="15" width="15" height="15" fill="white"/>
-                  <rect x="18" y="18" width="9" height="9" fill="#0f172a"/>
-                  <rect x="65" y="10" width="25" height="25" fill="#0f172a"/>
-                  <rect x="70" y="15" width="15" height="15" fill="white"/>
-                  <rect x="73" y="18" width="9" height="9" fill="#0f172a"/>
-                  <rect x="10" y="65" width="25" height="25" fill="#0f172a"/>
-                  <rect x="15" y="70" width="15" height="15" fill="white"/>
-                  <rect x="18" y="73" width="9" height="9" fill="#0f172a"/>
-                  <circle cx="50" cy="50" r="8" fill="#0f766e"/>
-                </svg>
+              <!-- Standards-Compliant Scannable QR Graphic -->
+              <div class="qr-code-graphic" id="qr-code-container" style="background: white; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 150px; height: 150px; margin: 12px auto; display: flex; align-items: center; justify-content: center;">
+                <!-- Real scannable SVG dynamically rendered by QrCodeEngine -->
               </div>
 
-              <div style="font-size: 10px; font-weight: bold; color: #0f766e; font-family: var(--font-family-mono);">menu.example.com/m/7F82A9C</div>
+              <div style="font-size: 11px; font-weight: bold; color: #0f766e; font-family: var(--font-family-mono); direction: ltr;" id="qr-display-url">https://menu.example.com/m/7F82A9C</div>
+              <div style="font-size: 11px; color: #15803d; margin-top: 6px; font-weight: 600;">✓ رمز QR قياسي متوافق مع ISO/IEC 18004 وقابل للمسح الفعلي بكاميرا الهاتف</div>
             </div>
 
             <div class="admin-card">
@@ -1424,16 +1427,25 @@
       }, 3000);
     }
 
-    // Modal Manager
+    // Modal Manager with Accessible Keyboard Focus Trapping
+    function getFocusableElements(dialog) {
+      return Array.from(dialog.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
+    }
+
     function openModal(dialog, backdrop, initialFocusEl) {
       backdrop.classList.add('open');
       dialog.classList.add('open');
-      backdrop.setAttribute('aria-hidden', 'false');
+      backdrop.setAttribute('aria-hidden', 'true');
       dialog.setAttribute('aria-hidden', 'false');
 
       setTimeout(() => {
         if (initialFocusEl && typeof initialFocusEl.focus === 'function') {
           initialFocusEl.focus();
+        } else {
+          const focusable = getFocusableElements(dialog);
+          if (focusable.length > 0) focusable[0].focus();
         }
       }, 50);
     }
@@ -1449,13 +1461,54 @@
       }
     }
 
-    // Escape Key Listener
+    function getOpenModal() {
+      if (catFormDialog && catFormDialog.classList.contains('open')) return { dialog: catFormDialog, backdrop: catModalBackdrop };
+      if (itemFormDialog && itemFormDialog.classList.contains('open')) return { dialog: itemFormDialog, backdrop: itemModalBackdrop };
+      if (conflictDialog && conflictDialog.classList.contains('open')) return { dialog: conflictDialog, backdrop: conflictModalBackdrop };
+      if (provisionDialog && provisionDialog.classList.contains('open')) return { dialog: provisionDialog, backdrop: provisionModalBackdrop };
+      return null;
+    }
+
+    // Modal Keyboard Management (Escape Dismissal & Tab Focus Trap)
     window.addEventListener('keydown', (e) => {
+      const openModalInfo = getOpenModal();
+      if (!openModalInfo) return;
+
       if (e.key === 'Escape') {
-        if (catFormDialog.classList.contains('open')) closeModal(catFormDialog, catModalBackdrop);
-        if (itemFormDialog.classList.contains('open')) closeModal(itemFormDialog, itemModalBackdrop);
-        if (conflictDialog.classList.contains('open')) closeModal(conflictDialog, conflictModalBackdrop);
-        if (provisionDialog.classList.contains('open')) closeModal(provisionDialog, provisionModalBackdrop);
+        closeModal(openModalInfo.dialog, openModalInfo.backdrop);
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusable = getFocusableElements(openModalInfo.dialog);
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first || !openModalInfo.dialog.contains(document.activeElement)) {
+            last.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    });
+
+    // Close on backdrop click
+    [catModalBackdrop, itemModalBackdrop, conflictModalBackdrop, provisionModalBackdrop].forEach(b => {
+      if (b) {
+        b.addEventListener('click', () => {
+          const open = getOpenModal();
+          if (open) closeModal(open.dialog, open.backdrop);
+        });
       }
     });
 
@@ -1500,8 +1553,10 @@
           renderItems();
         } else if (screen === 'branding') {
           document.getElementById('view-branding').style.display = 'block';
+          applyThemeColor(document.getElementById('inp-custom-hex').value || '#d97706');
         } else if (screen === 'qr') {
           document.getElementById('view-qr').style.display = 'block';
+          renderQrStudio();
         } else if (screen === 'platform-tenants') {
           document.getElementById('view-platform-tenants').style.display = 'block';
           renderTenants();
@@ -1509,11 +1564,13 @@
       }
     }
 
-    // Role Toggle
+    // Authenticated Profile Simulation Switcher (/me contract simulation)
     document.getElementById('btn-toggle-role').addEventListener('click', () => {
       currentRole = currentRole === 'owner' ? 'platform' : 'owner';
       const isOwner = currentRole === 'owner';
-      document.getElementById('lbl-role-state').textContent = isOwner ? 'دور: مالك المطعم' : 'دور: مدير المنصة (Platform)';
+      document.getElementById('lbl-role-state').textContent = isOwner ?
+        (currentLang === 'ar' ? 'الملف الشخصي: مالك المطعم (/me: Owner)' : 'Profile: Owner (/me: Owner)') :
+        (currentLang === 'ar' ? 'الملف الشخصي: مدير المنصة (/me: PlatformAdmin)' : 'Profile: PlatformAdmin (/me: PlatformAdmin)');
 
       if (!isOwner) {
         document.getElementById('hdr-brand-name').textContent = 'إدارة منصة ديجيتال منيو';
@@ -1999,35 +2056,66 @@
 
     function applyThemeColor(hex) {
       document.documentElement.style.setProperty('--tenant-primary', hex);
-      document.getElementById('preview-price-tag').style.color = hex;
+      const priceTag = document.getElementById('preview-price-tag');
+      if (priceTag) priceTag.style.color = hex;
 
-      // Simple relative luminance contrast calculation against white
-      const r = parseInt(hex.slice(1, 3), 16) / 255;
-      const g = parseInt(hex.slice(3, 5), 16) / 255;
-      const b = parseInt(hex.slice(5, 7), 16) / 255;
-      const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      const contrast = (1.05 / (L + 0.05)).toFixed(1);
-
+      const compliance = WcagContrast.evaluateWcagCompliance(hex, '#ffffff');
       const badge = document.getElementById('contrast-badge');
       const text = document.getElementById('contrast-text');
-      if (contrast >= 4.5) {
+      
+      if (compliance.normalTextAAA) {
         badge.className = 'contrast-badge pass';
-        text.textContent = `نسبة التباين ${contrast}:1 (متوافق مع WCAG AA / AAA)`;
+        text.textContent = currentLang === 'ar' ? compliance.labelAr : compliance.labelEn;
+      } else if (compliance.normalTextAA) {
+        badge.className = 'contrast-badge pass';
+        text.textContent = currentLang === 'ar' ? compliance.labelAr : compliance.labelEn;
+      } else if (compliance.largeTextAA) {
+        badge.className = 'contrast-badge warning';
+        text.textContent = currentLang === 'ar' ? compliance.labelAr : compliance.labelEn;
       } else {
         badge.className = 'contrast-badge fail';
-        text.textContent = `⚠️ تحذير: نسبة التباين ${contrast}:1 غير كافية لسهولة القراءة`;
+        text.textContent = currentLang === 'ar' ? compliance.labelAr : compliance.labelEn;
       }
     }
 
-    // QR Actions
+    // Real Scannable QR Studio Renderer
+    function renderQrStudio() {
+      const container = document.getElementById('qr-code-container');
+      if (!container) return;
+      const mockUrl = 'https://menu.example.com/m/7F82A9C';
+      const { svg } = QrCodeEngine.generateQrSvg(mockUrl, { margin: 4 });
+      container.replaceChildren();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svg, 'image/svg+xml');
+      if (doc.documentElement) {
+        container.appendChild(document.importNode(doc.documentElement, true));
+      }
+    }
+
+    // Genuine QR Actions
     document.getElementById('btn-copy-qr-url').addEventListener('click', () => {
-      showToast('تم نسخ الرابط الدائم إلى الحافظة: menu.example.com/m/7F82A9C');
+      const url = 'https://menu.example.com/m/7F82A9C';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          showToast(currentLang === 'ar' ? `تم نسخ الرابط الدائم: ${url}` : `Copied permanent URL: ${url}`);
+        }).catch(() => {
+          showToast(currentLang === 'ar' ? `الرابط الدائم: ${url}` : `Permanent URL: ${url}`);
+        });
+      } else {
+        showToast(currentLang === 'ar' ? `الرابط الدائم: ${url}` : `Permanent URL: ${url}`);
+      }
     });
+
     document.getElementById('btn-dl-qr-png').addEventListener('click', () => {
-      showToast('جاري تصدير صورة PNG عالية الدقة (1024x1024)...');
+      const url = 'https://menu.example.com/m/7F82A9C';
+      QrCodeEngine.downloadQrPng(url, 'qr-saraya-7F82A9C.png', { pixelSize: 1024, margin: 4 });
+      showToast(currentLang === 'ar' ? 'تم تنزيل رمز QR كصورة PNG عالية الدقة (1024x1024)' : 'Downloaded high-res PNG (1024x1024)');
     });
+
     document.getElementById('btn-dl-qr-svg').addEventListener('click', () => {
-      showToast('جاري تصدير ملف فيكتور SVG للطباعة المطبعية...');
+      const url = 'https://menu.example.com/m/7F82A9C';
+      QrCodeEngine.downloadQrSvg(url, 'qr-saraya-7F82A9C.svg', { margin: 4 });
+      showToast(currentLang === 'ar' ? 'تم تنزيل رمز QR كملف SVG فيكتور للطباعة' : 'Downloaded print vector SVG');
     });
 
     // Modals Close Hooks
@@ -2087,10 +2175,153 @@
 
     document.getElementById('sc-goto-brand').addEventListener('click', () => setScreenView('branding'));
     document.getElementById('sc-qr-download').addEventListener('click', () => setScreenView('qr'));
+    // Sign out (Simulates POST /api/v1/auth/logout -> 204 No Content)
     document.getElementById('btn-sign-out').addEventListener('click', () => {
-      showToast('تم تسجيل الخروج بنجاح');
+      showToast(currentLang === 'ar' ? 'تم تسجيل الخروج بنجاح (HTTP 204) وحذف الجلسة' : 'Signed out successfully (HTTP 204), session invalidated');
       setScreenView('login');
+      hideLoginError();
+      const loginForm = document.getElementById('login-form');
+      if (loginForm) loginForm.reset();
     });
+
+    // Login Form Handling & F03 Contract Handshake Simulation
+    const loginForm = document.getElementById('login-form');
+    const loginErrorAlert = document.getElementById('login-error-alert');
+    const loginErrorText = document.getElementById('login-error-text');
+
+    function hideLoginError() {
+      if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+    }
+
+    function showLoginError(msg) {
+      if (loginErrorText) loginErrorText.textContent = msg;
+      if (loginErrorAlert) loginErrorAlert.style.display = 'flex';
+    }
+
+    function executeLoginFlow(role, restaurantName, email) {
+      hideLoginError();
+      const btn = document.getElementById('btn-submit-login');
+      const lbl = document.getElementById('lbl-btn-login');
+      if (btn) btn.setAttribute('aria-busy', 'true');
+      const originalText = lbl ? lbl.textContent : 'تسجيل الدخول';
+      if (lbl) lbl.textContent = currentLang === 'ar' ? 'جاري المصادقة وتجديد CSRF...' : 'Authenticating & CSRF Handshake...';
+
+      // Simulate F03 pipeline:
+      // 1. GET /api/v1/auth/csrf -> Antiforgery cookie + XSRF-TOKEN
+      // 2. POST /api/v1/auth/login with X-XSRF-TOKEN -> 204 No Content
+      // 3. GET /api/v1/auth/csrf -> Refreshed XSRF-TOKEN
+      // 4. GET /api/v1/auth/me -> { role: PlatformAdmin | Owner }
+      setTimeout(() => {
+        if (btn) btn.removeAttribute('aria-busy');
+        if (lbl) lbl.textContent = originalText;
+
+        currentRole = role;
+        const isOwner = role === 'owner';
+        document.getElementById('lbl-role-state').textContent = isOwner ?
+          (currentLang === 'ar' ? 'الملف الشخصي: مالك المطعم (/me: Owner)' : 'Profile: Owner (/me: Owner)') :
+          (currentLang === 'ar' ? 'الملف الشخصي: مدير المنصة (/me: PlatformAdmin)' : 'Profile: PlatformAdmin (/me: PlatformAdmin)');
+
+        if (isOwner) {
+          document.getElementById('hdr-brand-name').textContent = restaurantName || 'مطعم السرايا';
+          document.getElementById('hdr-owner-email').textContent = email || 'owner@saraya.com';
+          setScreenView('categories');
+          showToast(currentLang === 'ar' ? 'تم تسجيل الدخول بنجاح (HTTP 204) — توجيه المالك' : 'Login successful (HTTP 204) — Routed to Owner Dashboard');
+        } else {
+          document.getElementById('hdr-brand-name').textContent = 'إدارة منصة ديجيتال منيو';
+          document.getElementById('hdr-owner-email').textContent = email || 'admin@platform.com';
+          setScreenView('platform-tenants');
+          showToast(currentLang === 'ar' ? 'تم تسجيل الدخول بنجاح (HTTP 204) — توجيه مدير المنصة' : 'Login successful (HTTP 204) — Routed to Platform Portal');
+        }
+      }, 350);
+    }
+
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById('login-email');
+        const pwdInput = document.getElementById('login-password');
+        const email = emailInput.value.trim();
+        const pwd = pwdInput.value;
+
+        let valid = true;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email) || email.length > 256) {
+          document.getElementById('err-email').classList.add('visible');
+          valid = false;
+        } else {
+          document.getElementById('err-email').classList.remove('visible');
+        }
+
+        if (!pwd || pwd.length < 12 || pwd.length > 256) {
+          document.getElementById('err-password').classList.add('visible');
+          valid = false;
+        } else {
+          document.getElementById('err-password').classList.remove('visible');
+        }
+
+        if (!valid) return;
+
+        // F03 Authentication evaluation:
+        if (email.toLowerCase() === 'admin@platform.com') {
+          executeLoginFlow('platform', 'منصة ديجيتال منيو', email);
+        } else if (email.toLowerCase() === 'owner@saraya.com' || email.toLowerCase().startsWith('owner@')) {
+          executeLoginFlow('owner', 'مطعم السرايا', email);
+        } else {
+          // Unknown / suspended / wrong credentials -> Generic 401 ProblemDetails (never revealing account existence)
+          setTimeout(() => {
+            showLoginError(currentLang === 'ar' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة (HTTP 401 Invalid credentials.)' : 'Invalid credentials. (HTTP 401)');
+          }, 200);
+        }
+      });
+    }
+
+    // Toggle Password Visibility
+    const btnTogglePwd = document.getElementById('btn-toggle-pwd');
+    if (btnTogglePwd) {
+      btnTogglePwd.addEventListener('click', () => {
+        const pwdInput = document.getElementById('login-password');
+        const isPwd = pwdInput.type === 'password';
+        pwdInput.type = isPwd ? 'text' : 'password';
+        btnTogglePwd.textContent = isPwd ? '🙈' : '👁️';
+      });
+    }
+
+    // F03 Simulation Trigger Buttons
+    const simOwner = document.getElementById('sim-login-owner');
+    if (simOwner) {
+      simOwner.addEventListener('click', () => {
+        document.getElementById('login-email').value = 'owner@saraya.com';
+        document.getElementById('login-password').value = 'SarayaOwner123!';
+        executeLoginFlow('owner', 'مطعم السرايا', 'owner@saraya.com');
+      });
+    }
+
+    const simAdmin = document.getElementById('sim-login-admin');
+    if (simAdmin) {
+      simAdmin.addEventListener('click', () => {
+        document.getElementById('login-email').value = 'admin@platform.com';
+        document.getElementById('login-password').value = 'PlatformAdmin123!';
+        executeLoginFlow('platform', 'منصة ديجيتال منيو', 'admin@platform.com');
+      });
+    }
+
+    const sim401 = document.getElementById('sim-login-401');
+    if (sim401) {
+      sim401.addEventListener('click', () => {
+        document.getElementById('login-email').value = 'suspended@restaurant.com';
+        document.getElementById('login-password').value = 'SuspendedPass123!';
+        showLoginError(currentLang === 'ar' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة (HTTP 401 Invalid credentials.)' : 'Invalid credentials. (HTTP 401)');
+        showToast(currentLang === 'ar' ? 'استجابة الخادم: 401 عام لمنع كشف وجود الحساب أو حالة التعليق' : 'Server response: Generic 401 to prevent enumeration', true);
+      });
+    }
+
+    const sim429 = document.getElementById('sim-login-429');
+    if (sim429) {
+      sim429.addEventListener('click', () => {
+        showLoginError(currentLang === 'ar' ? 'تم تجاوز الحد المسموح من الطلبات (HTTP 429 Too many requests.). يرجى الانتظار 60 ثانية.' : 'Too many requests. (HTTP 429). Please wait 60 seconds.');
+        showToast(currentLang === 'ar' ? 'استجابة الخادم: 429 ProblemDetails (سياسة معدل الطلبات 10/دقيقة)' : 'Server response: 429 ProblemDetails (Rate limit 10/min)', true);
+      });
+    }
 
     // Screen View Select Trigger
     selScreenView.addEventListener('change', (e) => {
@@ -2128,9 +2359,16 @@
       document.getElementById('lbl-brand-title').textContent = isAr ? 'الهوية والمظهر والتباين (Branding)' : 'Brand & Theme Customizer';
       document.getElementById('lbl-qr-title').textContent = isAr ? 'استوديو رمز QR الدائم للطباعة' : 'Permanent QR Code Studio';
 
+      const isOwner = currentRole === 'owner';
+      document.getElementById('lbl-role-state').textContent = isOwner ?
+        (isAr ? 'الملف الشخصي: مالك المطعم (/me: Owner)' : 'Profile: Owner (/me: Owner)') :
+        (isAr ? 'الملف الشخصي: مدير المنصة (/me: PlatformAdmin)' : 'Profile: PlatformAdmin (/me: PlatformAdmin)');
+
       // Re-render active view
       if (currentScreen === 'categories') renderCategories();
       if (currentScreen === 'items') renderItems();
+      if (currentScreen === 'branding') applyThemeColor(document.getElementById('inp-custom-hex').value || '#d97706');
+      if (currentScreen === 'qr') renderQrStudio();
       if (currentScreen === 'platform-tenants') renderTenants();
     }
 

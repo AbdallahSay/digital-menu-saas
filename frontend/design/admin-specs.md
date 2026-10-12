@@ -27,34 +27,46 @@ The Digital Menu SaaS administration suite comprises two distinct operational ti
 ## 2. Authentication & Session Architecture (`/login`)
 
 ```
-[Owner or Admin Navigates to /login]
+[User Navigates to /login]
+                  │
+                  ▼
+      [CSRF Handshake Pre-flight]
+      GET /api/v1/auth/csrf -> Receives XSRF-TOKEN cookie & header name
                   │
                   ▼
          [CSR Login Screen]
                   │
-                  ├── User inputs: Email & Password
-                  │   └── Real-time client-side validation (RFC 5322 Email regex, min 8 chars password)
+                  ├── Inputs: Email (RFC 5322, max 256) & Password (min 12, max 256)
+                  │   └── Client validation aligned with backend Identity constraints
                   │
                   ▼
          [Submit Button Pressed]
                   │
                   ▼
-     [POST /api/v1/auth/login]  <-- Anti-forgery CSRF token (X-XSRF-TOKEN) + Credentials
+     [POST /api/v1/auth/login]  <-- X-XSRF-TOKEN header + credentials
                   │
      ┌────────────┴───────────────────────┬────────────────────────────┐
      ▼                                    ▼                            ▼
-[200 OK: Session Cookie Set]      [401 Unauthorized]           [429 Too Many Requests]
-• SameSite=Lax/Strict             • Generic error message:     • Lockout countdown timer
-• HttpOnly & Secure                 "البريد الإلكتروني أو       • Generic feedback:
-• Redirects to /admin (Owner)       كلمة المرور غير صحيحة"       "تم تجاوز الحد المسموح،
-  or /platform (Platform Admin)   • Prevents user enumeration    يرجى الانتظار 60 ثانية"
+[204 No Content: Session Cookie Set]  [401 Unauthorized]       [429 Too Many Requests]
+• __Host-DigitalMenu.Session cookie  • Generic ProblemDetails: • IP rate limit (10 req/min)
+• HttpOnly, Secure, SameSite=Strict    "Invalid credentials."  • Cooldown feedback:
+• 30-min fixed absolute lifetime     • Unified for: bad pwd,     "تم تجاوز الحد المسموح،
+• Refresh CSRF: GET /auth/csrf         unknown user, lockout,    يرجى الانتظار 60 ثانية"
+• Profile fetch: GET /auth/me          or suspended tenant
+• Route: /platform or /admin           (zero enumeration)
 ```
 
-### Security & Session Contracts
-- **Session Cookie:** Issued by ASP.NET Core Identity (`.AspNetCore.Identity.Application`). Flagged `HttpOnly`, `Secure`, `SameSite=Lax`. Session tokens are never exposed to JavaScript or stored in `localStorage` or `sessionStorage`.
-- **CSRF Defense:** Unsafe mutating HTTP methods (`POST`, `PUT`, `PATCH`, `DELETE`) require the `X-XSRF-TOKEN` header validated against the server-generated anti-forgery cookie.
-- **Account Lockout & Enumeration Protection:** 5 consecutive failed login attempts trigger a 5-minute lockout (HTTP 429). Error messages are generic to prevent email enumeration.
-- **Suspended Tenant Guard:** If a restaurant has been suspended by Platform Admin, the login attempt succeeds in identifying the account but responds with HTTP 403 Forbidden: *"حساب المطعم معلق حالياً، يرجى التواصل مع إدارة المنصة"* without disclosing internal administrative details.
+### Security & Session Contracts (F03 Implementation Alignment)
+- **Session Cookie:** Issued by ASP.NET Core Identity as `__Host-DigitalMenu.Session`. Flags: `HttpOnly = true`, `Secure = true` (Always), `SameSite = SameSiteMode.Strict`, `Path = "/"`. Fixed absolute lifetime of 30 minutes (`ExpireTimeSpan = 30m`, `SlidingExpiration = false`). Security stamp validation executes on each request (`ValidationInterval = TimeSpan.Zero`) without extending absolute session expiry (`context.ShouldRenew = false`). Tokens are never accessible to client scripts or stored in `localStorage`/`sessionStorage`.
+- **CSRF Handshake & Defense:** Prior to authentication, frontend initiates `GET /api/v1/auth/csrf` (over HTTPS) to retrieve the anti-forgery token cookie `XSRF-TOKEN` and header name `X-XSRF-TOKEN`. Mutation requests include `X-XSRF-TOKEN` validated against the encrypted `__Host-DigitalMenu.Antiforgery` cookie (`HttpOnly`, `Secure`, `SameSite=Strict`). Post-login, CSRF handshake is refreshed to bind the token to the newly established authenticated principal.
+- **Account Lockout & Anti-Enumeration Invariants:** ASP.NET Core Identity is configured with `MaxFailedAccessAttempts = 5` and `DefaultLockoutTimeSpan = 15 minutes`. To prevent user enumeration and timing side-channels, `POST /api/v1/auth/login` returns uniform HTTP 401 ProblemDetails (`title: "Invalid credentials."`) for:
+  1. Non-existent email addresses (a dummy password hash is calculated to equalize execution time).
+  2. Incorrect passwords.
+  3. Locked-out accounts (5 consecutive failures).
+  4. Accounts belonging to inactive or suspended restaurants (`restaurant.Status != "Active"`).
+- **No Account-Revealing 403 on Login:** Login **never** returns HTTP 403 for suspended or deactivated accounts; doing so would confirm valid credentials and expose tenant administrative status to unauthenticated attackers. Suspended accounts simply receive the generic 401 ProblemDetails.
+- **Rate Limiting:** `auth` policy enforces a fixed window partition limiter per client IP: 10 permits per 1-minute window, returning HTTP 429 ProblemDetails (`title: "Too many requests."`).
+- **Profile-Based Role Routing:** Routing to `/platform` (Platform Admin) or `/admin` (Restaurant Owner) is determined exclusively by the server via `GET /api/v1/auth/me` inspection of identity claims and active restaurant memberships. The login screen never offers client-selected roles.
 
 ---
 
@@ -63,10 +75,14 @@ The Digital Menu SaaS administration suite comprises two distinct operational ti
 ### Screen 1: Owner Authentication (`/login`)
 - **Visual Design:** Centered card on canvas background (`#0b1329`), featuring the SaaS brand mark, bilingual title, form inputs, and clear password visibility toggle.
 - **Interactive State Handlers:**
-  - Email format validation with immediate feedback.
+  - Email format validation (RFC 5322 regex, max 256 characters) with immediate feedback.
+  - Password field validation (min 12 characters matching backend Identity policy, max 256).
   - Show/hide password eye icon with accessible `aria-label`.
   - Loading spinner on submit button with `aria-busy="true"`.
   - Error banner rendering RFC 7807 `ProblemDetails` error messages safely.
+  - Generic 401 handling: displays generic "Invalid credentials." / "البريد الإلكتروني أو كلمة المرور غير صحيحة" for unknown, bad password, suspended, or locked accounts without revealing account status.
+  - Rate limiting 429 handling: displays cooldown message ("Too many requests. Please wait 60 seconds.") on HTTP 429 rejection.
+  - Automatic post-login flow: HTTP 204 response -> fresh CSRF handshake -> `GET /api/v1/auth/me` -> automatic routing to `/admin` (Owner) or `/platform` (Platform Admin).
 
 ---
 
@@ -128,25 +144,33 @@ The Digital Menu SaaS administration suite comprises two distinct operational ti
   - Restaurant Logo uploader with live thumbnail preview.
   - Primary Brand Color palette with 6 preset restaurant swatches (Amber Gold `#d97706`, Emerald Green `#059669`, Crimson `#dc2626`, Royal Blue `#2563eb`, Deep Indigo `#4f46e5`, Charcoal `#334155`).
   - Custom HEX color input with live color picker.
-- **Live WCAG Contrast Calculator:**
-  - Automatically calculates relative luminance and contrast ratio against white background.
-  - Displays WCAG AA / AAA compliance badge (e.g. `نسبة التباين 5.8:1 - متوافق مع WCAG AA / AAA`).
-  - Warns the owner if the selected brand color fails contrast targets (< 4.5:1).
-- **Live Menu Card Preview:**
-  - Real-time interactive preview card showing how the public dish card renders with the chosen brand color and logo.
+- **Standard WCAG 2.1/2.2 Contrast Calculator:**
+  - Standard relative luminance formula with sRGB linearization:
+    For $C \in \{R, G, B\}$ normalized to $[0, 1]$: $C_{lin} = C / 12.92$ if $C \le 0.04045$, else $((C + 0.055) / 1.055)^{2.4}$.
+    Relative luminance: $L = 0.2126 \times R_{lin} + 0.7152 \times G_{lin} + 0.0722 \times B_{lin}$.
+  - Contrast ratio against white background ($L_w = 1.0$): $(1.05) / (L + 0.05)$.
+  - Compliance evaluation against official thresholds:
+    - Normal text: Level AA $\ge 4.5:1$, Level AAA $\ge 7.0:1$
+    - Large text ($\ge 18\text{pt} / 24\text{px}$ or $\ge 14\text{pt} / 18.66\text{px}$ bold): Level AA $\ge 3.0:1$, Level AAA $\ge 4.5:1$
+    - Graphical elements / UI components: Level AA $\ge 3.0:1$
+  - Displays accurate compliance badges (e.g., Amber Gold `#d97706` is $3.23:1$, passing AA for large text only, whereas Charcoal `#334155` is $9.61:1$, passing AAA for normal text).
+- **Strict Display-Only Menu Card Preview:**
+  - Real-time interactive preview card showing how public dish presentation renders with the chosen brand color and logo.
+  - Strictly display-only: shows availability badge ("متوفر" / "نفد") and "عرض التفاصيل". Zero ordering, cart, or payment language.
 
 ---
 
 ### Screen 6: Permanent QR Code Studio (`/admin/qr`)
 - **Permanent Slug Architecture:**
   - Explains the architectural principle: The QR code encodes a permanent, immutable short URL alias (e.g., `https://menu.example.com/m/7F82A9C`) that **never changes**, even if the restaurant changes its name, branding, or menu items.
-- **Vector SVG QR Code Display:**
-  - Scalable vector rendering with embedded restaurant logo in the center.
-  - High error correction level (Level H - 30%) ensuring scannability even with physical damage or low restaurant lighting.
-- **Export & Download Affordances:**
-  - `[ نسخ الرابط الدائم ]`: Copies short URL to clipboard.
-  - `[ تحميل PNG عالي الدقة (1024x1024) ]`: Instant download for digital sharing and social media.
-  - `[ تحميل SVG فيكتور للطباعة ]`: Infinite resolution vector export for restaurant table tents, acrylic stands, and outdoor banners.
+- **Functional Standards-Compliant QR Demonstration:**
+  - Generates authentic ISO/IEC 18004 Model 2 QR Code matrices encoding permanent mock short URLs (e.g., `https://menu.example.com/m/7F82A9C`).
+  - Verified scannability via mobile devices and QR scanners.
+  - Transparent labeling: clearly marked as a functional demonstration of the scannable permanent QR link.
+- **Genuine Export & Download Affordances:**
+  - `[ نسخ الرابط الدائم ]`: Copies the permanent short URL to clipboard via `navigator.clipboard.writeText` with textarea fallback.
+  - `[ تحميل PNG عالي الدقة (1024x1024) ]`: Generates and triggers actual high-resolution PNG image download rendered via HTML5 canvas with standard quiet zone margins.
+  - `[ تحميل SVG فيكتور للطباعة ]`: Generates and triggers actual scalable vector SVG file download with infinite resolution for print media.
 
 ---
 
@@ -160,7 +184,7 @@ The Digital Menu SaaS administration suite comprises two distinct operational ti
   - Data table with columns: `المطعم (Restaurant)`, `الرابط (Slug)`, `المالك (Owner Email)`, `الأقسام والأطباق (Catalog)`, `تاريخ الإنشاء (Created Date)`, `الحالة (Status)`, `الإجراءات (Actions)`.
 - **Tenant Suspension & Reactivation:**
   - Single-tap status toggle switch.
-  - Suspending a restaurant immediately disables its public menu access (returns HTTP 403 / suspended page) and blocks owner administrative access.
+  - Suspending a restaurant immediately disables its public menu access (returns HTTP 404 / suspended notice) and blocks owner administrative access (login returns generic HTTP 401 ProblemDetails to prevent account enumeration).
 - **Atomic Restaurant Provisioning Modal:**
   - Provisions restaurant and initial owner user in a single transactional step.
   - Fields: Restaurant Name (Arabic & English), Unique Slug, Owner Full Name, Owner Email, Initial Temporary Password.
@@ -330,7 +354,7 @@ export class CategoryStateService {
 | **P0** | Architecture Baseline & PRD Approval | Human Architect | Pending Approval ([Issue #4](https://github.com/AbdallahSay/digital-menu-saas/issues/4)) | **Blocks merge** of any production feature branches |
 | **F01** | Backend & SSR Scaffolding | Codex | Merged | Foundation established |
 | **F02** | Multi-Tenant Schema & Isolation Tests | Codex | Merged | Relational integrity and tenant tables available |
-| **F03** | Identity Cookie Sessions & CSRF Guards | Codex | In Progress ([PR #29](https://github.com/AbdallahSay/digital-menu-saas/pull/29)) | Required for authenticated `/login` and admin session routing |
+| **F03** | Identity Cookie Sessions & CSRF Guards | Codex | Merged ([PR #31](https://github.com/AbdallahSay/digital-menu-saas/pull/31)) | Authenticated `/login`, `__Host-DigitalMenu.Session`, and CSRF protection established |
 | **F06** | Category Management API Endpoints | Codex | Not Started | **Hard blocker for real Angular U02 implementation** |
 | **U01** | Mobile-First UI/UX Design System | Antigravity | Merged ([PR #25](https://github.com/AbdallahSay/digital-menu-saas/pull/25), [PR #27](https://github.com/AbdallahSay/digital-menu-saas/pull/27)) | Design tokens and preview merged into `main` |
 | **U02-PREP** | Interactive Admin Experience Prototype | Antigravity | **Completed** ([PR #28](https://github.com/AbdallahSay/digital-menu-saas/pull/28), updating to `design/U02-admin-prototypes`) | Ready for human architectural review |
