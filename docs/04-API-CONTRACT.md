@@ -135,6 +135,55 @@ unlocked account. F05 will authorize individual tenant resources; none are added
 Verification and production dependencies: [F04 report](../backend/F04-VERIFICATION.md).
 
 ## Owner endpoints (server-derived restaurant scope, no arbitrary tenant input)
+
+### F05 authorization infrastructure (no catalog/media HTTP endpoints yet)
+
+F05 adds `ITenantContext`, `ITenantDataSession`, the `TenantOwner` policy and
+`TenantRestaurantRequirement`. It does not implement the F06/F07/F08 endpoints
+below or introduce a test-only route. F03 `Owner` remains a global role eligibility
+policy; owner feature groups must require **TenantOwner** and use the tenant data
+session for every resource operation. RestaurantId authorization alone is not a
+replacement for the scoped resource lookup.
+
+Tenant scope comes only from the named Identity cookie authentication result
+(signature/security-stamp validation), a current eligible account, exactly one
+active Owner membership, and an Active restaurant. Two active memberships are
+ambiguous even if one restaurant is suspended. Zero, inactive, locked,
+passwordless, MFA-enabled or expired/revoked identities fail closed. PlatformAdmin
+has no implicit owner-scope bypass. Headers/query/body/role or tenant claims never
+select the tenant. No owner tenant-selector endpoint or mutable scope setter exists.
+
+The data session offers bounded (1..100) projected reads, owned tracked lookup,
+explicit rowversion lookup, staged writes and commit; no raw IQueryable, DbContext
+or bulk SQL is exposed. Each operation resolves current scope. The session is
+request-scoped and cannot switch user/restaurant after binding. Before commit it
+revalidates user/stamp/membership/status inside the same Serializable SQL
+transaction as the writes. Key/tenant changes, detached foreign IDs, foreign
+CategoryId/MenuItemId and non-canonical/foreign media keys are rejected; only
+Restaurant/Category/MenuItem/MenuItemImage/RestaurantSettings are allowed. Owners
+cannot provision/delete restaurants or change Status/Slug/PublicCode/CreatedAtUtc
+through this boundary. Image ObjectKey remains immutable, including detached edits.
+
+Generic error mapping via TenantBoundaryException: missing authentication 401;
+invalid/ambiguous scope 403; foreign/missing resources/associations 404 with the same
+`Resource not found.` title; stale rowversion 412; SQL deadlock contention 409;
+invalid bounded read/constraint input 400. An invalidated F03 cookie can be rejected
+with 401 before tenant resolution. Error responses are no-store ProblemDetails,
+without tenant/resource IDs, membership counts, SQL, exception detail or secrets.
+Filtered lists return an empty result for foreign predicates; detail/mutation
+lookups reject with 404. Denied batches clear pending changes and cannot commit
+earlier tracked edits accidentally. Successful writes and audit are atomic.
+
+This is authorization/persistence infrastructure, not field-validation/business
+CRUD. F06/F07/F08 must still implement DTO allowlists, validation, pagination/sort,
+soft deletion, category deletion conflict, public-version invalidation, and storage
+validation. Use the explicit expected-rowversion lookup for client PATCH/PUT
+preconditions (versioned entities); internal snapshot concurrency alone does not
+detect a stale client payload. Media namespace validation does not prove that a
+blob exists or has valid content; F08 must verify storage metadata/ownership and
+both nested route IDs before file operations. Full future HTTP matrix and current
+executed SQL evidence: [F05 verification](../backend/F05-VERIFICATION.md).
+
 - `GET /api/v1/admin/restaurant` / `PATCH /api/v1/admin/restaurant` — details/branding/basic contact.
 - `GET /api/v1/admin/categories` / `POST /api/v1/admin/categories`.
 - `PUT /api/v1/admin/categories/{id}` / `DELETE /api/v1/admin/categories/{id}` — deletion conflict if linked active items.

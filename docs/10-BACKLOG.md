@@ -9,7 +9,7 @@ Each item is a PR-sized unit. Agent must propose technical implementation and af
 | F02 | Persistence | SQL Server schema migrations, constraints and indexes, two-tenant dev/test fixtures | SQL integration tests; tenant relation FK denial |
 | F03 | Identity | Identity, cookie/CSRF, platform/owner auth, bootstrap controls, rate limits | Authentication/CSRF/lockout integration tests |
 | F04 | Platform | Provision restaurant + owner, active/suspended status, audit | Platform policies, negative role tests, audit record |
-| F05 | Tenant security | Server-resolved tenant context, scoped repos/commands, cross-tenant API tests | Complete negative matrix across entities |
+| F05 | Tenant security | Server-resolved tenant context, scoped queries/writes, resource/association guards | SQL adversarial service-boundary matrix now; actual HTTP matrix with F06/F07/F08 (no invented test routes) |
 | F06 | Catalog API | Categories CRUD, validation, sorting/publish | Authorization, validation, concurrency tests |
 | F07 | Catalog API | Items CRUD, publish/availability, soft delete | Cross-tenant FK tests and public visibility tests |
 | F08 | Media | Image normalization, tenant storage abstraction, upload endpoints | MIME spoof/oversize/foreign item tests |
