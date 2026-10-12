@@ -1,0 +1,101 @@
+
+name: Planning Contracts
+
+on:
+  push:
+    branches:
+      - chore/github-bootstrap-templates
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate planning files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Validate project manifest
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          required = [
+              "AGENTS.md",
+              "README.md",
+              "docs/01-PRD.md",
+              "docs/06-SECURITY.md",
+              "docs/12-SEO-STRATEGY.md",
+              "docs/13-SEO-PERFORMANCE-GATES.md",
+              "automation/tasks.json",
+          ]
+
+          missing = [
+              path for path in required
+              if not Path(path).is_file()
+          ]
+
+          assert not missing, f"Missing: {missing}"
+
+          data = json.loads(
+              Path("automation/tasks.json")
+              .read_text(encoding="utf-8")
+          )
+
+          assert data["schema_version"] == 1
+          assert data["requires_production_human_approval"] is True
+
+          tasks = data["tasks"]
+          ids = [task["id"] for task in tasks]
+
+          assert tasks, "No tasks defined"
+          assert len(ids) == len(set(ids)), "Duplicate task IDs"
+
+          graph = {
+              task["id"]: task.get("depends_on", [])
+              for task in tasks
+          }
+
+          for task in tasks:
+              for dependency in graph[task["id"]]:
+                  assert dependency in graph, (
+                      f"Unknown dependency: {dependency}"
+                  )
+
+              if task["risk"] in ("high", "critical"):
+                  assert task.get("human_approval") is True
+
+          visited = set()
+          visiting = set()
+
+          def visit(task_id):
+              if task_id in visited:
+                  return
+              assert task_id not in visiting, (
+                  f"Circular dependency: {task_id}"
+              )
+
+              visiting.add(task_id)
+              for dependency in graph[task_id]:
+                  visit(dependency)
+
+              visiting.remove(task_id)
+              visited.add(task_id)
+
+          for task_id in graph:
+              visit(task_id)
+
+          print("Planning validation passed")
+          PY
