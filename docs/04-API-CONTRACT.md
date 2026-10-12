@@ -236,6 +236,57 @@ server-resolved `ITenantContext`, never privileged persistence.
 
 Verification and reproduction: [F06 report](../backend/F06-VERIFICATION.md).
 
+### F07 implemented item contract
+
+All `/api/v1/admin/items` routes require the existing authenticated cookie,
+`TenantOwner`, HTTPS and no-store; POST/PUT/DELETE require identity-bound CSRF.
+Only ITenantDataSession is used for data operations and the server resolves scope.
+
+- GET collection: `page` default 1 (1..100000), `pageSize` default 20 (1..100),
+  optional `categoryId` and `search` (trimmed literal substring, max 150, no control
+  characters). Search covers Arabic/English names and descriptions using SQL
+  collation. `%`, `_`, `[` are literal text, not wildcard expressions. SQL sorts
+  by SortOrder then Id before offset pagination. Response `{ page, pageSize, items }`,
+  no total count/snapshot. Only own non-deleted items appear, including drafts and
+  unavailable items. Foreign/missing/deleted category filters return generic 404.
+- GET `/{id}` returns the current item DTO. Foreign/missing/deleted item IDs use
+  indistinguishable 404 ProblemDetails. Successful reads make no writes.
+- POST body: `{ categoryId, nameAr, nameEn?, descriptionAr?, descriptionEn?,
+  price, currencyCode, sortOrder, isPublished, isAvailable }`. The referenced
+  category must be owned and non-deleted; unpublished categories are valid.
+  Arabic name required and nonblank, English optional, names max 150. Descriptions
+  optional, max 2000. Text is trimmed; optional blank becomes null. Names reject
+  control characters; descriptions permit CR/LF/tab but no other controls.
+  Text is plain JSON, never HTML. Names/descriptions are not required to contain
+  a particular script; rendering must safely escape them.
+- Price is required, 0..9999999999999999.99 with at most two significant decimal
+  places; no silent rounding. CurrencyCode must be exactly `EGP`. SortOrder is
+  required integer 0..2147483647, ties allowed. Publish/availability booleans are
+  required explicitly. 201 returns DTO and retrievable item Location.
+- PUT `/{id}` requires the full POST fields plus eight-byte base64 `rowVersion`;
+  can move to another owned non-deleted category. 200 returns updated DTO.
+- DELETE `/{id}` takes JSON `{ rowVersion }`, soft-deletes and returns 204.
+  Images are retained; upload/storage/delete lifecycle belongs to F08.
+- DTO fields: `id`, `categoryId`, `nameAr`, `nameEn`, `descriptionAr`, `descriptionEn`,
+  `price`, `currencyCode`, `sortOrder`, `isPublished`, `isAvailable`, `rowVersion`.
+  No restaurant/user IDs, timestamps, raw image keys or administrative metadata.
+  Unknown JSON fields on every write (including client IDs/roles/tenant fields)
+  return 400. HTTP item request body is capped at 32 KiB to accommodate escaped
+  bilingual descriptions at the declared maximum; other existing limits remain.
+- Malformed/range/currency/version input returns 400; foreign/missing/deleted
+  resource or parent returns generic 404. Owned stale client/concurrent SQL
+  rowversion returns 412; deadlock contention returns 409. Item ownership is
+  checked before version/semantic validation. F05 transaction revalidation,
+  audits, SQL integrity and F06 category-linked-item 409 remain enforced.
+- Every accepted item mutation conservatively increments PublishedMenuVersion
+  and restaurant UpdatedAtUtc once per transaction, including identical/draft
+  changes; item write and audit commit atomically. Failures roll back all writes.
+  Public visibility in F09 requires active/published restaurant, published category,
+  published/available/non-deleted item; this admin API does not implement F09.
+  Future F09/S03 caches must consume the version. No schema/cache/package added.
+
+Evidence and local commands: [F07 verification](../backend/F07-VERIFICATION.md).
+
 ## Public endpoints
 - `GET /api/v1/public/menus/{publicCode}?lang=ar|en` — active + published restaurant only; visible categories and items only; response `200`, `404` when nonexistent or intentionally hidden (exact unavailable strategy clarified before coding); cache only response safe for public reuse. Search in frontend over visible menu.
 
