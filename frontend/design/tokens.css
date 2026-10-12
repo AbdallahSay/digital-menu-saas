@@ -17,9 +17,10 @@
   --color-brand-forest: #193630;
   --color-brand-forest-subtle: #eff5f2;
   --color-brand-ivory: #faf7f0;
-  --color-brand-terracotta: #ca7655;
-  --color-brand-terracotta-hover: #b56243;
+  --color-brand-terracotta: #a84e32;
+  --color-brand-terracotta-hover: #933e24;
   --color-brand-terracotta-subtle: #fbe6e2;
+  --color-brand-terracotta-text: #8f3c22;
 
   /* Tenant Theme Dynamic Slot */
   --tenant-primary: var(--color-brand-primary);
@@ -39,7 +40,7 @@
   /* Typography / Text Colors */
   --color-text-primary: #193630;
   --color-text-secondary: #4a5d57;
-  --color-text-muted: #6b7d77;
+  --color-text-muted: #4d615b;
   --color-text-inverse: #ffffff;
   --color-text-disabled: #98aaa3;
 

@@ -42,7 +42,7 @@ interface ServiceRequestForm {
         <nav class="desktop-nav" aria-label="التنقل الرئيسي">
           <a href="#features" class="nav-link">المميزات</a>
           <a href="#how-it-works" class="nav-link">الخدمة بتشتغل إزاي؟</a>
-          <a href="#audience" class="nav-link">لمن صُممت؟</a>
+          <a href="#audience" class="nav-link">مناسبة لمين؟</a>
           <a href="#pricing" class="nav-link">الأسعار</a>
           <a href="#faq" class="nav-link">الأسئلة الشائعة</a>
           <a routerLink="/r/demo" class="nav-link nav-link-highlight">منيو تجريبي ☕</a>
@@ -94,7 +94,7 @@ interface ServiceRequestForm {
           <a href="#how-it-works" class="mobile-nav-link" (click)="closeMobileNav()"
             >الخدمة بتشتغل إزاي؟</a
           >
-          <a href="#audience" class="mobile-nav-link" (click)="closeMobileNav()">لمن صُممت؟</a>
+          <a href="#audience" class="mobile-nav-link" (click)="closeMobileNav()">مناسبة لمين؟</a>
           <a href="#pricing" class="mobile-nav-link" (click)="closeMobileNav()">الأسعار</a>
           <a href="#faq" class="mobile-nav-link" (click)="closeMobileNav()">الأسئلة الشائعة</a>
           <a
@@ -172,56 +172,23 @@ interface ServiceRequestForm {
               <div class="table-stand-mockup">
                 <div class="stand-acrylic">
                   <div class="stand-qr-box">
-                    <!-- SVG QR Representation -->
-                    <svg viewBox="0 0 100 100" width="80" height="80" fill="currentColor">
-                      <!-- Position detection patterns -->
-                      <rect
-                        x="5"
-                        y="5"
-                        width="30"
-                        height="30"
-                        rx="4"
-                        fill="none"
-                        stroke="#193630"
-                        stroke-width="6"
+                    <!-- Real Scannable /r/demo Vector QR Code -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 25 25"
+                      width="80"
+                      height="80"
+                      shape-rendering="crispEdges"
+                      aria-label="كود QR تجريبي لتصفح المنيو"
+                    >
+                      <rect width="25" height="25" fill="#ffffff" />
+                      <path
+                        d="M2,2h1v1h-1z M3,2h1v1h-1z M4,2h1v1h-1z M5,2h1v1h-1z M6,2h1v1h-1z M7,2h1v1h-1z M8,2h1v1h-1z M10,2h1v1h-1z M11,2h1v1h-1z M16,2h1v1h-1z M17,2h1v1h-1z M18,2h1v1h-1z M19,2h1v1h-1z M20,2h1v1h-1z M21,2h1v1h-1z M22,2h1v1h-1z M2,3h1v1h-1z M8,3h1v1h-1z M12,3h1v1h-1z M16,3h1v1h-1z M22,3h1v1h-1z M2,4h1v1h-1z M4,4h1v1h-1z M5,4h1v1h-1z M6,4h1v1h-1z M8,4h1v1h-1z M10,4h1v1h-1z M11,4h1v1h-1z M16,4h1v1h-1z M18,4h1v1h-1z M19,4h1v1h-1z M20,4h1v1h-1z M22,4h1v1h-1z M2,5h1v1h-1z M4,5h1v1h-1z M5,5h1v1h-1z M6,5h1v1h-1z M8,5h1v1h-1z M11,5h1v1h-1z M13,5h1v1h-1z M16,5h1v1h-1z M18,5h1v1h-1z M19,5h1v1h-1z M20,5h1v1h-1z M22,5h1v1h-1z M2,6h1v1h-1z M4,6h1v1h-1z M5,6h1v1h-1z M6,6h1v1h-1z M8,6h1v1h-1z M10,6h1v1h-1z M11,6h1v1h-1z M12,6h1v1h-1z M14,6h1v1h-1z M16,6h1v1h-1z M18,6h1v1h-1z M19,6h1v1h-1z M20,6h1v1h-1z M22,6h1v1h-1z M2,7h1v1h-1z M8,7h1v1h-1z M11,7h1v1h-1z M12,7h1v1h-1z M14,7h1v1h-1z M16,7h1v1h-1z M22,7h1v1h-1z M2,8h1v1h-1z M3,8h1v1h-1z M4,8h1v1h-1z M5,8h1v1h-1z M6,8h1v1h-1z M7,8h1v1h-1z M8,8h1v1h-1z M10,8h1v1h-1z M12,8h1v1h-1z M14,8h1v1h-1z M16,8h1v1h-1z M17,8h1v1h-1z M18,8h1v1h-1z M19,8h1v1h-1z M20,8h1v1h-1z M21,8h1v1h-1z M22,8h1v1h-1z M11,9h1v1h-1z M13,9h1v1h-1z M14,9h1v1h-1z M3,10h1v1h-1z M6,10h1v1h-1z M8,10h1v1h-1z M12,10h1v1h-1z M13,10h1v1h-1z M18,10h1v1h-1z M20,10h1v1h-1z M22,10h1v1h-1z M2,11h1v1h-1z M4,11h1v1h-1z M5,11h1v1h-1z M6,11h1v1h-1z M11,11h1v1h-1z M12,11h1v1h-1z M16,11h1v1h-1z M17,11h1v1h-1z M19,11h1v1h-1z M22,11h1v1h-1z M3,12h1v1h-1z M8,12h1v1h-1z M9,12h1v1h-1z M10,12h1v1h-1z M11,12h1v1h-1z M14,12h1v1h-1z M18,12h1v1h-1z M21,12h1v1h-1z M22,12h1v1h-1z M2,13h1v1h-1z M3,13h1v1h-1z M4,13h1v1h-1z M5,13h1v1h-1z M6,13h1v1h-1z M7,13h1v1h-1z M11,13h1v1h-1z M16,13h1v1h-1z M18,13h1v1h-1z M19,13h1v1h-1z M22,13h1v1h-1z M3,14h1v1h-1z M5,14h1v1h-1z M7,14h1v1h-1z M8,14h1v1h-1z M9,14h1v1h-1z M11,14h1v1h-1z M14,14h1v1h-1z M16,14h1v1h-1z M17,14h1v1h-1z M21,14h1v1h-1z M10,15h1v1h-1z M13,15h1v1h-1z M15,15h1v1h-1z M17,15h1v1h-1z M18,15h1v1h-1z M20,15h1v1h-1z M21,15h1v1h-1z M22,15h1v1h-1z M2,16h1v1h-1z M3,16h1v1h-1z M4,16h1v1h-1z M5,16h1v1h-1z M6,16h1v1h-1z M7,16h1v1h-1z M8,16h1v1h-1z M12,16h1v1h-1z M13,16h1v1h-1z M15,16h1v1h-1z M16,16h1v1h-1z M17,16h1v1h-1z M18,16h1v1h-1z M19,16h1v1h-1z M22,16h1v1h-1z M2,17h1v1h-1z M8,17h1v1h-1z M11,17h1v1h-1z M13,17h1v1h-1z M14,17h1v1h-1z M15,17h1v1h-1z M22,17h1v1h-1z M2,18h1v1h-1z M4,18h1v1h-1z M5,18h1v1h-1z M6,18h1v1h-1z M8,18h1v1h-1z M10,18h1v1h-1z M11,18h1v1h-1z M12,18h1v1h-1z M13,18h1v1h-1z M15,18h1v1h-1z M16,18h1v1h-1z M17,18h1v1h-1z M21,18h1v1h-1z M22,18h1v1h-1z M2,19h1v1h-1z M4,19h1v1h-1z M5,19h1v1h-1z M6,19h1v1h-1z M8,19h1v1h-1z M16,19h1v1h-1z M17,19h1v1h-1z M18,19h1v1h-1z M21,19h1v1h-1z M2,20h1v1h-1z M4,20h1v1h-1z M5,20h1v1h-1z M6,20h1v1h-1z M8,20h1v1h-1z M11,20h1v1h-1z M12,20h1v1h-1z M14,20h1v1h-1z M17,20h1v1h-1z M18,20h1v1h-1z M20,20h1v1h-1z M22,20h1v1h-1z M2,21h1v1h-1z M8,21h1v1h-1z M10,21h1v1h-1z M12,21h1v1h-1z M16,21h1v1h-1z M21,21h1v1h-1z M2,22h1v1h-1z M3,22h1v1h-1z M4,22h1v1h-1z M5,22h1v1h-1z M6,22h1v1h-1z M7,22h1v1h-1z M8,22h1v1h-1z M14,22h1v1h-1z M16,22h1v1h-1z M17,22h1v1h-1z M18,22h1v1h-1z M21,22h1v1h-1z M22,22h1v1h-1z"
+                        fill="#193630"
                       />
-                      <rect x="15" y="15" width="10" height="10" fill="#193630" />
-                      <rect
-                        x="65"
-                        y="5"
-                        width="30"
-                        height="30"
-                        rx="4"
-                        fill="none"
-                        stroke="#193630"
-                        stroke-width="6"
-                      />
-                      <rect x="75" y="15" width="10" height="10" fill="#193630" />
-                      <rect
-                        x="5"
-                        y="65"
-                        width="30"
-                        height="30"
-                        rx="4"
-                        fill="none"
-                        stroke="#193630"
-                        stroke-width="6"
-                      />
-                      <rect x="15" y="75" width="10" height="10" fill="#193630" />
-                      <!-- Pattern modules -->
-                      <rect x="42" y="10" width="8" height="8" fill="#0f766e" />
-                      <rect x="45" y="25" width="6" height="6" fill="#193630" />
-                      <rect x="10" y="45" width="8" height="6" fill="#0f766e" />
-                      <rect x="25" y="45" width="8" height="8" fill="#193630" />
-                      <rect x="42" y="42" width="16" height="16" rx="2" fill="#ca7655" />
-                      <rect x="65" y="45" width="12" height="8" fill="#193630" />
-                      <rect x="85" y="45" width="6" height="12" fill="#0f766e" />
-                      <rect x="45" y="65" width="8" height="10" fill="#193630" />
-                      <rect x="65" y="65" width="10" height="8" fill="#0f766e" />
-                      <rect x="80" y="75" width="12" height="12" fill="#193630" />
                     </svg>
                   </div>
-                  <span class="stand-caption">امسح لتصفح المنيو</span>
+                  <span class="stand-caption">معاينة توضيحية لكود الطاولة</span>
                 </div>
                 <div class="stand-base"></div>
               </div>
@@ -460,7 +427,7 @@ interface ServiceRequestForm {
       <section id="audience" class="section-padded bg-muted">
         <div class="container">
           <div class="section-header text-center">
-            <span class="badge badge-forest">لمن صُممت؟</span>
+            <span class="badge badge-forest">مناسبة لمين؟</span>
             <h2 class="section-title">مصمم لكافيهات ومطاعم بتفكر لقدام</h2>
             <p class="section-subtitle">
               حلول عملية تناسب كل مكان بيهتم بتقديم تجربة شيك ومريحة لزبائنه.
@@ -539,7 +506,7 @@ interface ServiceRequestForm {
 
             <!-- Tier 2 (Highlighted) -->
             <div class="pricing-card card-featured">
-              <div class="featured-badge">الأكثر طلباً</div>
+              <div class="featured-badge">باقة متكاملة</div>
               <div class="pricing-header">
                 <h3 class="tier-name">باقة المطاعم الاحترافية</h3>
                 <p class="tier-desc">للمطاعم والمقاهي المتنامية الباحثة عن تميز كامل.</p>

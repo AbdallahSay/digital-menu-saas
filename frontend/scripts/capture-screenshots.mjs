@@ -1,7 +1,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 
-mkdirSync('screenshots', { recursive: true });
+mkdirSync('screenshots/after', { recursive: true });
 
 const executablePath = process.env['CHROME_PATH'] || undefined;
 const browser = await chromium.launch({
@@ -16,8 +16,8 @@ async function capture(urlPath, filename, width, height) {
   });
   const page = await context.newPage();
   await page.goto(`http://localhost:4000${urlPath}`, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: `screenshots/${filename}`, fullPage: false });
-  console.log(`Saved screenshots/${filename} (${width}x${height})`);
+  await page.screenshot({ path: `screenshots/after/${filename}`, fullPage: false });
+  console.log(`Saved screenshots/after/${filename} (${width}x${height})`);
   await context.close();
 }
 

@@ -5,8 +5,6 @@
  * Conforms to WCAG 2.2 AA, RTL-first, Mobile-first
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap');
-
 :root {
   /* Brand Palette */
   --color-brand-primary: #0f766e;
@@ -21,13 +19,14 @@
   --color-brand-forest-subtle: #eff5f2;
   --color-brand-forest-hover: #122823;
   --color-brand-ivory: #faf7f0;
-  --color-brand-terracotta: #ca7655;
-  --color-brand-terracotta-hover: #b56243;
+  --color-brand-terracotta: #a84e32;
+  --color-brand-terracotta-hover: #933e24;
   --color-brand-terracotta-subtle: #fbe6e2;
+  --color-brand-terracotta-text: #8f3c22;
 
   /* Accent / Terracotta Warmth */
-  --color-brand-accent: #ca7655;
-  --color-brand-accent-hover: #b56243;
+  --color-brand-accent: #a84e32;
+  --color-brand-accent-hover: #933e24;
   --color-brand-accent-subtle: #fbe6e2;
 
   /* Dynamic Tenant Slot */
@@ -48,7 +47,7 @@
   /* Text Colors */
   --color-text-primary: #193630;
   --color-text-secondary: #4a5d57;
-  --color-text-muted: #6b7d77;
+  --color-text-muted: #4d615b;
   --color-text-inverse: #ffffff;
   --color-text-disabled: #98aaa3;
 
@@ -268,7 +267,7 @@ h6,
 .btn-accent {
   background-color: var(--color-brand-accent);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgb(202 118 85 / 0.28);
+  box-shadow: 0 4px 12px rgb(168 78 50 / 0.28);
 }
 
 .btn-accent:hover {
@@ -300,7 +299,7 @@ h6,
 
 .badge-terracotta {
   background-color: var(--color-brand-terracotta-subtle);
-  color: var(--color-brand-terracotta);
+  color: var(--color-brand-terracotta-text);
 }
 
 .badge-forest {

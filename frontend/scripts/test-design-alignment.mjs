@@ -229,3 +229,62 @@ test('F03 Authentication Invariants Specification Assertions', () => {
   assert.equal(F03_CONTRACT.lockoutDurationMinutes, 15);
   assert.equal(F03_CONTRACT.csrfHeaderName, 'X-XSRF-TOKEN');
 });
+
+test('Design System Contrast Audits — Modern Cairo Boutique Palette WCAG 2.2 AA Compliance', () => {
+  // Test actual color pairs in production UI:
+  // 1. Terracotta button / badge text: White #FFFFFF on #A84E32
+  const whiteOnTerracotta = WcagContrast.evaluateWcagCompliance('#ffffff', '#a84e32');
+  assert.ok(
+    whiteOnTerracotta.ratio >= 4.5,
+    `White on Terracotta must be >= 4.5:1, got ${whiteOnTerracotta.ratio}`,
+  );
+  assert.equal(whiteOnTerracotta.normalTextAA, true);
+
+  // 2. Terracotta hover state: White #FFFFFF on #933E24
+  const whiteOnTerracottaHover = WcagContrast.evaluateWcagCompliance('#ffffff', '#933e24');
+  assert.ok(
+    whiteOnTerracottaHover.ratio >= 4.5,
+    `White on Terracotta Hover must be >= 4.5:1, got ${whiteOnTerracottaHover.ratio}`,
+  );
+  assert.equal(whiteOnTerracottaHover.normalTextAA, true);
+
+  // 3. Terracotta badge text on subtle background: #8F3C22 on #FBE6E2
+  const terracottaBadge = WcagContrast.evaluateWcagCompliance('#8f3c22', '#fbe6e2');
+  assert.ok(
+    terracottaBadge.ratio >= 4.5,
+    `Terracotta badge text on subtle bg must be >= 4.5:1, got ${terracottaBadge.ratio}`,
+  );
+  assert.equal(terracottaBadge.normalTextAA, true);
+
+  // 4. Muted text on Ivory canvas: #4D615B on #FAF7F0
+  const mutedOnIvory = WcagContrast.evaluateWcagCompliance('#4d615b', '#faf7f0');
+  assert.ok(
+    mutedOnIvory.ratio >= 4.5,
+    `Muted text on Ivory canvas must be >= 4.5:1, got ${mutedOnIvory.ratio}`,
+  );
+  assert.equal(mutedOnIvory.normalTextAA, true);
+
+  // 5. Muted text on White surface: #4D615B on #FFFFFF
+  const mutedOnWhite = WcagContrast.evaluateWcagCompliance('#4d615b', '#ffffff');
+  assert.ok(
+    mutedOnWhite.ratio >= 4.5,
+    `Muted text on White surface must be >= 4.5:1, got ${mutedOnWhite.ratio}`,
+  );
+  assert.equal(mutedOnWhite.normalTextAA, true);
+
+  // 6. Deep forest text on Ivory canvas: #193630 on #FAF7F0 (Primary body text)
+  const forestOnIvory = WcagContrast.evaluateWcagCompliance('#193630', '#faf7f0');
+  assert.ok(
+    forestOnIvory.ratio >= 7.0,
+    `Forest text on Ivory must be >= 7.0:1 (AAA), got ${forestOnIvory.ratio}`,
+  );
+  assert.equal(forestOnIvory.normalTextAAA, true);
+
+  // 7. Primary Teal on container: #115E59 on #CCFBF1
+  const tealOnContainer = WcagContrast.evaluateWcagCompliance('#115e59', '#ccfbf1');
+  assert.ok(
+    tealOnContainer.ratio >= 4.5,
+    `Teal on Primary Container must be >= 4.5:1, got ${tealOnContainer.ratio}`,
+  );
+  assert.equal(tealOnContainer.normalTextAA, true);
+});
