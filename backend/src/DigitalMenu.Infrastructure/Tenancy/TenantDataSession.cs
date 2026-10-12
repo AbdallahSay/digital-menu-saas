@@ -84,6 +84,30 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
         }
         catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
     }
+    public async Task<IReadOnlyList<TResult>> ReadItemsAsync<TResult>(Expression<Func<MenuItem, TResult>> projection,
+        int page, int pageSize, Guid? categoryId, string? search, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await BindAsync(cancellationToken);
+            if (page < 1 || page > 100000 || pageSize < 1 || pageSize > 100 ||
+                (search is not null && (search.Length > 150 || search.Any(char.IsControl))))
+                throw new TenantBoundaryException(TenantFailure.InvalidRequest);
+            if (categoryId is { } category && !await Owned<Category>().AnyAsync(c => c.Id == category && !c.IsDeleted, cancellationToken))
+                throw Missing();
+            var query = Owned<MenuItem>().AsNoTracking().Where(i => !i.IsDeleted);
+            if (categoryId is { } parent) query = query.Where(i => i.CategoryId == parent);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(i => i.NameAr.Contains(term) || (i.NameEn != null && i.NameEn.Contains(term)) ||
+                    (i.DescriptionAr != null && i.DescriptionAr.Contains(term)) || (i.DescriptionEn != null && i.DescriptionEn.Contains(term)));
+            }
+            return await query.OrderBy(i => i.SortOrder).ThenBy(i => i.Id).Skip((page - 1) * pageSize)
+                .Take(pageSize).Select(projection).ToListAsync(cancellationToken);
+        }
+        catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
+    }
     public async Task StageAsync<TEntity>(TEntity entity, bool isNew, CancellationToken cancellationToken = default) where TEntity : class
     {
         try
@@ -135,7 +159,7 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
                     await Owned<MenuItem>().AnyAsync(i => i.CategoryId == entry.Entity.Id && !i.IsDeleted, cancellationToken))
                     throw new TenantBoundaryException(TenantFailure.Conflict);
             }
-            if (categories.Length > 0)
+            if (categories.Length > 0 || db.ChangeTracker.Entries<MenuItem>().Any(e => e.State != EntityState.Unchanged))
             {
                 var restaurant = await Owned<Restaurant>().SingleAsync(cancellationToken);
                 restaurant.PublishedMenuVersion = checked(restaurant.PublishedMenuVersion + 1);

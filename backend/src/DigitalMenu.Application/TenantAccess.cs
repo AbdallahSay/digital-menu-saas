@@ -27,6 +27,8 @@ public sealed class TenantBoundaryException(TenantFailure failure) : Exception("
 // No raw IQueryable, DbContext, bulk SQL or client-selectable tenant scope escapes this boundary.
 public interface ITenantDataSession
 {
+    Task<IReadOnlyList<TResult>> ReadItemsAsync<TResult>(Expression<Func<DigitalMenu.Domain.MenuItem, TResult>> projection,
+        int page, int pageSize, Guid? categoryId, string? search, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TResult>> ReadCategoriesAsync<TResult>(Expression<Func<DigitalMenu.Domain.Category, TResult>> projection,
         int page, int pageSize, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TResult>> ReadAsync<TEntity, TResult>(Expression<Func<TEntity, bool>> filter,
