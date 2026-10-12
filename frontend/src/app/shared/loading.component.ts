@@ -35,6 +35,7 @@ import { Component, input, output } from '@angular/core';
             </div>
           </div>
           <span class="loading-text">{{ message() }}</span>
+          <span class="loading-subtext">بنجهّز لك تجربة استعراض سريعة وواضحة</span>
         </div>
       }
     </div>
@@ -45,7 +46,7 @@ import { Component, input, output } from '@angular/core';
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 160px;
+        min-height: 180px;
         padding: var(--space-6);
         width: 100%;
       }
@@ -59,7 +60,7 @@ import { Component, input, output } from '@angular/core';
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: var(--space-3);
+        gap: var(--space-2);
       }
       .spinner-wrapper {
         position: relative;
@@ -68,6 +69,7 @@ import { Component, input, output } from '@angular/core';
         display: flex;
         align-items: center;
         justify-content: center;
+        margin-bottom: var(--space-2);
       }
       .spinner-ring {
         position: absolute;
@@ -78,15 +80,20 @@ import { Component, input, output } from '@angular/core';
         animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
       }
       .spinner-logo {
-        color: var(--color-brand-primary);
+        color: var(--color-brand-forest);
         display: flex;
         align-items: center;
         justify-content: center;
       }
       .loading-text {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        font-weight: var(--font-weight-medium);
+        font-family: var(--font-family-display);
+        font-size: var(--font-size-base);
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-bold);
+      }
+      .loading-subtext {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
       }
       .error-icon {
         font-size: 2rem;
@@ -99,6 +106,7 @@ import { Component, input, output } from '@angular/core';
       .btn-retry {
         font-size: var(--font-size-sm);
         padding: 0.375rem 1rem;
+        margin-top: var(--space-2);
       }
       @keyframes spin {
         to {
@@ -115,9 +123,9 @@ import { Component, input, output } from '@angular/core';
   ],
 })
 export class LoadingComponent {
-  readonly message = input<string>('جاري التحميل...');
+  readonly message = input<string>('ثوانٍ قليلة، والمنيو جاهز...');
   readonly hasError = input<boolean>(false);
-  readonly errorMessage = input<string>('تعذر تحميل البيانات، يرجى إعادة المحاولة.');
+  readonly errorMessage = input<string>('حصل خطأ في تجهيز البيانات، تقدر تحاول تاني.');
   readonly retryable = input<boolean>(true);
   readonly compact = input<boolean>(false);
   readonly retry = output<void>();

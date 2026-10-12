@@ -38,12 +38,12 @@ describe('Application Core & Foundation', () => {
     const fixture = TestBed.createComponent(Marketing);
     fixture.detectChanges();
     const h1 = fixture.nativeElement.querySelector('h1');
-    expect(h1?.textContent).toContain('منيو مطعمك… بشكل أذكى وأجمل');
-    expect(fixture.nativeElement.textContent).toContain('خلّي عملاءك يشوفوا الأطباق والأسعار');
-    expect(fixture.nativeElement.textContent).toContain('المميزات الأساسية');
-    expect(fixture.nativeElement.textContent).toContain('كيف تعمل');
+    expect(h1?.textContent).toContain('منيو مطعمك، على مزاجك.');
+    expect(fixture.nativeElement.textContent).toContain('خلّي زوارك يشوفوا الأطباق والأسعار');
+    expect(fixture.nativeElement.textContent).toContain('كل اللي محتاجه في مكان واحد');
+    expect(fixture.nativeElement.textContent).toContain('الخدمة بتشتغل إزاي؟');
     expect(fixture.nativeElement.textContent).toContain('الأسئلة الشائعة');
-    expect(fixture.nativeElement.textContent).toContain('اطلب خدمتك الآن');
+    expect(fixture.nativeElement.textContent).toContain('اعمل منيو لمطعمك');
   });
 
   it('renders the 404 Not Found page with friendly illustration and links', async () => {
@@ -54,9 +54,9 @@ describe('Application Core & Foundation', () => {
     const fixture = TestBed.createComponent(NotFound);
     fixture.detectChanges();
     const h1 = fixture.nativeElement.querySelector('h1');
-    expect(h1?.textContent).toContain('الصفحة غير موجودة');
+    expect(h1?.textContent).toContain('الصفحة دي مش موجودة');
     expect(fixture.nativeElement.textContent).toContain('العودة للصفحة الرئيسية');
-    expect(fixture.nativeElement.textContent).toContain('تصفح منيو تجريبي');
+    expect(fixture.nativeElement.textContent).toContain('شوف المنيو التجريبي');
   });
 
   it('renders the accessible loading indicator and handles error retry', async () => {

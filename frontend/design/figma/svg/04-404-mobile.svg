@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+<style>text{font-family:Cairo,"Noto Kufi Arabic","Noto Sans Arabic",sans-serif}</style>
+<rect data-name="Card" x="0" y="0" width="390" height="844" rx="0" fill="#F8F7F2"/>
+<rect data-name="Brand mark" x="106" y="27" width="41" height="41" rx="11" fill="#0F766E"/>
+<text data-name="◈" x="126.5" y="67.25" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25" font-weight="700" fill="#FFFFFF">◈</text>
+<text data-name="DIGITAL MENU" x="157" y="56.92" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#12302A">DIGITAL MENU</text>
+<ellipse data-name="Circle" cx="196.0" cy="268.0" rx="140.0" ry="140.0" fill="#E2F5EB"/>
+<ellipse data-name="Circle" cx="195.0" cy="265.0" rx="99.0" ry="99.0" fill="#FFFFFF"/>
+<text data-name="404" x="198.0" y="296.79" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="67" font-weight="700" fill="#0F766E">404</text>
+<text data-name="⌁" x="196.5" y="349.91" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="43" font-weight="700" fill="#E8BB79">⌁</text>
+<text data-name="الصفحة مش موجودة" x="195.0" y="478.25" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25" font-weight="700" fill="#12302A">الصفحة مش موجودة</text>
+<text data-name="الرابط ممكن يكون غلط أو الصفحة اتن" x="195.0" y="521.18" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="400" fill="#667B74">الرابط ممكن يكون غلط أو الصفحة اتنقلت</text>
+<rect data-name="Button / العودة للرئيسية" x="27" y="564" width="336" height="54" rx="13" fill="#0F766E"/>
+<text data-name="العودة للرئيسية" x="195.0" y="597.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#FFFFFF">العودة للرئيسية</text>
+<rect data-name="Button / شاهد المنيو التجريبي" x="27" y="634" width="336" height="54" rx="13" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="شاهد المنيو التجريبي" x="195.0" y="667.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#0F766E">شاهد المنيو التجريبي</text>
+<rect data-name="Card" x="27" y="733" width="336" height="76" rx="15" fill="#E2F5EB"/>
+<text data-name="عندك مطعم؟ اطلب خدمة المنيو الرقمي" x="195.0" y="770.18" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="700" fill="#0F766E">عندك مطعم؟ اطلب خدمة المنيو الرقمي</text>
+<text data-name="رابط عام وآمن، بدون إظهار بيانات م" x="195.0" y="797.07" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="11" font-weight="400" fill="#667B74">رابط عام وآمن، بدون إظهار بيانات مطاعم مخفية</text>
+</svg>

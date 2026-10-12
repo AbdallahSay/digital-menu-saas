@@ -11,7 +11,7 @@ import { RouterLink } from '@angular/router';
       <div class="not-found-card">
         <div class="illustration-wrapper" aria-hidden="true">
           <svg viewBox="0 0 240 180" width="240" height="180" fill="none" class="illustration-svg">
-            <ellipse cx="120" cy="155" rx="90" ry="15" fill="#e2e8f0" />
+            <ellipse cx="120" cy="155" rx="90" ry="15" fill="#e6ded4" />
             <!-- Plate / Base -->
             <ellipse
               cx="120"
@@ -19,7 +19,7 @@ import { RouterLink } from '@angular/router';
               rx="80"
               ry="24"
               fill="#ffffff"
-              stroke="#cbd5e1"
+              stroke="#d2c5b7"
               stroke-width="3"
             />
             <ellipse
@@ -27,8 +27,8 @@ import { RouterLink } from '@angular/router';
               cy="136"
               rx="65"
               ry="18"
-              fill="#f8fafc"
-              stroke="#e2e8f0"
+              fill="#faf7f0"
+              stroke="#e6ded4"
               stroke-width="2"
             />
             <!-- Acrylic Table Stand with Broken / Missing QR -->
@@ -39,7 +39,7 @@ import { RouterLink } from '@angular/router';
               height="90"
               rx="8"
               fill="#ffffff"
-              stroke="#0f766e"
+              stroke="#193630"
               stroke-width="3"
             />
             <path d="M85 55 h70" stroke="#ccfbf1" stroke-width="8" />
@@ -54,12 +54,12 @@ import { RouterLink } from '@angular/router';
               font-weight="bold"
               fill="#0f766e"
               text-anchor="middle"
-              font-family="sans-serif"
+              font-family="'Alexandria', sans-serif"
             >
               ؟
             </text>
-            <!-- 404 Badge -->
-            <rect x="96" y="22" width="48" height="20" rx="10" fill="#d97706" />
+            <!-- 404 Badge in Terracotta -->
+            <rect x="96" y="22" width="48" height="20" rx="10" fill="#ca7655" />
             <text
               x="120"
               y="36"
@@ -74,16 +74,22 @@ import { RouterLink } from '@angular/router';
           </svg>
         </div>
 
-        <h1 class="not-found-title">الصفحة غير موجودة</h1>
+        <span class="badge badge-terracotta not-found-badge">رابط اتوه من المنيو</span>
+        <h1 class="not-found-title">الصفحة دي مش موجودة</h1>
         <p class="not-found-desc">
-          عذراً، الرابط الذي تحاول الوصول إليه غير موجود أو ربما تم نقله. يمكنك العودة للصفحة
-          الرئيسية أو استعراض القائمة التجريبية للمنصة.
+          ممكن الرابط اتغير، أو الصفحة اللي بتدور عليها اتحذفت. لسه تقدر تستكشف المنيو وتشوف
+          خدماتنا.
         </p>
 
         <div class="actions-group">
           <a routerLink="/" class="btn btn-primary"> العودة للصفحة الرئيسية </a>
-          <a routerLink="/r/demo" class="btn btn-secondary"> تصفح منيو تجريبي </a>
-          <a href="/#request" class="btn btn-accent"> طلب خدمة لمطعمك </a>
+          <a routerLink="/r/demo" class="btn btn-secondary"> شوف المنيو التجريبي </a>
+          <a href="/#request" class="btn btn-accent"> اطلب تفاصيل الخدمة </a>
+        </div>
+
+        <div class="not-found-owner-note">
+          <span>صاحب مطعم أو كافيه؟</span>
+          <a href="/#request">خلّي منيوك رقمي وسهل التحديث</a>
         </div>
       </div>
     </main>
@@ -111,28 +117,33 @@ import { RouterLink } from '@angular/router';
         box-shadow: var(--shadow-lg);
       }
       .illustration-wrapper {
-        margin-bottom: var(--space-4);
+        margin-bottom: var(--space-3);
       }
       .illustration-svg {
         max-width: 100%;
         height: auto;
       }
+      .not-found-badge {
+        margin-bottom: var(--space-3);
+      }
       .not-found-title {
+        font-family: var(--font-family-display);
         font-size: var(--font-size-3xl);
         font-weight: var(--font-weight-extrabold);
-        color: var(--color-text-primary);
+        color: var(--color-brand-forest);
         margin: 0 0 var(--space-3);
       }
       .not-found-desc {
         font-size: var(--font-size-base);
         color: var(--color-text-secondary);
         line-height: var(--line-height-relaxed);
-        margin: 0 0 var(--space-8);
+        margin: 0 0 var(--space-6);
       }
       .actions-group {
         display: flex;
         flex-direction: column;
         gap: var(--space-3);
+        margin-bottom: var(--space-6);
       }
       @media (min-width: 640px) {
         .actions-group {
@@ -141,12 +152,30 @@ import { RouterLink } from '@angular/router';
           flex-wrap: wrap;
         }
       }
+      .not-found-owner-note {
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--color-border-subtle);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+      }
+      .not-found-owner-note a {
+        color: var(--color-brand-primary);
+        font-weight: var(--font-weight-bold);
+        text-decoration: none;
+      }
+      .not-found-owner-note a:hover {
+        text-decoration: underline;
+      }
     `,
   ],
 })
 export class NotFound {
   constructor() {
-    inject(Title).setTitle('الصفحة غير موجودة | القائمة الرقمية');
+    inject(Title).setTitle('الصفحة دي مش موجودة | القائمة الرقمية');
     inject(Meta).updateTag({ name: 'robots', content: 'noindex, nofollow' });
   }
 }
