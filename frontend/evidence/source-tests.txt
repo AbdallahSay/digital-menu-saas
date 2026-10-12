@@ -1,0 +1,19 @@
+
+> digital-menu@0.0.0 test:html
+> node --test scripts/source-html.mjs
+
+✔ raw source contains the public fixture and truthful SEO metadata without executing JS (212.5774ms)
+✔ QR is one same-origin 302 hop; all unknown routes are actual 404s (34.6552ms)
+✔ marketing is prerendered, admin is CSR and noindex, proxy reaches .NET (117.7446ms)
+✔ sitemap contains only canonical fixture and forged Host cannot poison canonical (30.2101ms)
+All browser JS gzip bytes: 74619
+✔ parallel public and missing requests do not mix metadata or fixture content (47.0254ms)
+✔ all browser JavaScript together stays within the provisional 180 KiB gzip budget (6.9671ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1082.1013

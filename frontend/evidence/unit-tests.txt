@@ -1,0 +1,16 @@
+
+> digital-menu@0.0.0 test
+> ng test --watch=false
+
+> Building...
+√ Building...
+Application bundle generation complete. [0.951 seconds] - 2026-10-12T02:14:30.051Z
+
+
+ RUN  v5.0.3 E:/it/Menu_QR/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:14:30
+   Duration  1.30s (environment 70%, setup 17%, transform 5%, tests 3%, import 3%, worker 1%)

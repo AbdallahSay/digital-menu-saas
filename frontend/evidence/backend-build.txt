@@ -1,0 +1,11 @@
+  DigitalMenu.Domain -> E:\it\Menu_QR\backend\src\DigitalMenu.Domain\bin\Release\net10.0\DigitalMenu.Domain.dll
+  DigitalMenu.Application -> E:\it\Menu_QR\backend\src\DigitalMenu.Application\bin\Release\net10.0\DigitalMenu.Application.dll
+  DigitalMenu.Infrastructure -> E:\it\Menu_QR\backend\src\DigitalMenu.Infrastructure\bin\Release\net10.0\DigitalMenu.Infrastructure.dll
+  DigitalMenu.Api -> E:\it\Menu_QR\backend\src\DigitalMenu.Api\bin\Release\net10.0\DigitalMenu.Api.dll
+  DigitalMenu.IntegrationTests -> E:\it\Menu_QR\backend\tests\DigitalMenu.IntegrationTests\bin\Release\net10.0\DigitalMenu.IntegrationTests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.60

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "digitalmenu.application": {
+        "type": "Project",
+        "dependencies": {
+          "DigitalMenu.Domain": "[1.0.0, )"
+        }
+      },
+      "digitalmenu.domain": {
+        "type": "Project"
+      }
+    }
+  }
+}

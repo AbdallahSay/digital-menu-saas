@@ -1,0 +1,75 @@
+name: F01 foundation gates
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NG_BUILD_MAX_WORKERS: "1"
+      F01_LOCAL_ONLY: "1"
+      ASPNETCORE_ENVIRONMENT: Development
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24.19.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Backend locked restore, build, format and tests
+        run: |
+          dotnet restore backend/DigitalMenu.slnx --locked-mode
+          dotnet build backend/DigitalMenu.slnx -c Release --no-restore
+          dotnet format backend/DigitalMenu.slnx --verify-no-changes --no-restore
+          dotnet test backend/DigitalMenu.slnx -c Release --no-build --logger trx
+          dotnet list backend/DigitalMenu.slnx package --vulnerable --include-transitive --format json > backend/advisories.json
+          node -e "const r=require('./backend/advisories.json');for(const p of r.projects??[])for(const f of p.frameworks??[])for(const d of [...(f.topLevelPackages??[]),...(f.transitivePackages??[])])for(const v of d.vulnerabilities??[])if(['High','Critical'].includes(v.severity))throw Error(d.id+': '+v.severity)"
+      - name: Frontend locked install, audit, lint, unit tests and production build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm audit --audit-level=high
+          npm run lint
+          npm test -- --watch=false
+          npm run build
+          npx playwright install --with-deps chromium
+      - name: Raw HTTP, browser and Lighthouse gates against local production build
+        shell: bash
+        run: |
+          dotnet backend/src/DigitalMenu.Api/bin/Release/net10.0/DigitalMenu.Api.dll --urls http://127.0.0.1:5080 > api.log 2>&1 &
+          API_PID=$!
+          cd frontend
+          node dist/digital-menu/server/server.mjs > ssr.log 2>&1 &
+          SSR_PID=$!
+          trap 'kill "$API_PID" "$SSR_PID"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:4000/api/health/live && curl --fail --silent http://localhost:4000/r/demo > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://localhost:4000/r/demo > source.html
+          export CHROME_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
+          npm run test:html
+          npm run test:e2e
+          npm run test:lighthouse
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: foundation-evidence
+          include-hidden-files: true
+          path: |
+            frontend/.lighthouseci/
+            frontend/source.html
+            frontend/ssr.log
+            frontend/test-results/
+            backend/tests/**/TestResults/
+            backend/advisories.json
+            api.log

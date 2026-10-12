@@ -1,0 +1,40 @@
+
+> digital-menu@0.0.0 build
+> ng build
+
+> Building...
+√ Building...
+Browser bundles
+Initial chunk files  | Names            |  Raw size | Estimated transfer size
+main-DS2SDBIV.js     | main             | 233.84 kB |                64.40 kB
+styles-T33AF7YE.css  | styles           | 302 bytes |               302 bytes
+
+                     | Initial total    | 234.14 kB |                64.71 kB
+
+Lazy chunk files     | Names            |  Raw size | Estimated transfer size
+chunk-DCfrLcKT.js    | menu             |   1.70 kB |               804 bytes
+chunk-CovkT_Pn.js    | admin            | 564 bytes |               564 bytes
+chunk-DqVnhsIW.js    | marketing        | 516 bytes |               516 bytes
+
+
+Server bundles
+Initial chunk files  | Names            |  Raw size
+server.mjs           | server           | 916.70 kB |
+main.server.mjs      | main.server      | 353.00 kB |
+polyfills.server.mjs | polyfills.server | 235.58 kB |
+chunk-VLZPEMKW.mjs   | -                | 130.91 kB |
+chunk-YLK55MM6.mjs   | -                |  29.51 kB |
+chunk-C2KJ4ATU.mjs   | -                |   1.54 kB |
+chunk-KYQQYI4M.mjs   | -                |   1.01 kB |
+
+Lazy chunk files     | Names            |  Raw size
+chunk-RBXOAK24.mjs   | xhr2             |  12.17 kB |
+chunk-XDZ7ZLR6.mjs   | xhr2             |  12.08 kB |
+chunk-OKPJP2HY.mjs   | menu             |   2.28 kB |
+chunk-FLMUVSEJ.mjs   | admin            | 892 bytes |
+chunk-PLZOI2UY.mjs   | marketing        | 831 bytes |
+
+Prerendered 1 static route.
+Application bundle generation complete. [3.261 seconds] - 2026-10-12T02:15:37.513Z
+
+Output location: E:\it\Menu_QR\frontend\dist\digital-menu

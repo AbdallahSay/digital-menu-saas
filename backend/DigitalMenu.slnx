@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DigitalMenu.Api/DigitalMenu.Api.csproj" />
+    <Project Path="src/DigitalMenu.Application/DigitalMenu.Application.csproj" />
+    <Project Path="src/DigitalMenu.Domain/DigitalMenu.Domain.csproj" />
+    <Project Path="src/DigitalMenu.Infrastructure/DigitalMenu.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DigitalMenu.IntegrationTests/DigitalMenu.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

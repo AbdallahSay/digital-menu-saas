@@ -1,0 +1,16 @@
+  Determining projects to restore...
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Application\DigitalMenu.Application.csproj (in 106 ms).
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Domain\DigitalMenu.Domain.csproj (in 98 ms).
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Infrastructure\DigitalMenu.Infrastructure.csproj (in 106 ms).
+  Restored E:\it\Menu_QR\backend\src\DigitalMenu.Api\DigitalMenu.Api.csproj (in 183 ms).
+  Restored E:\it\Menu_QR\backend\tests\DigitalMenu.IntegrationTests\DigitalMenu.IntegrationTests.csproj (in 209 ms).
+
+The following sources were used:
+   https://api.nuget.org/v3/index.json
+   C:\Program Files (x86)\Microsoft SDKs\NuGetPackages\
+
+The given project `DigitalMenu.Api` has no vulnerable packages given the current sources.
+The given project `DigitalMenu.Application` has no vulnerable packages given the current sources.
+The given project `DigitalMenu.Domain` has no vulnerable packages given the current sources.
+The given project `DigitalMenu.Infrastructure` has no vulnerable packages given the current sources.
+The given project `DigitalMenu.IntegrationTests` has no vulnerable packages given the current sources.
