@@ -16,7 +16,15 @@
 import assert from 'node:assert/strict';
 import { describe, it, before, after } from 'node:test';
 import http from 'node:http';
-import { writeFileSync, unlinkSync, symlinkSync, existsSync, readdirSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import {
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  symlinkSync,
+  existsSync,
+  readdirSync,
+} from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -46,26 +54,36 @@ function findHashedAsset(ext) {
  * Send a raw HTTP GET to localhost:4000 with the path delivered **verbatim**
  * (no URL normalization). Returns { status, headers, body }.
  */
-function rawGet(rawPath, extraHeaders = {}) {
+function rawGet(rawPath, extraHeaders = {}, method = 'GET') {
   return new Promise((resolve, reject) => {
     const req = http.request(
       {
         hostname: '127.0.0.1',
         port: 4000,
-        method: 'GET',
+        method,
         path: rawPath, // sent byte-for-byte; Node does NOT normalise this
         headers: { 'Accept-Encoding': 'gzip', ...extraHeaders },
       },
       (res) => {
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
-        res.on('end', () =>
-          resolve({
-            status: res.statusCode,
-            headers: res.headers,
-            body: Buffer.concat(chunks).toString('latin1'), // safe for binary gzip
-          }),
-        );
+        res.on('end', () => {
+          try {
+            const bytes = Buffer.concat(chunks);
+            const decoded =
+              res.headers['content-encoding'] === 'gzip' && method !== 'HEAD'
+                ? gunzipSync(bytes)
+                : bytes;
+            resolve({
+              status: res.statusCode,
+              headers: res.headers,
+              body: decoded.toString('utf8'),
+              bytes: decoded,
+            });
+          } catch (error) {
+            reject(error);
+          }
+        });
       },
     );
     req.setTimeout(5000, () => {
@@ -103,79 +121,46 @@ before(async () => {
   // Write the canary file outside the browser root
   writeFileSync(canaryPath, canaryContent, 'utf8');
 
-  // Create symlink inside browser dir pointing to the canary (best-effort)
-  try {
-    if (existsSync(symlinkPath)) unlinkSync(symlinkPath);
-    symlinkSync(canaryPath, symlinkPath);
-  } catch {
-    // Symlink creation may fail on some CI runners; tests check existsSync before asserting.
-  }
+  // Required fixture: inability to create the symlink fails this security gate.
+  if (existsSync(symlinkPath)) unlinkSync(symlinkPath);
+  symlinkSync(canaryPath, symlinkPath);
 });
 
 after(() => {
-  // Always clean up — even on test failure
-  try {
-    if (existsSync(canaryPath)) unlinkSync(canaryPath);
-  } catch {
-    /* ignore */
-  }
-  try {
-    if (existsSync(symlinkPath)) unlinkSync(symlinkPath);
-  } catch {
-    /* ignore */
+  // Unlink first: existsSync is false for a dangling symlink. Fixture paths only.
+  for (const path of [symlinkPath, canaryPath]) {
+    try {
+      unlinkSync(path);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
   }
 });
 
 // ─── Raw traversal rejection (canary-based) ───────────────────────────────────
-describe('Path Traversal — raw HTTP dot-segments must not expose canary outside browserRoot', () => {
-  it('raw /../security-canary.json is rejected (verbatim path via node:http)', async () => {
-    const { status, body } = await rawGet('/../security-canary.json');
-    assert.ok(
-      status !== 200 || !body.includes(canaryMark),
-      `Raw traversal must not return canary content (status=${status})`,
-    );
-  });
-
-  it('raw /../../security-canary.json multi-segment is rejected', async () => {
-    const { status, body } = await rawGet('/../../security-canary.json');
-    assert.ok(
-      status !== 200 || !body.includes(canaryMark),
-      `Multi-segment raw traversal must not return canary (status=${status})`,
-    );
-  });
-
-  it('URL-encoded %2e%2e/security-canary.json is rejected', async () => {
-    // Use rawGet so encoding is preserved verbatim.
-    const { status, body } = await rawGet('/%2e%2e/security-canary.json');
-    assert.ok(
-      status !== 200 || !body.includes(canaryMark),
-      `URL-encoded traversal must not return canary (status=${status})`,
-    );
-  });
-
-  it('double-encoded %252e%252e/security-canary.json is rejected', async () => {
-    const { status, body } = await rawGet('/%252e%252e/security-canary.json');
-    assert.ok(
-      status !== 200 || !body.includes(canaryMark),
-      `Double-encoded traversal must not return canary (status=${status})`,
-    );
-  });
-
-  it('symlink inside browser dir pointing outside is rejected', async () => {
-    if (!existsSync(symlinkPath)) {
-      // Symlink could not be created on this platform — skip gracefully.
-      return;
+describe('Path Traversal — forbidden assets never reach static fallback or SSR', () => {
+  for (const encoding of ['gzip', 'identity']) {
+    for (const method of ['GET', 'HEAD']) {
+      for (const path of [
+        '/../security-canary.json',
+        '/../../security-canary.json',
+        '/%2e%2e/security-canary.json',
+        '/%252e%252e/security-canary.json',
+        '/%2e%2e%2fsecurity-canary.json',
+        '/%252e%252e%252fsecurity-canary.json',
+        '/%2e%2e%5csecurity-canary.json',
+        '/%00security-canary.json',
+        '/_sec-symlink-test.json',
+      ]) {
+        it(method + ' ' + encoding + ' rejects ' + path, async () => {
+          const { status, body } = await rawGet(path, { 'Accept-Encoding': encoding }, method);
+          assert.ok([403, 404].includes(status), 'Forbidden path status: ' + status);
+          assert.ok(!body.includes(canaryMark), 'Decoded response disclosed the outside canary');
+          if (method === 'HEAD') assert.equal(body, '');
+        });
+      }
     }
-    // The symlink name is _sec-symlink-test.json; request it directly.
-    const { status, body } = await rawGet('/_sec-symlink-test.json', {
-      'Accept-Encoding': 'gzip',
-    });
-    // realpathSync in server.ts resolves the symlink to outside browserRoot → rejected.
-    assert.ok(
-      status !== 200 || !body.includes(canaryMark),
-      `Symlink escape must not return canary content (status=${status})`,
-    );
-  });
+  }
 });
 
 // ─── Correct static asset delivery ───────────────────────────────────────────
@@ -259,3 +244,46 @@ describe('Security Headers — must be present on all responses', () => {
     assert.equal(r.headers.get('referrer-policy'), 'same-origin');
   });
 });
+
+// Cover both encodings and HEAD using the exact built Express server.
+describe('Static and SSR encoding regression', () => {
+  for (const encoding of ['gzip', 'identity']) {
+    for (const method of ['GET', 'HEAD']) {
+      for (const ext of ['.js', '.css']) {
+        it(method + ' ' + encoding + ' delivers hashed ' + ext, async () => {
+          const file = findHashedAsset(ext);
+          assert.ok(file);
+          const { status, headers, body, bytes } = await rawGet(
+            '/' + file,
+            { 'Accept-Encoding': encoding },
+            method,
+          );
+          assert.equal(status, 200);
+          assert.ok(headers['content-type'].includes(ext === '.js' ? 'javascript' : 'text/css'));
+          assert.equal(headers['content-encoding'], encoding === 'gzip' ? 'gzip' : undefined);
+          assert.ok(headers['vary'].includes('Accept-Encoding'));
+          assert.ok(headers['cache-control'].includes('immutable'));
+          if (method === 'HEAD') assert.equal(body, '');
+          else assert.deepEqual(bytes, fsRead(file));
+        });
+      }
+      it(method + ' ' + encoding + ' preserves SSR and missing-route status', async () => {
+        const page = await rawGet('/r/demo', { 'Accept-Encoding': encoding }, method);
+        assert.equal(page.status, 200);
+        assert.ok(page.headers['content-type'].includes('text/html'));
+        const missing = await rawGet('/r/nonexistent', { 'Accept-Encoding': encoding }, method);
+        assert.equal(missing.status, 404);
+        if (method === 'HEAD') {
+          assert.equal(page.body, '');
+          assert.equal(missing.body, '');
+        } else {
+          assert.ok(page.body.includes('<h1'));
+          assert.ok(missing.body.includes('noindex'));
+        }
+      });
+    }
+  }
+});
+function fsRead(file) {
+  return readFileSync(join(browserDir, file));
+}
