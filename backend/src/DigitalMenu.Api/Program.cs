@@ -2,6 +2,7 @@ using DigitalMenu.Api.Auth;
 using DigitalMenu.Api.Catalog;
 using DigitalMenu.Api.Media;
 using DigitalMenu.Api.Platform;
+using DigitalMenu.Api.Public;
 using DigitalMenu.Application;
 using DigitalMenu.Infrastructure.Tenancy;
 using Microsoft.AspNetCore.Antiforgery;
@@ -23,6 +24,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(opt
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
 builder.Services.AddMenuMedia(builder.Environment, builder.Configuration);
+builder.Services.AddPublicMenus();
 builder.Services.AddDevelopmentOnboarding(builder.Environment, builder.Configuration);
 builder.Services.AddSingleton<IRestaurantPublicCodeGenerator, CryptographicPublicCodeGenerator>();
 builder.Services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(options =>
@@ -52,7 +54,9 @@ app.Use(async (context, next) =>
     context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
     await next(context);
 });
-app.UseAuthentication();
+// Public projections never authenticate cookies or produce identity-specific SQL/Set-Cookie.
+app.UseWhen(context => context.GetEndpoint()?.Metadata.GetMetadata<PublicMenuMetadata>() is null,
+    branch => branch.UseAuthentication());
 app.UseAuthorization();
 app.UseRateLimiter();
 app.Use(async (context, next) =>
@@ -94,6 +98,7 @@ app.MapPlatformProvisioning();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
+app.MapPublicMenus();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
 app.MapHealthChecks("/api/health/ready").AllowAnonymous();
