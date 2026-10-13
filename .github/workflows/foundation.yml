@@ -45,22 +45,23 @@ jobs:
       - name: Raw HTTP, browser and Lighthouse gates against local production build
         shell: bash
         run: |
-          dotnet backend/src/DigitalMenu.Api/bin/Release/net10.0/DigitalMenu.Api.dll --urls http://127.0.0.1:5080 > api.log 2>&1 &
-          API_PID=$!
-          cd frontend
-          node dist/digital-menu/server/server.mjs > ssr.log 2>&1 &
-          SSR_PID=$!
-          trap 'kill "$API_PID" "$SSR_PID"' EXIT
-          for attempt in {1..30}; do
-            if curl --fail --silent http://localhost:4000/api/health/live && curl --fail --silent http://localhost:4000/r/demo > /dev/null; then break; fi
+          set -euo pipefail
+          SQL_PASSWORD="S01!$(openssl rand -hex 24)"
+          echo "::add-mask::$SQL_PASSWORD"
+          export MSSQL_SA_PASSWORD="$SQL_PASSWORD"
+          docker run -d --name s01-sql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD -p 127.0.0.1:1433:1433 mcr.microsoft.com/mssql/server@sha256:2b5b581621126574f3d1f75e78d3eebe8d05aedb59ad0cfdf9aa42cb0634d726
+          trap 'docker rm -f s01-sql' EXIT
+          ready=0
+          for attempt in {1..60}; do
+            if docker logs s01-sql 2>&1 | grep -q 'SQL Server is now ready for client connections'; then ready=1; break; fi
             sleep 1
           done
-          curl --fail --silent http://localhost:4000/r/demo > source.html
-          export CHROME_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
-          npm run test:html
-          npm run test:e2e
-          npm run test:security
-          npm run test:lighthouse
+          test "$ready" = 1
+          export F02_SQL_CONNECTION="Server=localhost,1433;User ID=sa;Password=$SQL_PASSWORD;Encrypt=false"
+          export S01_FRONTEND_GATES=1
+          export CHROME_PATH="$(cd frontend && node -e "console.log(require('@playwright/test').chromium.executablePath())")"
+          dotnet test backend/DigitalMenu.slnx -c Release --no-build --filter FullyQualifiedName~PublicSsrTests --logger trx --logger 'console;verbosity=detailed'
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
