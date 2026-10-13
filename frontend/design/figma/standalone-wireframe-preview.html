@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Digital Menu SaaS — Figma-ready Design Source</title>
+    <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #eaf0ec;
+        font:
+          14px Tahoma,
+          Arial,
+          sans-serif;
+        color: #12302a;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #103d36;
+        color: white;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        padding: 14px 26px;
+      }
+      .bar strong {
+        font-size: 18px;
+      }
+      .bar select {
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1px solid #99b4a8;
+        background: white;
+        min-width: 240px;
+        font: inherit;
+      }
+      .bar small {
+        opacity: 0.76;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .actions a {
+        display: inline-flex;
+        color: white;
+        border: 1px solid #477c6e;
+        text-decoration: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+      }
+      .actions a:hover {
+        background: #246655;
+      }
+      .stage {
+        text-align: center;
+        padding: 32px 14px 90px;
+      }
+      .card {
+        display: inline-block;
+        background: white;
+        padding: 15px;
+        border-radius: 18px;
+        box-shadow: 0 20px 65px #1d514324;
+        max-width: 100%;
+      }
+      .card img {
+        display: block;
+        max-width: 100%;
+        max-height: none;
+        width: auto;
+        height: auto;
+      }
+      .stage.mobile img {
+        max-width: 390px;
+      }
+      .stage.desktop img {
+        max-width: 1150px;
+      }
+      .hint {
+        padding: 10px;
+        color: #566d64;
+        line-height: 1.8;
+      }
+      a {
+        color: #0f766e;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <strong>◈ Digital Menu · ملفات التصميم المستقلة</strong
+      ><select id="screen" aria-label="اختر الشاشة"></select>
+      <div class="actions">
+        <a id="svg" href="#" download>تحميل SVG قابل للاستيراد</a
+        ><a href="README.md">تعليمات Figma</a>
+      </div>
+      <small>بدون ربط أو تعديل لحساب Figma</small>
+    </header>
+    <main class="stage" id="stage">
+      <div class="card"><img id="preview" alt="معاينة التصميم" /></div>
+      <p class="hint">
+        كل الشاشات محفوظة كملفات SVG مستقلة. افتح Figma ثم استورد ملفات SVG، أو شغّل الـPlugin
+        المحلي لطبقات نصوص وعناصر قابلة للتعديل.
+      </p>
+    </main>
+    <script>
+      const data = [
+        {
+          slug: '01-loading-desktop',
+          title: 'Waiting / Desktop — only when actual loading',
+          width: 1440,
+        },
+        { slug: '02-loading-mobile', title: 'Waiting / Mobile — 390px', width: 390 },
+        { slug: '03-404-desktop', title: 'Not Found / Desktop', width: 1440 },
+        { slug: '04-404-mobile', title: 'Not Found / Mobile', width: 390 },
+        { slug: '05-landing-desktop', title: 'Marketing Landing / Desktop (RTL)', width: 1440 },
+        { slug: '06-landing-mobile', title: 'Marketing Landing / Mobile (390px)', width: 390 },
+      ];
+      const sel = document.getElementById('screen');
+      for (const s of data) {
+        const o = document.createElement('option');
+        o.value = s.slug;
+        o.textContent = s.title;
+        sel.appendChild(o);
+      }
+      function show() {
+        const s = data.find((x) => x.slug === sel.value);
+        const u = 'svg/' + s.slug + '.svg';
+        document.getElementById('preview').src = u;
+        document.getElementById('preview').alt = s.title;
+        document.getElementById('svg').href = u;
+        document.getElementById('svg').download = s.slug + '.svg';
+        document.getElementById('stage').className =
+          'stage ' + (s.width < 500 ? 'mobile' : 'desktop');
+      }
+      sel.addEventListener('change', show);
+      show();
+    </script>
+  </body>
+</html>

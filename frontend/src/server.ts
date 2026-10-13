@@ -7,6 +7,8 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { request } from 'node:http';
+import { gzipSync } from 'node:zlib';
+import { secureAssets } from './secure-assets';
 
 // F01 only: this is a reversible local router, never a production hosting decision.
 const app = express();
@@ -46,6 +48,7 @@ app.use('/api', (req, res) => {
   });
   req.pipe(upstream);
 });
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.get('/m/demo-code', (_req, res) => res.redirect(302, '/r/demo'));
 app.get('/robots.txt', (_req, res) =>
   res
@@ -61,13 +64,9 @@ app.get('/sitemap.xml', (_req, res) =>
       '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://localhost:4000/r/demo</loc></url></urlset>',
     ),
 );
-app.use(
-  express.static(join(import.meta.dirname, '../browser'), {
-    index: false,
-    redirect: false,
-    maxAge: 0,
-  }),
-);
+
+app.use(secureAssets(join(import.meta.dirname, '../browser'), isMainModule(import.meta.url)));
+
 app.use((req, res, next) => {
   if (req.path === '/admin') {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
@@ -76,7 +75,23 @@ app.use((req, res, next) => {
   }
   angularApp
     .handle(req)
-    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
+    .then(async (response) => {
+      if (!response) return next();
+      const acceptEncoding = req.headers['accept-encoding'] || '';
+      if (acceptEncoding.includes('gzip')) {
+        const text = await response.text();
+        const gzipped = gzipSync(text);
+        for (const [k, v] of response.headers.entries()) {
+          res.setHeader(k, v);
+        }
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Vary', 'Accept-Encoding');
+        res.status(response.status).send(gzipped);
+      } else {
+        writeResponseToNodeResponse(response, res);
+      }
+    })
     .catch(next);
 });
 app.use((_req, res) => {

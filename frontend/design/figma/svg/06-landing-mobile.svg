@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="4120" viewBox="0 0 390 4120">
+<style>text{font-family:Cairo,"Noto Kufi Arabic","Noto Sans Arabic",sans-serif}</style>
+<rect data-name="Card" x="0" y="0" width="390" height="4120" rx="0" fill="#FFFFFF"/>
+<rect data-name="Brand mark" x="137" y="19" width="41" height="41" rx="11" fill="#0F766E"/>
+<text data-name="◈" x="157.5" y="59.25" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25" font-weight="700" fill="#FFFFFF">◈</text>
+<text data-name="DIGITAL MENU" x="188" y="48.92" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#12302A">DIGITAL MENU</text>
+<rect data-name="Card" x="20" y="73" width="350" height="1" rx="0" fill="#DFEAE5"/>
+<rect data-name="Pill" x="113" y="115" width="164" height="40" rx="20.0" fill="#E2F5EB"/>
+<text data-name="منيو رقمي للمطاعم" x="195.0" y="140.81" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="700" fill="#0F766E">منيو رقمي للمطاعم</text>
+<text data-name="منيو مطعمك" x="194.5" y="220.58" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="34" font-weight="700" fill="#12302A">منيو مطعمك</text>
+<text data-name="بشكل أذكى وأجمل" x="194.5" y="269.84000000000003" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="32" font-weight="700" fill="#0F766E">بشكل أذكى وأجمل</text>
+<text data-name="عميلك يمسح QR ويشوف الأطباق والأسع" x="194.5" y="323.55" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="15" font-weight="400" fill="#667B74">عميلك يمسح QR ويشوف الأطباق والأسعار</text>
+<text data-name="وأنت تحدّث القائمة من غير طباعة جد" x="195.0" y="359.55" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="15" font-weight="400" fill="#667B74">وأنت تحدّث القائمة من غير طباعة جديدة.</text>
+<rect data-name="Button / اطلب خدمتك دلوقتي" x="24" y="409" width="342" height="54" rx="13" fill="#0F766E"/>
+<text data-name="اطلب خدمتك دلوقتي" x="195.0" y="442.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#FFFFFF">اطلب خدمتك دلوقتي</text>
+<rect data-name="Button / شاهد مثال المنيو" x="24" y="479" width="342" height="54" rx="13" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="شاهد مثال المنيو" x="195.0" y="512.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#0F766E">شاهد مثال المنيو</text>
+<rect data-name="Card" x="39" y="596" width="312" height="519" rx="28" fill="#103D36"/>
+<rect data-name="Device / public menu preview" x="65" y="611" width="260" height="493" rx="30" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="2"/>
+<rect data-name="Card" x="74" y="621" width="242" height="147" rx="22" fill="#103D36"/>
+<text data-name="مطعم السرايا" x="195.0" y="671.14" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="22" font-weight="700" fill="#FFFFFF">مطعم السرايا</text>
+<text data-name="طعم أصيل وتجربة أحلى" x="195.0" y="708.81" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#DDECE5">طعم أصيل وتجربة أحلى</text>
+<rect data-name="Card" x="87" y="784" width="216" height="46" rx="12" fill="#EFF5F2"/>
+<text data-name="⌕    ابحث عن طبق" x="294" y="812.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">⌕    ابحث عن طبق</text>
+<rect data-name="Pill" x="203" y="851" width="91" height="40" rx="20.0" fill="#E2F5EB"/>
+<text data-name="المشويات" x="248.5" y="875.44" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="12" font-weight="700" fill="#0F766E">المشويات</text>
+<rect data-name="Pill" x="93" y="851" width="104" height="40" rx="20.0" fill="#EFF5F2"/>
+<text data-name="المقبلات" x="145.0" y="875.44" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="12" font-weight="700" fill="#667B74">المقبلات</text>
+<rect data-name="Menu item / كباب مشوي" x="85" y="909" width="220" height="78" rx="12" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<rect data-name="Food media slot" x="227" y="919" width="66" height="57" rx="11" fill="#FFF1D7"/>
+<ellipse data-name="Circle" cx="258.5" cy="947.0" rx="18.5" ry="16.0" fill="#E8BB79"/>
+<text data-name="كباب مشوي" x="217" y="940.18" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="700" fill="#12302A">كباب مشوي</text>
+<text data-name="285 ج.م" x="217" y="971.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="700" fill="#0F766E">285 ج.م</text>
+<rect data-name="Menu item / شوربة عدس" x="85" y="997" width="220" height="78" rx="12" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<rect data-name="Food media slot" x="227" y="1007" width="66" height="57" rx="11" fill="#FFF1D7"/>
+<ellipse data-name="Circle" cx="258.5" cy="1035.0" rx="18.5" ry="16.0" fill="#E8BB79"/>
+<text data-name="شوربة عدس" x="217" y="1028.18" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="700" fill="#12302A">شوربة عدس</text>
+<text data-name="65 ج.م" x="217" y="1059.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="700" fill="#0F766E">65 ج.م</text>
+<rect data-name="Card" x="19" y="1157" width="352" height="142" rx="18" fill="#E2F5EB"/>
+<text data-name="QR ثابت  ◈  الأسعار تتحدّث" x="195.0" y="1217.66" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="18" font-weight="700" fill="#12302A">QR ثابت  ◈  الأسعار تتحدّث</text>
+<text data-name="منيو عربي وإنجليزي للموبايل" x="195.0" y="1261.18" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="400" fill="#667B74">منيو عربي وإنجليزي للموبايل</text>
+<rect data-name="Pill" x="239" y="1369" width="130" height="40" rx="20.0" fill="#E2F5EB"/>
+<text data-name="من نحن" x="304.0" y="1394.81" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="700" fill="#0F766E">من نحن</text>
+<text data-name="إحنا مين؟" x="195.0" y="1474.1" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="30" font-weight="700" fill="#12302A">إحنا مين؟</text>
+<text data-name="بنساعد المطاعم والكافيهات تعرض الم" x="195.5" y="1524.92" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="400" fill="#667B74">بنساعد المطاعم والكافيهات تعرض المنيو</text>
+<text data-name="بشكل واضح، جميل، وسهل التعديل." x="195.0" y="1558.92" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="400" fill="#667B74">بشكل واضح، جميل، وسهل التعديل.</text>
+<text data-name="مميزات الخدمة" x="195.0" y="1660.99" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="27" font-weight="700" fill="#12302A">مميزات الخدمة</text>
+<rect data-name="Card" x="22" y="1703" width="346" height="115" rx="17" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<rect data-name="Icon tile" x="283" y="1720" width="60" height="60" rx="15" fill="#E2F5EB"/>
+<text data-name="◇" x="313.0" y="1762.346" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25.8" font-weight="700" fill="#0F766E">◇</text>
+<text data-name="كود QR ثابت" x="277" y="1743.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">كود QR ثابت</text>
+<text data-name="الرابط يفضل ثابت مع كل تعديل" x="279" y="1781.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">الرابط يفضل ثابت مع كل تعديل</text>
+<rect data-name="Card" x="22" y="1836" width="346" height="115" rx="17" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<rect data-name="Icon tile" x="283" y="1853" width="60" height="60" rx="15" fill="#E2F5EB"/>
+<text data-name="✎" x="313.0" y="1895.346" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25.8" font-weight="700" fill="#0F766E">✎</text>
+<text data-name="تعديل الأسعار" x="277" y="1876.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">تعديل الأسعار</text>
+<text data-name="غيّر الأسعار وحدث الأطباق" x="279" y="1914.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">غيّر الأسعار وحدث الأطباق</text>
+<rect data-name="Card" x="22" y="1969" width="346" height="115" rx="17" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<rect data-name="Icon tile" x="283" y="1986" width="60" height="60" rx="15" fill="#E2F5EB"/>
+<text data-name="▣" x="313.0" y="2028.346" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25.8" font-weight="700" fill="#0F766E">▣</text>
+<text data-name="منيو مناسب للموبايل" x="277" y="2009.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">منيو مناسب للموبايل</text>
+<text data-name="تجربة بسيطة من غير تطبيق" x="279" y="2047.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">تجربة بسيطة من غير تطبيق</text>
+<rect data-name="Card" x="22" y="2102" width="346" height="115" rx="17" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<rect data-name="Icon tile" x="283" y="2119" width="60" height="60" rx="15" fill="#E2F5EB"/>
+<text data-name="AR" x="313.0" y="2161.346" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25.8" font-weight="700" fill="#0F766E">AR</text>
+<text data-name="عربي وإنجليزي" x="277" y="2142.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">عربي وإنجليزي</text>
+<text data-name="العميل يختار لغته" x="279" y="2180.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">العميل يختار لغته</text>
+<rect data-name="Card" x="0" y="2290" width="390" height="464" rx="0" fill="#103D36"/>
+<text data-name="3 خطوات ونبدأ معاك" x="194.5" y="2357.99" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="27" font-weight="700" fill="#FFFFFF">3 خطوات ونبدأ معاك</text>
+<rect data-name="Card" x="21" y="2393" width="348" height="95" rx="15" fill="#195046"/>
+<rect data-name="Pill" x="285" y="2418" width="67" height="40" rx="20.0" fill="#E2F5EB"/>
+<text data-name="01" x="318.5" y="2442.44" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="12" font-weight="700" fill="#0F766E">01</text>
+<text data-name="قول لنا على مطعمك" x="262" y="2443.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#FFFFFF">قول لنا على مطعمك</text>
+<rect data-name="Card" x="21" y="2503" width="348" height="95" rx="15" fill="#195046"/>
+<rect data-name="Pill" x="285" y="2528" width="67" height="40" rx="20.0" fill="#E2F5EB"/>
+<text data-name="02" x="318.5" y="2552.44" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="12" font-weight="700" fill="#0F766E">02</text>
+<text data-name="نجهّز الأقسام والأطباق" x="262" y="2553.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#FFFFFF">نجهّز الأقسام والأطباق</text>
+<rect data-name="Card" x="21" y="2613" width="348" height="95" rx="15" fill="#195046"/>
+<rect data-name="Pill" x="285" y="2638" width="67" height="40" rx="20.0" fill="#E2F5EB"/>
+<text data-name="03" x="318.5" y="2662.44" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="12" font-weight="700" fill="#0F766E">03</text>
+<text data-name="خلّي العملاء يمسحوا QR" x="262" y="2663.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#FFFFFF">خلّي العملاء يمسحوا QR</text>
+<text data-name="أسئلة شائعة" x="195.0" y="2843.36" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="28" font-weight="700" fill="#12302A">أسئلة شائعة</text>
+<rect data-name="Card" x="22" y="2873" width="346" height="96" rx="14" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="هل فيه تطبيق؟" x="357" y="2904.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">هل فيه تطبيق؟</text>
+<text data-name="لا، المنيو يفتح من المتصفح." x="354" y="2941.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">لا، المنيو يفتح من المتصفح.</text>
+<rect data-name="Card" x="22" y="2982" width="346" height="96" rx="14" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="هل بغير الأسعار؟" x="357" y="3013.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">هل بغير الأسعار؟</text>
+<text data-name="آه، من لوحة إدارة المطعم." x="354" y="3050.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">آه، من لوحة إدارة المطعم.</text>
+<rect data-name="Card" x="22" y="3091" width="346" height="96" rx="14" fill="#F8F7F2" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="هل العميل يطلب من المنيو؟" x="357" y="3122.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">هل العميل يطلب من المنيو؟</text>
+<text data-name="لا، المنيو للعرض فقط." x="354" y="3159.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">لا، المنيو للعرض فقط.</text>
+<rect data-name="Card" x="18" y="3250" width="354" height="719" rx="22" fill="#E2F5EB"/>
+<text data-name="اطلب منيو لمطعمك" x="195.5" y="3314.62" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="26" font-weight="700" fill="#12302A">اطلب منيو لمطعمك</text>
+<text data-name="سيب بياناتك وإحنا نتواصل معاك" x="195.5" y="3355.18" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="400" fill="#667B74">سيب بياناتك وإحنا نتواصل معاك</text>
+<text data-name="اسمك" x="349" y="3412.18" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="700" fill="#12302A">اسمك</text>
+<rect data-name="Input / اسمك" x="40" y="3429" width="309" height="56" rx="12" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="الاسم الكامل" x="331" y="3460.55" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="15" font-weight="400" fill="#667B74">الاسم الكامل</text>
+<text data-name="اسم المطعم" x="349" y="3534.18" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="700" fill="#12302A">اسم المطعم</text>
+<rect data-name="Input / اسم المطعم" x="40" y="3551" width="309" height="56" rx="12" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="اسم النشاط" x="331" y="3582.55" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="15" font-weight="400" fill="#667B74">اسم النشاط</text>
+<text data-name="رقم واتساب" x="349" y="3656.18" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="700" fill="#12302A">رقم واتساب</text>
+<rect data-name="Input / رقم واتساب" x="40" y="3673" width="309" height="56" rx="12" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="01XXXXXXXXX" x="331" y="3704.55" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="15" font-weight="400" fill="#667B74">01XXXXXXXXX</text>
+<text data-name="نوع النشاط" x="344" y="3778.18" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="700" fill="#12302A">نوع النشاط</text>
+<rect data-name="Card" x="40" y="3797" width="309" height="52" rx="12" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="مطعم  ⌄" x="327" y="3827.18" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="14" font-weight="400" fill="#667B74">مطعم  ⌄</text>
+<rect data-name="Button / إرسال طلب الخدمة" x="40" y="3879" width="309" height="54" rx="13" fill="#0F766E"/>
+<text data-name="إرسال طلب الخدمة" x="194.5" y="3912.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#FFFFFF">إرسال طلب الخدمة</text>
+<rect data-name="Card" x="0" y="3992" width="390" height="128" rx="0" fill="#103D36"/>
+<text data-name="DIGITAL MENU" x="197.5" y="4038.29" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#FFFFFF">DIGITAL MENU</text>
+<text data-name="منيو للعرض فقط — بدون طلبات أونلاي" x="195.5" y="4076.44" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="12" font-weight="400" fill="#D4E3DC">منيو للعرض فقط — بدون طلبات أونلاين</text>
+</svg>

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const WcagContrast = require('../design/wcag-contrast.js');
@@ -228,4 +229,184 @@ test('F03 Authentication Invariants Specification Assertions', () => {
   assert.equal(F03_CONTRACT.lockoutFailedAttempts, 5);
   assert.equal(F03_CONTRACT.lockoutDurationMinutes, 15);
   assert.equal(F03_CONTRACT.csrfHeaderName, 'X-XSRF-TOKEN');
+});
+
+function parseCssCustomProperties(cssText) {
+  const tokens = {};
+  const regex = /--([a-z0-9-]+)\s*:\s*([^;]+);/g;
+  let match;
+  while ((match = regex.exec(cssText)) !== null) {
+    tokens[match[1]] = match[2].trim();
+  }
+  return tokens;
+}
+
+test('Design System Contrast Audits — Modern Cairo Boutique Palette WCAG 2.2 AA Compliance (Dynamic CSS Tokens)', () => {
+  const cssContent = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+  const tokens = parseCssCustomProperties(cssContent);
+
+  // Assert expected tokens are defined in styles.css
+  assert.ok(tokens['color-brand-terracotta'], 'Terracotta token must exist');
+  assert.ok(tokens['color-brand-terracotta-hover'], 'Terracotta hover token must exist');
+  assert.ok(tokens['color-brand-terracotta-text'], 'Terracotta text token must exist');
+  assert.ok(tokens['color-brand-terracotta-subtle'], 'Terracotta subtle token must exist');
+  assert.ok(tokens['color-text-muted'], 'Text muted token must exist');
+  assert.ok(tokens['color-bg-canvas'], 'Canvas bg token must exist');
+  assert.ok(tokens['color-surface-card'], 'Card surface token must exist');
+  assert.ok(tokens['color-brand-forest'], 'Forest token must exist');
+  assert.ok(tokens['color-brand-primary-container'], 'Primary container token must exist');
+  assert.ok(tokens['color-brand-on-primary-container'], 'On primary container token must exist');
+
+  // Test actual color pairs in production UI using tokens parsed from CSS:
+  // 1. Terracotta button / badge text: White #FFFFFF on --color-brand-terracotta
+  const whiteOnTerracotta = WcagContrast.evaluateWcagCompliance(
+    '#ffffff',
+    tokens['color-brand-terracotta'],
+  );
+  assert.ok(
+    whiteOnTerracotta.ratio >= 4.5,
+    `White on Terracotta (${tokens['color-brand-terracotta']}) must be >= 4.5:1, got ${whiteOnTerracotta.ratio}`,
+  );
+  assert.equal(whiteOnTerracotta.normalTextAA, true);
+
+  // 2. Terracotta hover state: White #FFFFFF on --color-brand-terracotta-hover
+  const whiteOnTerracottaHover = WcagContrast.evaluateWcagCompliance(
+    '#ffffff',
+    tokens['color-brand-terracotta-hover'],
+  );
+  assert.ok(
+    whiteOnTerracottaHover.ratio >= 4.5,
+    `White on Terracotta Hover (${tokens['color-brand-terracotta-hover']}) must be >= 4.5:1, got ${whiteOnTerracottaHover.ratio}`,
+  );
+  assert.equal(whiteOnTerracottaHover.normalTextAA, true);
+
+  // 3. Terracotta badge text on subtle background: --color-brand-terracotta-text on --color-brand-terracotta-subtle
+  const terracottaBadge = WcagContrast.evaluateWcagCompliance(
+    tokens['color-brand-terracotta-text'],
+    tokens['color-brand-terracotta-subtle'],
+  );
+  assert.ok(
+    terracottaBadge.ratio >= 4.5,
+    `Terracotta badge text (${tokens['color-brand-terracotta-text']}) on subtle bg (${tokens['color-brand-terracotta-subtle']}) must be >= 4.5:1, got ${terracottaBadge.ratio}`,
+  );
+  assert.equal(terracottaBadge.normalTextAA, true);
+
+  // 4. Muted text on Ivory canvas: --color-text-muted on --color-bg-canvas
+  const mutedOnIvory = WcagContrast.evaluateWcagCompliance(
+    tokens['color-text-muted'],
+    tokens['color-bg-canvas'],
+  );
+  assert.ok(
+    mutedOnIvory.ratio >= 4.5,
+    `Muted text (${tokens['color-text-muted']}) on Ivory canvas (${tokens['color-bg-canvas']}) must be >= 4.5:1, got ${mutedOnIvory.ratio}`,
+  );
+  assert.equal(mutedOnIvory.normalTextAA, true);
+
+  // 5. Muted text on White surface: --color-text-muted on --color-surface-card
+  const mutedOnWhite = WcagContrast.evaluateWcagCompliance(
+    tokens['color-text-muted'],
+    tokens['color-surface-card'],
+  );
+  assert.ok(
+    mutedOnWhite.ratio >= 4.5,
+    `Muted text (${tokens['color-text-muted']}) on White surface (${tokens['color-surface-card']}) must be >= 4.5:1, got ${mutedOnWhite.ratio}`,
+  );
+  assert.equal(mutedOnWhite.normalTextAA, true);
+
+  // 6. Deep forest text on Ivory canvas: --color-brand-forest on --color-bg-canvas (Primary body text)
+  const forestOnIvory = WcagContrast.evaluateWcagCompliance(
+    tokens['color-brand-forest'],
+    tokens['color-bg-canvas'],
+  );
+  assert.ok(
+    forestOnIvory.ratio >= 7.0,
+    `Forest text (${tokens['color-brand-forest']}) on Ivory (${tokens['color-bg-canvas']}) must be >= 7.0:1 (AAA), got ${forestOnIvory.ratio}`,
+  );
+  assert.equal(forestOnIvory.normalTextAAA, true);
+
+  // 7. Primary Teal on container: --color-brand-on-primary-container on --color-brand-primary-container
+  const tealOnContainer = WcagContrast.evaluateWcagCompliance(
+    tokens['color-brand-on-primary-container'],
+    tokens['color-brand-primary-container'],
+  );
+  assert.ok(
+    tealOnContainer.ratio >= 4.5,
+    `Teal (${tokens['color-brand-on-primary-container']}) on Primary Container (${tokens['color-brand-primary-container']}) must be >= 4.5:1, got ${tealOnContainer.ratio}`,
+  );
+  assert.equal(tealOnContainer.normalTextAA, true);
+});
+
+test('Hero Table QR Code — Rendered Destination, Quiet Zone, and Illustrative Labeling', () => {
+  const marketingSrc = readFileSync(new URL('../src/app/marketing.ts', import.meta.url), 'utf8');
+
+  // Verify illustrative caption and aria-label
+  assert.ok(
+    marketingSrc.includes('معاينة توضيحية لكود الطاولة'),
+    'Hero QR stand must include explicit illustrative caption',
+  );
+  assert.ok(
+    marketingSrc.includes('معاينة توضيحية لكود QR الطاولة (رابط تجريبي)'),
+    'Hero QR stand must have descriptive illustrative aria-label',
+  );
+
+  // Extract SVG viewBox and path from stand-qr-box container
+  const qrBoxMatch = marketingSrc.match(/<div class="stand-qr-box">([\s\S]*?)<\/div>/);
+  assert.ok(qrBoxMatch, 'stand-qr-box container must exist in marketing template');
+  const qrSvgHtml = qrBoxMatch[1];
+
+  const viewBoxMatch = qrSvgHtml.match(/viewBox="0 0 (\d+) (\d+)"/);
+  assert.ok(viewBoxMatch, 'Hero QR SVG must have a numeric viewBox');
+  const totalWidth = parseInt(viewBoxMatch[1], 10);
+  const totalHeight = parseInt(viewBoxMatch[2], 10);
+  assert.equal(totalWidth, 37, 'Version 3 QR with 4-module quiet zone must have 37x37 viewBox');
+  assert.equal(totalHeight, 37);
+
+  // Extract path commands
+  const pathMatch = qrSvgHtml.match(/d="(M4,4h1v1h-1z[^"]+)"/);
+  assert.ok(pathMatch, 'Hero QR SVG must contain vector path modules');
+  const pathData = pathMatch[1];
+
+  const moduleMatches = [...pathData.matchAll(/M(\d+),(\d+)h1v1h-1z/g)];
+  assert.ok(moduleMatches.length > 0, 'Path data must contain modules');
+
+  // Verify standard quiet zone (ISO/IEC 18004 clause 6.3.8: >= 4 modules on all four sides)
+  const margin = 4;
+  const qrSize = totalWidth - margin * 2; // 29 modules
+  assert.equal(qrSize, 29, 'QR code matrix must be 29x29 (Version 3)');
+
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  const reconstructedMatrix = Array.from({ length: qrSize }, () => new Array(qrSize).fill(0));
+
+  for (const match of moduleMatches) {
+    const x = parseInt(match[1], 10);
+    const y = parseInt(match[2], 10);
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+
+    assert.ok(x >= margin, `Module x (${x}) must be >= margin (${margin})`);
+    assert.ok(y >= margin, `Module y (${y}) must be >= margin (${margin})`);
+    assert.ok(x < totalWidth - margin, `Module x (${x}) must be < ${totalWidth - margin}`);
+    assert.ok(y < totalHeight - margin, `Module y (${y}) must be < ${totalHeight - margin}`);
+
+    reconstructedMatrix[y - margin][x - margin] = 1;
+  }
+
+  assert.equal(minX, 4, 'Left quiet zone margin must be exactly 4 modules');
+  assert.equal(minY, 4, 'Top quiet zone margin must be exactly 4 modules');
+  assert.equal(maxX, 32, 'Right quiet zone margin must be exactly 4 modules (37 - 1 - 4 = 32)');
+  assert.equal(maxY, 32, 'Bottom quiet zone margin must be exactly 4 modules (37 - 1 - 4 = 32)');
+
+  // Decode the exact rendered QR code matrix
+  const decoded = QrCodeEngine.decodeQrMatrix(reconstructedMatrix);
+  assert.equal(
+    decoded.text,
+    'https://menu.example.com/r/demo',
+    'Rendered QR must encode verified full URL',
+  );
+  assert.equal(decoded.version, 3, 'Rendered QR must be ISO/IEC 18004 Model 2 Version 3');
 });

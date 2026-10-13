@@ -13,6 +13,15 @@
   --color-brand-on-primary: #ffffff;
   --color-brand-on-primary-container: #115e59;
 
+  /* Premium Boutique Palette */
+  --color-brand-forest: #193630;
+  --color-brand-forest-subtle: #eff5f2;
+  --color-brand-ivory: #faf7f0;
+  --color-brand-terracotta: #a84e32;
+  --color-brand-terracotta-hover: #933e24;
+  --color-brand-terracotta-subtle: #fbe6e2;
+  --color-brand-terracotta-text: #8f3c22;
+
   /* Tenant Theme Dynamic Slot */
   --tenant-primary: var(--color-brand-primary);
   --tenant-primary-hover: var(--color-brand-primary-hover);
@@ -21,19 +30,19 @@
   --tenant-on-primary-container: var(--color-brand-on-primary-container);
 
   /* Neutrals & Surfaces */
-  --color-bg-canvas: #f8fafc;
+  --color-bg-canvas: #faf7f0;
   --color-surface-card: #ffffff;
-  --color-surface-muted: #f1f5f9;
-  --color-surface-subtle: #f8fafc;
-  --color-border-subtle: #e2e8f0;
-  --color-border-strong: #cbd5e1;
+  --color-surface-muted: #f4efe6;
+  --color-surface-subtle: #fdfbf7;
+  --color-border-subtle: #e6ded4;
+  --color-border-strong: #d2c5b7;
 
   /* Typography / Text Colors */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #64748b;
+  --color-text-primary: #193630;
+  --color-text-secondary: #4a5d57;
+  --color-text-muted: #4d615b;
   --color-text-inverse: #ffffff;
-  --color-text-disabled: #94a3b8;
+  --color-text-disabled: #98aaa3;
 
   /* Semantic Feedback */
   --color-semantic-success: #15803d;
@@ -48,20 +57,23 @@
   --color-status-soldout-bg: #f1f5f9;
 
   /* Fonts */
-  --font-family-arabic: 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-display: 'Alexandria', 'Tajawal', sans-serif;
+  --font-family-arabic:
+    'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
   --font-family-latin: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'SF Mono', monospace;
   --font-family-current: var(--font-family-arabic);
 
   /* Type Scale */
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 1.875rem;  /* 30px */
-  --font-size-4xl: 2.25rem;   /* 36px */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -73,16 +85,16 @@
   --line-height-relaxed: 1.6;
 
   /* Spacing Scale (4px base) */
-  --space-1: 0.25rem;  /* 4px */
-  --space-2: 0.5rem;   /* 8px */
-  --space-3: 0.75rem;  /* 12px */
-  --space-4: 1rem;     /* 16px */
-  --space-5: 1.25rem;  /* 20px */
-  --space-6: 1.5rem;   /* 24px */
-  --space-8: 2rem;     /* 32px */
-  --space-10: 2.5rem;  /* 40px */
-  --space-12: 3rem;    /* 48px */
-  --space-16: 4rem;    /* 64px */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
 
   /* Border Radii */
   --radius-sm: 0.25rem;
@@ -115,7 +127,7 @@
 }
 
 /* LTR Language Override */
-[dir="ltr"] {
+[dir='ltr'] {
   --font-family-current: var(--font-family-latin);
 }
 
@@ -127,7 +139,9 @@
 
 /* High Contrast Reduced Motion Gate */
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
+  *,
+  ::before,
+  ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<style>text{font-family:Cairo,"Noto Kufi Arabic","Noto Sans Arabic",sans-serif}</style>
+<rect data-name="Card" x="0" y="0" width="1440" height="900" rx="0" fill="#F8F7F2"/>
+<rect data-name="Card" x="0" y="0" width="1440" height="91" rx="0" fill="#FFFFFF"/>
+<rect data-name="Brand mark" x="1170" y="25" width="41" height="41" rx="11" fill="#0F766E"/>
+<text data-name="◈" x="1190.5" y="65.25" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="25" font-weight="700" fill="#FFFFFF">◈</text>
+<text data-name="DIGITAL MENU" x="1221" y="54.92" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#12302A">DIGITAL MENU</text>
+<rect data-name="Button / اطلب الخدمة" x="65" y="21" width="171" height="54" rx="13" fill="#0F766E"/>
+<text data-name="اطلب الخدمة" x="150.5" y="54.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#FFFFFF">اطلب الخدمة</text>
+<line data-name="Divider" x1="0" y1="91" x2="1440" y2="91" stroke="#DFEAE5" stroke-width="1"/>
+<rect data-name="Card" x="77" y="165" width="538" height="574" rx="34" fill="#E2F5EB"/>
+<ellipse data-name="Circle" cx="341.0" cy="408.0" rx="169.0" ry="169.0" fill="#D0EADE"/>
+<ellipse data-name="Circle" cx="343.0" cy="408.0" rx="138.0" ry="138.0" fill="#FFFFFF"/>
+<text data-name="404" x="345.5" y="435.71000000000004" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="83" font-weight="700" fill="#0F766E">404</text>
+<text data-name="⌁" x="345.5" y="508.9" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="70" font-weight="700" fill="#E8BB79">⌁</text>
+<rect data-name="Card" x="170" y="618" width="351" height="59" rx="16" fill="#FFFFFF"/>
+<text data-name="رابط اتوه من المنيو" x="345.5" y="653.66" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="18" font-weight="700" fill="#667B74">رابط اتوه من المنيو</text>
+<rect data-name="Pill" x="1100" y="222" width="217" height="41" rx="20.5" fill="#E2F5EB"/>
+<text data-name="رابط غير متاح" x="1208.5" y="248.31" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="700" fill="#0F766E">رابط غير متاح</text>
+<text data-name="الصفحة دي مش موجودة" x="1320" y="375.28" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="44" font-weight="700" fill="#12302A">الصفحة دي مش موجودة</text>
+<text data-name="ممكن الرابط اتغير، أو الصفحة اللي " x="1317" y="422.66" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="18" font-weight="400" fill="#667B74">ممكن الرابط اتغير، أو الصفحة اللي بتدور عليها اتحذفت.</text>
+<text data-name="لسه تقدر تستكشف المنيو وتشوف خدمات" x="1315" y="463.66" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="18" font-weight="400" fill="#667B74">لسه تقدر تستكشف المنيو وتشوف خدماتنا.</text>
+<rect data-name="Button / العودة للرئيسية" x="1074" y="541" width="248" height="54" rx="13" fill="#0F766E"/>
+<text data-name="العودة للرئيسية" x="1198.0" y="574.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#FFFFFF">العودة للرئيسية</text>
+<rect data-name="Button / شوف المنيو التجريبي" x="790" y="541" width="269" height="54" rx="13" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="شوف المنيو التجريبي" x="924.5" y="574.42" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-size="16" font-weight="700" fill="#0F766E">شوف المنيو التجريبي</text>
+<rect data-name="Card" x="737" y="644" width="581" height="95" rx="18" fill="#FFFFFF" stroke="#DFEAE5" stroke-width="1"/>
+<text data-name="صاحب مطعم أو كافيه؟" x="1284" y="684.29" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="17" font-weight="700" fill="#12302A">صاحب مطعم أو كافيه؟</text>
+<text data-name="خلّي منيوك رقمي وسهل التحديث — اطل" x="1289" y="716.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">خلّي منيوك رقمي وسهل التحديث — اطلب تفاصيل الخدمة.</text>
+<text data-name="404  •  صفحة خطأ فعلية في التنفيذ،" x="1324" y="839.81" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-size="13" font-weight="400" fill="#667B74">404  •  صفحة خطأ فعلية في التنفيذ، وليست صفحة نجاح برمز 200</text>
+</svg>

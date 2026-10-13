@@ -375,11 +375,94 @@
     URL.revokeObjectURL(url);
   }
 
+  function generateQrPath(text, options = {}) {
+    const margin = typeof options.margin === 'number' ? options.margin : 4;
+    const res = generateQrMatrix(text);
+    let path = '';
+    for (let r = 0; r < res.size; r++) {
+      for (let c = 0; c < res.size; c++) {
+        if (res.matrix[r][c] === 1) {
+          path += `M${c + margin},${r + margin}h1v1h-1z `;
+        }
+      }
+    }
+    return {
+      path: path.trim(),
+      size: res.size,
+      totalSize: res.size + margin * 2,
+      margin,
+      version: res.vInfo.version,
+    };
+  }
+
+  function decodeQrMatrix(matrix) {
+    const size = matrix.length;
+    const vInfo = QR_VERSIONS_M.find((v) => v && v.size === size);
+    if (!vInfo) throw new Error('Unsupported QR matrix size: ' + size);
+
+    const isFunc = Array.from({ length: size }, () => new Array(size).fill(false));
+    function markFunc(top, left, h, w) {
+      for (let r = 0; r < h; r++) {
+        for (let c = 0; c < w; c++) {
+          if (top + r >= 0 && top + r < size && left + c >= 0 && left + c < size) {
+            isFunc[top + r][left + c] = true;
+          }
+        }
+      }
+    }
+    markFunc(0, 0, 9, 9);
+    markFunc(0, size - 8, 9, 8);
+    markFunc(size - 8, 0, 8, 9);
+    for (let i = 0; i < size; i++) {
+      isFunc[6][i] = true;
+      isFunc[i][6] = true;
+    }
+    for (const center of vInfo.align) {
+      markFunc(center - 2, center - 2, 5, 5);
+    }
+    isFunc[size - 8][8] = true;
+
+    const bits = [];
+    let upwards = true;
+    for (let rightCol = size - 1; rightCol > 0; rightCol -= 2) {
+      if (rightCol === 6) rightCol--;
+      const rows = upwards
+        ? Array.from({ length: size }, (_, i) => size - 1 - i)
+        : Array.from({ length: size }, (_, i) => i);
+      for (const r of rows) {
+        for (const c of [rightCol, rightCol - 1]) {
+          if (!isFunc[r][c]) {
+            const mask = (r + c) % 2 === 0 ? 1 : 0;
+            bits.push(matrix[r][c] ^ mask);
+          }
+        }
+      }
+      upwards = !upwards;
+    }
+
+    let bitPos = 0;
+    function readBits(num) {
+      let val = 0;
+      for (let i = 0; i < num; i++) val = (val << 1) | bits[bitPos++];
+      return val;
+    }
+
+    const mode = readBits(4);
+    const len = readBits(8);
+    let text = '';
+    for (let i = 0; i < len; i++) {
+      text += String.fromCharCode(readBits(8));
+    }
+    return { text, mode, length: len, version: vInfo.version };
+  }
+
   return {
     generateQrMatrix,
     generateQrSvg,
+    generateQrPath,
+    decodeQrMatrix,
     renderQrToCanvas,
     downloadQrPng,
-    downloadQrSvg
+    downloadQrSvg,
   };
 });

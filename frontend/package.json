@@ -12,7 +12,8 @@
     "test:html": "node --test scripts/source-html.mjs",
     "test:design": "node --test scripts/test-design-alignment.mjs",
     "test:e2e": "playwright test",
-    "test:lighthouse": "node scripts/lighthouse-ci.mjs"
+    "test:lighthouse": "node scripts/lighthouse-ci.mjs",
+    "test:security": "node --test scripts/test-security.mjs scripts/test-static-assets.mjs"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

@@ -20,9 +20,7 @@ for (const javaScriptEnabled of [false, true]) {
         true,
       );
       await page.getByRole('link', { name: 'الصفحة الرئيسية' }).click();
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-        'منيو مطعمك… بشكل أذكى وأجمل',
-      );
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('منيو مطعمك، على مزاجك.');
       expect(errors).toEqual([]);
     });
 
@@ -32,9 +30,7 @@ for (const javaScriptEnabled of [false, true]) {
       const errors: string[] = [];
       page.on('pageerror', (error) => errors.push(error.message));
       await page.goto('/');
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-        'منيو مطعمك… بشكل أذكى وأجمل',
-      );
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('منيو مطعمك، على مزاجك.');
       await expect(page.locator('#features')).toBeVisible();
       await expect(page.locator('#how-it-works')).toBeVisible();
       await expect(page.locator('#pricing')).toBeVisible();
@@ -51,7 +47,7 @@ for (const javaScriptEnabled of [false, true]) {
       page.on('pageerror', (error) => errors.push(error.message));
       const response = await page.goto('/unknown-missing-page');
       expect(response?.status()).toBe(404);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('الصفحة غير موجودة');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('الصفحة دي مش موجودة');
       await expect(page.getByRole('link', { name: 'العودة للصفحة الرئيسية' })).toBeVisible();
       expect(errors).toEqual([]);
     });
