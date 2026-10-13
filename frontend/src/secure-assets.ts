@@ -103,12 +103,16 @@ export function secureAssets(root: string, preload = true): RequestHandler {
   }
   if (preload) initialize();
   return (req, res, next) => {
+    const reject = () => {
+      res.setHeader('X-Robots-Tag', 'noindex');
+      res.status(404).end();
+    };
     const raw = req.originalUrl.split('?')[0];
     let path: string;
     try {
       path = decodeURIComponent(raw);
     } catch {
-      res.status(404).end();
+      reject();
       return;
     }
     if (
@@ -118,7 +122,7 @@ export function secureAssets(root: string, preload = true): RequestHandler {
         .split('/')
         .some((segment) => segment === '.' || segment === '..' || segment.startsWith('.'))
     ) {
-      res.status(404).end();
+      reject();
       return;
     }
     // Angular's build-time virtual server has no browser directory yet. Genuine
@@ -133,7 +137,7 @@ export function secureAssets(root: string, preload = true): RequestHandler {
     const asset = assets.get(path);
     if (!asset) {
       if (extname(path) || path.startsWith('/fonts/')) {
-        res.status(404).end();
+        reject();
         return;
       }
       next();

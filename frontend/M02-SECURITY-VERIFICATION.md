@@ -41,15 +41,15 @@ Node 24.19.0 / npm 11.17.0 / Windows, production Angular build:
 - npm run build: PASS, one prerendered route. Initial attempt diagnosed build-time
   virtual root unavailability and fixed it; no security gate disabled.
 - npm run test:design: PASS 8/8.
-- npm run test:html: PASS 6/6, aggregate browser JS 109607 gzip bytes.
+- npm run test:html: final PASS 6/6, aggregate browser JS 109607 gzip bytes. A rerun caught a missing noindex header on the new static 404 path; fixed without changing assertions.
 - npm run test:lighthouse: PASS, performance 92/96/96, median 96 >= unchanged 90;
   accessibility/SEO/best-practices 100 each. Local lab, not production CWV.
 - npm run test:security: local BLOCKED/exit 1 because Windows denies creating
   file symlinks (EPERM). Creation is required, never silently skipped. Required
   Foundation CI executes the full Linux security suite on the final pushed SHA.
 - Playwright initial attempt: BLOCKED (missing pinned headless browser); installed
-  the pinned browser outside the repo. Final rerun is reported in PR evidence.
-- Backend locked restore and Release build: PASS; zero warnings/errors.
+  the pinned browser outside the repo. Final rerun PASS 6/6, exit 0.
+- Backend locked restore, Release build and format verification: PASS; zero warnings/errors.
 - Full real SQL Server LocalDB regression: PASS 90/90, 0 failed, 0 skipped (93s).
   TRX: backend/tests/DigitalMenu.IntegrationTests/TestResults/m02-full.trx (ignored).
 
