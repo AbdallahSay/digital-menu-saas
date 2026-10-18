@@ -28,7 +28,7 @@ test('raw source contains the public fixture and truthful SEO metadata without e
   assert.doesNotMatch(html, /UserId|RestaurantId|password|draft-product/);
 });
 
-test('QR is one same-origin 302 hop; all unknown routes are actual 404s', async () => {
+test('QR is one same-origin 302 hop; well-formed unknown routes are actual 404s', async () => {
   const qr = await fetch(origin + '/m/demo-code', { redirect: 'manual' });
   assert.equal(qr.status, 302);
   assert.equal(qr.headers.get('location'), '/r/demo');
@@ -39,12 +39,23 @@ test('QR is one same-origin 302 hop; all unknown routes are actual 404s', async 
   for (const path of [
     '/r/missing',
     '/missing',
-    '/m/missing',
+    '/m/' + '0'.repeat(20), // Well-formed and absent from the SQL fixtures.
     '/r/demo/extra',
     '/m/https://evil.example',
   ]) {
     const response = await fetch(origin + path, { redirect: 'manual' });
     assert.equal(response.status, 404, path);
+    assert.equal(response.headers.get('location'), null, path);
+    assert.match(response.headers.get('x-robots-tag'), /noindex/);
+    assert.doesNotMatch(await response.text(), /مطعم التجربة|قهوة عربية/);
+  }
+});
+
+test('malformed QR codes and invalid QR locales return 400 without redirects', async () => {
+  for (const path of ['/m/missing', '/m/invalid', '/m/' + '0'.repeat(20) + '?lang=fr']) {
+    const response = await fetch(origin + path, { redirect: 'manual' });
+    assert.equal(response.status, 400, path);
+    assert.equal(response.headers.get('location'), null, path);
     assert.match(response.headers.get('x-robots-tag'), /noindex/);
     assert.doesNotMatch(await response.text(), /مطعم التجربة|قهوة عربية/);
   }

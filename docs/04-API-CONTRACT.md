@@ -378,6 +378,40 @@ No `RestaurantId`, `UserId`, status internals, private drafts, e-mail, storage b
 - Edit invalidates public menu cached read model; if adopting TTL, define user-visible maximum stale duration and verify in tests.
 
 ## Public SEO route contract (SSR edge and .NET API)
+
+### S01 implemented SSR boundary (local/test runtime)
+
+- `/r/{slug}?lang=ar|en` reads the actual F09 by-slug projection and returns Angular
+  server HTML containing every returned category/item, descriptions and exact EGP
+  decimal prices. Arabic is default; F09 supplies per-field English fallback.
+  Empty published menus remain 200. No image/logo URL is invented.
+- 400 for malformed slug or empty/unsupported/repeated `lang`; 404 for unknown,
+  unpublished or suspended menus; 503 for unavailable/rate-limited/malformed API
+  responses or timeouts. Errors are generic and noindex. GET/HEAD preserve status
+  with gzip or identity. Unsafe paths rejected by M02 may return 404 before routing.
+- `/m/{publicCode}` resolves F09 by permanent code, then returns exactly one 302 to
+  the validated internal `/r/{currentSlug}`. No permanent redirect or external
+  destination. Code lookup rechecks publication/status on every request.
+- Human-approved reservation: `/r/demo` and `/m/demo-code` remain illustrative.
+  A real F09 restaurant resolving to slug `demo` cannot be represented there;
+  its QR returns generic 503 until it has a different slug. S01 does not change
+  existing restaurant records or F04 provisioning validation.
+- `PUBLIC_API_ORIGIN` and `PUBLIC_ORIGIN` are trusted server configuration only;
+  never derive them from Host/forwarded headers. Bare HTTPS origins required,
+  except explicit HTTP loopback for local tests. Defaults remain local-only.
+  Never forward cookies, authorization, tenant or role headers to public F09.
+- Responses remain no-store. One F09 fetch per SSR render; request-scoped sanitized
+  transfer state avoids a duplicate initial hydration fetch. It is not a shared
+  cache. Body reads have a 5-second deadline and 16 MiB limit, with F09's existing
+  100-category/1000-item bounds; invalid data fails closed without truncation.
+- Actual pages have title, description, one H1, validated canonical (without query
+  parameters), correct lang/dir and robots. English is a query variant of the same
+  canonical; no fictitious hreflang. Detailed live sitemap/JSON-LD and historical
+  slug redirects remain S02; current sitemap still lists only the demo fixture.
+  Production hosting/media and S03/U04 work remain outstanding.
+
+Reproduction, SQL/SSR evidence and limitations: [S01 verification](../frontend/S01-VERIFICATION.md).
+
 - `GET /r/{slug}`: SSR runtime returns full public HTML from authorized **anonymous public data only**, status 200 with restaurant header, categories and items in source. Include unique title, description, canonical, `lang`/`dir`, verified Restaurant JSON-LD and optional Open Graph/Twitter tags.
 - `GET /m/{publicCode}`: same-origin redirect resolver returns **302** to the current canonical route. Only platform-generated local redirect targets; if unknown/unpublished, use correct non-200, not external URL or soft 404. QR string remains unchanged after rename.
 - `GET /api/v1/public/restaurants/by-slug/{slug}?lang=ar|en`: anonymous public projection for Angular SSR route; do not expose draft/identity info. Resolver may query API internally; document stable non-public infrastructure endpoints vs same-origin public contract.
