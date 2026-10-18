@@ -121,10 +121,15 @@ test('GET/HEAD gzip/identity statuses, validated one-hop QR and trusted canonica
         ['/r/s01-a?lang=ar&lang=en', 400],
         ['/r/INVALID', 400],
         ['/m/' + 'a'.repeat(20), 302],
+        ['/m/' + 'a'.repeat(20) + '?returnUrl=https%3A%2F%2Fevil.example', 302],
         ['/m/' + 'd'.repeat(20), 404],
         ['/m/' + 'e'.repeat(20), 404],
         ['/m/' + 'f'.repeat(20), 503],
         ['/m/invalid', 400],
+        ['/m/missing', 400],
+        ['/m/' + '0'.repeat(20), 404],
+        ['/m/' + 'a'.repeat(20) + '?lang=fr', 400],
+        ['/m/https://evil.example', 404],
       ]) {
         const result = await raw(path, encoding, method);
         assert.equal(result.status, status, path + ' ' + method + ' ' + encoding);
@@ -132,6 +137,7 @@ test('GET/HEAD gzip/identity statuses, validated one-hop QR and trusted canonica
           assert.equal(result.headers.location, '/r/s01-a');
           assert.equal((await raw(result.headers.location)).status, 200);
         } else if (status !== 200) {
+          assert.equal(result.headers.location, undefined, path);
           assert.ok(result.headers['x-robots-tag'].includes('noindex'));
           assert.ok(!result.body.includes('S01_SECRET'));
         }
@@ -222,7 +228,7 @@ test('three Lighthouse runs on a genuine SQL-backed menu retain >=90 mobile gate
         'node_modules/lighthouse/cli/index.js',
         origin + '/r/s01-b',
         '--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage',
-        '--only-categories=performance,accessibility,seo',
+        '--only-categories=performance,accessibility,best-practices,seo',
         '--output=json',
         '--output=html',
         '--output-path=' + path,
@@ -235,6 +241,7 @@ test('three Lighthouse runs on a genuine SQL-backed menu retain >=90 mobile gate
     results.push({
       performance: report.categories.performance.score,
       accessibility: report.categories.accessibility.score,
+      bestPractices: report.categories['best-practices'].score,
       seo: report.categories.seo.score,
       lcpMs: report.audits['largest-contentful-paint'].numericValue,
       cls: report.audits['cumulative-layout-shift'].numericValue,

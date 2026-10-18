@@ -64,7 +64,9 @@ use `</script>`, `<script>` and an image onerror payload: literal text appears b
 no tenant script/image executes. The only allowed executable inline script in
 source assertions is Angular's exact pinned CSS-loader snippet. Public category/
 item IDs are allowed by F09; restaurant/user IDs, private contacts/keys, credentials
-and image URLs are excluded. No backend production handler/model/package changed.
+and image URLs are excluded. No backend production handler/model changed. The final
+review pins the existing transitive SQL-client Pkcs dependency to its patched
+servicing release, as documented below.
 
 `secure-assets.ts` is unchanged and remains before dynamic routing. No new static
 fallback exists. All 59 original M02 regressions remain mandatory in Foundation,
@@ -153,6 +155,55 @@ through `S01_FRONTEND_GATES=1` and the filtered PublicSsrTests test (ports 4000/
 must be free). Normal SQL tests use dedicated dynamic loopback ports and tear down
 only their own processes/disposable database. TRX lives under the integration test
 project's ignored TestResults. CI retains HTML/Lighthouse/TRX artifacts.
+
+## Final CI correction and review (2026-10-18)
+
+The original Foundation failure on `31b89bc` was an obsolete assertion, not a
+production status regression: `/m/missing` is malformed under F09 and correctly
+returns 400. `source-html.mjs` now separately checks malformed codes/invalid locale
+(400) and an absent, valid 20-character hexadecimal code (404). Both require no
+Location, noindex and no demo content. The real SQL status matrix adds these cases
+for GET/HEAD and gzip/identity, checks negative responses never redirect, and proves
+an external `returnUrl` cannot change a valid QR's validated same-origin destination.
+Existing suspended/unpublished, reserved-demo, slug-change and unavailable-API tests
+remain. No production HTTP behavior or CI threshold was changed for this fix.
+
+Independent review traced F09's published/available tenant projections through the
+bounded SSR decoder, fresh request context, Angular interpolation, trusted canonical
+and per-document TransferState. M02 secure asset delivery remains unchanged. No new
+production routing/security blocker was identified. The F09 per-IP rate limiter
+also aggregates SSR requests at the internal server's address; production capacity
+and trusted-proxy/rate-limit design still need review before public hosting.
+
+A fresh NuGet audit found the transitive `System.Security.Cryptography.Pkcs 9.0.11`
+affected by [GHSA-846f-f764-76mx](https://github.com/advisories/GHSA-846f-f764-76mx)
+and [GHSA-2fmv-rv2c-59x7](https://github.com/advisories/GHSA-2fmv-rv2c-59x7).
+Infrastructure now pins the patched same-major 9.0.21 servicing release with the
+three affected lockfiles regenerated. This is the same maintained Microsoft/MIT
+dependency already used by SQL Client; no new image/storage service or framework
+is introduced. Audit gates remain enabled.
+
+Local diagnostic attempts initially failed with real 503 responses under resource
+pressure; temporary diagnostics were removed. The 5-second API deadline was not
+increased and no retry or assertion bypass was added. A build also encountered a
+Windows testhost file lock during overlapping verification, then an esbuild resource
+failure; verification was restarted sequentially with one Angular build worker.
+The final rerun and GitHub checks are recorded in the PR delivery report; earlier
+October 13 results above are historical evidence, not claims about the final SHA.
+
+Final local verification: locked restore and Release build succeeded; lint passed;
+Angular unit 8/8 and design 8/8; complete real SQL Server suite 91/91, zero failures
+or skips (`s01-final-full.trx`), including all five SQL-to-SSR Node tests. The real
+menu Lighthouse Performance scores were 93/93/98 (median 93), Accessibility/Best
+Practices/SEO 100 each. First live SSR 608ms, warm 52ms, 12-request parallel p50
+170ms/p95 294ms on this local SQL/TestServer bridge; these are lab measurements.
+`dotnet format --verify-no-changes`, EF pending-model verification and idempotent
+script generation passed. NuGet JSON audit returned zero vulnerabilities after the
+patch; npm audit returned zero. Linux CI remains authoritative for the complete
+59 symlink/race security regressions because this Windows account lacks symlink
+creation privileges. The required Foundation job executes source-HTML, e2e,
+security and demo Lighthouse against the same SQL-backed SSR process. Final-SHA
+Foundation/SQL/Planning run links and exact results are in PR #43's delivery comment.
 
 ## Remaining gates
 
