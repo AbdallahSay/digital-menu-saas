@@ -2,6 +2,11 @@
 
 Each item is a PR-sized unit. Agent must propose technical implementation and affected tests before coding; reviewer controls merge.
 
+S01's local acceptance evidence, open production prerequisites and proposed S02
+scope/ownership are reviewed in [S01 review and S02 plan](18-S01-REVIEW-AND-S02-PLAN.md).
+That document is a proposal for human review: it does not authorize S02, change
+the task graph or declare production readiness.
+
 | ID | Milestone | Task | Verification gate |
 |---|---|---|---|
 | P0 | Planning | Approve PRD, API contract, SEO/SSR decision, SSR-capable host and constraints | Human review of docs, record open questions |
