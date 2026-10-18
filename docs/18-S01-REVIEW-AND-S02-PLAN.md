@@ -1,8 +1,11 @@
 # S01 acceptance review and S02 preparation
 
 Review date: 2026-10-18. **Planning proposal, not implementation authorization.**
-Documentation branch starts at main `18b555b07f18205d153b2f8a886a58404aba0ae5`.
-S01 remains separate, Draft and unmerged. No production system was accessed.
+Documentation branch originally started at main `18b555b07f18205d153b2f8a886a58404aba0ae5`.
+The owner subsequently authorized merging PR #43 ONLY; it merged on 2026-10-18
+as `211e28f7aa6a7931bfc8ec713d70aa11435c61e9`. That main commit is now merged
+into this documentation branch without rewriting history or losing its proposals.
+PR #44 remains Draft/unmerged. No production system was accessed.
 See [controlled integration and ADR proposals](19-INTEGRATION-AND-ADR-PROPOSALS.md)
 for the conditional merge/synchronization checkpoints, alternatives and prepared
 first S02 increment. All proposals require the stated owner decisions.
@@ -12,8 +15,9 @@ first S02 increment. All proposals require the stated owner decisions.
 Accept S01's **local-only milestone evidence**; recommend project-owner review,
 not production release. [PR #43](https://github.com/AbdallahSay/digital-menu-saas/pull/43)
 head independently rechecked as `045c0ae89e59195ae9e8c0771192747b1513f13b`.
-Its owner-authored COMMENT review reports no confirmed blocking defect within that
-scope; it is not an APPROVED review, merge instruction or deployment approval.
+Its owner-authored COMMENT review reported no confirmed blocking defect within that
+scope. A later explicit human instruction authorized the specific merge; neither
+the review nor that merge authorizes production deployment or S02 implementation.
 
 | Evidence on exact S01 head | Observed result |
 |---|---|
@@ -40,7 +44,7 @@ Existing SQL/SSR tests cover A/B isolation and published/available filtering.
 Production hosting, media, proxy behavior, database inventory, regional capacity,
 backup recovery, real phones and field CWV are **NOT RUN/NOT VERIFIED**.
 
-Documentation-branch validation: the planning manifest/DAG/approval invariants,
+Historical pre-integration documentation-branch validation: the planning manifest/DAG/approval invariants,
 relative Markdown links, fence balance and `git diff --check` passed locally using
 Node; Python is unavailable locally. GitHub's actual Python Planning check passed
 on the initial documentation commit. Its
@@ -51,7 +55,12 @@ NU1902/NU1903. The patched 9.0.21 reference is in unmerged S01, not in this docs
 branch. This is an inherited main dependency blocker, not a passing runtime
 verification for this PR. Do not suppress audits or copy S01 code here. After an
 owner-authorized S01 merge, update this documentation branch against main and
-rerun CI; no merge is authorized by this plan.
+rerun CI; no merge was authorized by that plan. The subsequent explicit owner
+authorization and safe main synchronization above have now brought in the 9.0.21
+fix. Dependency/workflow files match merged main; this PR's remaining diff is
+documentation only. New post-merge/synchronized-head checks must be inspected
+independently, not assumed green from this correction. Exact final results and
+workflow links are recorded in PR #44's synchronization delivery comment.
 
 ## 2. Sources and scope reconciliation
 
@@ -83,7 +92,7 @@ Severity describes public-release impact, not a newly failing local S01 gate.
 
 | Risk | Severity / impact | Recommended owner and exit evidence |
 |---|---|---|
-| Main retains vulnerable Pkcs 9.0.11 while S01 contains the fix | High dependency risk; new main-based PRs fail locked restore audit | Owner reviews S01's existing 9.0.21 fix; after authorized integration, update dependent branches and rerun audits/CI without suppression |
+| Historical main Pkcs 9.0.11 dependency blocker | High; fixed in the authorized S01 merge and synchronized here, verification still required per head | Keep 9.0.21 lockfiles, rerun dependency audits/CI without suppression; inspect new failures independently |
 | SSR aggregates visitors into F09's 120/min remote-IP bucket | High availability: legitimate visitors can receive generic 503 after backend 429 | F09 security follow-up implements trusted internal boundary; R01 defines ingress topology; Q02 verifies multi-visitor load and abusive clients |
 | F04 accepts `demo`, S01 reserves `/r/demo` | High routing/integrity: real tenant URL can show illustrative data; its QR deliberately fails 503 | F04 follow-up reserves routes and plans legacy remediation before real indexing; S02 verifies sitemap/alias exclusions |
 | Hardcoded localhost robots/sitemap, no real tenant structured data | High release SEO: wrong URLs and incomplete discovery/indexing policy | S02, AC-15/17/18 and lifecycle source tests |

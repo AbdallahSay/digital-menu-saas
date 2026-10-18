@@ -5,6 +5,15 @@ No implementation, hosting selection, purchase, merge or production access is
 authorized by this document. Supplements [the review plan](18-S01-REVIEW-AND-S02-PLAN.md);
 does not change `automation/tasks.json`, milestone ownership or dependencies.
 
+Integration update: the owner separately authorized merging PR #43 ONLY.
+It merged as `211e28f7aa6a7931bfc8ec713d70aa11435c61e9`; its exact reviewed head
+is an ancestor of main. A normal merge brought main into this documentation branch,
+preserving all proposals and patched Pkcs9.0.21 without conflicts or force-push.
+Synchronization was prepared while post-merge CI ran; readiness remains conditional
+on main and synchronized-head CI, not the mere completion of the Git merge.
+Final head/run results are recorded in PR #44's delivery comment. PR #44 remains
+unmerged, and all four ADRs remain proposals. No S02 or deployment authorization.
+
 ## Integration checkpoint A: S01
 
 Independently rechecked PR #43 head
@@ -27,10 +36,11 @@ reviews and does not enforce thread resolution; human permission remains require
 by this task regardless. Strengthening review enforcement is a separate owner
 decision; do not change permissions/rules in this increment.
 
-Stop at this checkpoint until the owner explicitly authorizes **PR #43**. Never
+This checkpoint was satisfied by the subsequent explicit authorization of **PR #43**.
+For any future integration, stop until that specific authorization is obtained. Never
 interpret approval of the plan or S02 as permission to merge either PR.
 
-## Conditional synchronization runbook B (NOT EXECUTED)
+## Synchronization runbook B (execution status above)
 
 Only after PR #43 is actually merged by an authorized action:
 
