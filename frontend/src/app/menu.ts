@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { demo, publicOrigin } from './demo';
+import { serializeJsonLd } from './public-menu-seo';
 
 @Component({
   selector: 'app-menu',
@@ -146,13 +147,13 @@ export class Menu {
       document.querySelector<HTMLScriptElement>('script[type="application/ld+json"]') ??
       document.createElement('script');
     schema.type = 'application/ld+json';
-    schema.textContent = JSON.stringify({
+    schema.textContent = serializeJsonLd({
       '@context': 'https://schema.org',
       '@type': 'Restaurant',
       name: demo.name,
       url: canonical.href,
       menu: canonical.href,
-    }).replace(/</g, '\\u003c');
+    });
     document.head.appendChild(schema);
   }
 }
