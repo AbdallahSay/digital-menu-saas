@@ -3,6 +3,9 @@
 Review date: 2026-10-18. **Planning proposal, not implementation authorization.**
 Documentation branch starts at main `18b555b07f18205d153b2f8a886a58404aba0ae5`.
 S01 remains separate, Draft and unmerged. No production system was accessed.
+See [controlled integration and ADR proposals](19-INTEGRATION-AND-ADR-PROPOSALS.md)
+for the conditional merge/synchronization checkpoints, alternatives and prepared
+first S02 increment. All proposals require the stated owner decisions.
 
 ## 1. Acceptance and independently checked evidence
 
