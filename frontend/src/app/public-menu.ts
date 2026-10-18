@@ -4,6 +4,13 @@ import { DOCUMENT } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import type { PublicPage } from './public-menu-contract';
+import {
+  buildCanonicalUrl,
+  buildRestaurantDescription,
+  buildRestaurantJsonLd,
+  buildRestaurantTitle,
+  serializeJsonLd,
+} from './public-menu-seo';
 
 @Component({
   selector: 'app-public-menu',
@@ -142,24 +149,26 @@ export class PublicMenuComponent {
       document.documentElement.lang = this.page.language;
       document.documentElement.dir = this.english ? 'ltr' : 'rtl';
       const menu = this.page.menu;
-      title.setTitle(
-        menu ? menu.restaurant.name + (this.english ? ' | Menu' : ' | المنيو') : this.errorTitle,
-      );
+      title.setTitle(buildRestaurantTitle(menu, this.errorTitle, this.english));
       meta.updateTag({
         name: 'description',
-        content: menu
-          ? (this.english ? 'Menu of ' : 'منيو ') + menu.restaurant.name
-          : this.errorTitle,
+        content: buildRestaurantDescription(menu, this.errorTitle, this.english),
       });
       meta.updateTag({ name: 'robots', content: menu ? 'index,follow' : 'noindex,nofollow' });
       document
         .querySelectorAll('link[rel="canonical"], script[type="application/ld+json"]')
         .forEach((element) => element.remove());
       if (menu) {
+        const canonicalUrl = buildCanonicalUrl(this.page.publicOrigin, menu.restaurant.slug);
         const canonical = document.createElement('link');
         canonical.rel = 'canonical';
-        canonical.href = this.page.publicOrigin + '/r/' + menu.restaurant.slug;
+        canonical.href = canonicalUrl;
         document.head.appendChild(canonical);
+
+        const schema = document.createElement('script');
+        schema.type = 'application/ld+json';
+        schema.textContent = serializeJsonLd(buildRestaurantJsonLd(menu, canonicalUrl));
+        document.head.appendChild(schema);
       }
     });
   }
