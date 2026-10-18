@@ -37,6 +37,19 @@ Existing SQL/SSR tests cover A/B isolation and published/available filtering.
 Production hosting, media, proxy behavior, database inventory, regional capacity,
 backup recovery, real phones and field CWV are **NOT RUN/NOT VERIFIED**.
 
+Documentation-branch validation: the planning manifest/DAG/approval invariants,
+relative Markdown links, fence balance and `git diff --check` passed locally using
+Node; Python is unavailable locally. GitHub's actual Python Planning check passed
+on the initial documentation commit. Its
+[Foundation](https://github.com/AbdallahSay/digital-menu-saas/actions/runs/39124660980)
+and [SQL](https://github.com/AbdallahSay/digital-menu-saas/actions/runs/39124660967)
+checks failed at restore: current main still resolves Pkcs 9.0.11, producing
+NU1902/NU1903. The patched 9.0.21 reference is in unmerged S01, not in this docs-only
+branch. This is an inherited main dependency blocker, not a passing runtime
+verification for this PR. Do not suppress audits or copy S01 code here. After an
+owner-authorized S01 merge, update this documentation branch against main and
+rerun CI; no merge is authorized by this plan.
+
 ## 2. Sources and scope reconciliation
 
 Source of truth: [backlog](10-BACKLOG.md), [architecture](02-ARCHITECTURE.md),
@@ -67,6 +80,7 @@ Severity describes public-release impact, not a newly failing local S01 gate.
 
 | Risk | Severity / impact | Recommended owner and exit evidence |
 |---|---|---|
+| Main retains vulnerable Pkcs 9.0.11 while S01 contains the fix | High dependency risk; new main-based PRs fail locked restore audit | Owner reviews S01's existing 9.0.21 fix; after authorized integration, update dependent branches and rerun audits/CI without suppression |
 | SSR aggregates visitors into F09's 120/min remote-IP bucket | High availability: legitimate visitors can receive generic 503 after backend 429 | F09 security follow-up implements trusted internal boundary; R01 defines ingress topology; Q02 verifies multi-visitor load and abusive clients |
 | F04 accepts `demo`, S01 reserves `/r/demo` | High routing/integrity: real tenant URL can show illustrative data; its QR deliberately fails 503 | F04 follow-up reserves routes and plans legacy remediation before real indexing; S02 verifies sitemap/alias exclusions |
 | Hardcoded localhost robots/sitemap, no real tenant structured data | High release SEO: wrong URLs and incomplete discovery/indexing policy | S02, AC-15/17/18 and lifecycle source tests |
