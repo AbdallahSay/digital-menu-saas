@@ -1,0 +1,604 @@
+{
+  "schema_version": 2,
+  "repo": "AbdallahSay/digital-menu-saas",
+  "task_count": 29,
+  "tasks": [
+    {
+      "id": "QA-001",
+      "track": "Quality",
+      "area": "CI baseline",
+      "title": "Audit existing CI status, broken checks and skipped suites",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Record current branch SHA and exact status of existing checks",
+        "Separate environmental gaps from code failures, no invented pass claims"
+      ],
+      "verification": "GitHub Actions report with links",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-002",
+      "track": "Quality",
+      "area": "Security",
+      "title": "Create repeatable two-tenant SQL seed and request matrix",
+      "depends_on": [
+        "BE-002",
+        "BE-003"
+      ],
+      "acceptance": [
+        "Two tenants with cross-linked IDs exercise each protected entity",
+        "Negative results prove no foreign mutation/disclosure"
+      ],
+      "verification": "SQL integration fixture and test report",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-003",
+      "track": "Quality",
+      "area": "Security",
+      "title": "Run HTTP tenant isolation regression across methods",
+      "depends_on": [
+        "QA-002",
+        "BE-012"
+      ],
+      "acceptance": [
+        "GET/POST/PUT/DELETE Owner A against B category/item/media denied",
+        "No response reveals B sensitive data"
+      ],
+      "verification": "HTTP security suite",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-004",
+      "track": "Quality",
+      "area": "Security",
+      "title": "Test cookie/CSRF/logout/lockout/role matrix",
+      "depends_on": [
+        "BE-004",
+        "BE-029"
+      ],
+      "acceptance": [
+        "Missing CSRF, invalid cookie or revoked owner blocks write",
+        "Platform-only routes reject owner"
+      ],
+      "verification": "Auth integration run",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-005",
+      "track": "Quality",
+      "area": "Public",
+      "title": "Test published/unpublished visibility in raw SSR HTML",
+      "depends_on": [
+        "BE-014",
+        "FE-015"
+      ],
+      "acceptance": [
+        "Draft/deleted/suspended menu content absent from raw response",
+        "Statuses, canonical and noindex match contract"
+      ],
+      "verification": "Raw GET snapshots without JS",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-006",
+      "track": "Quality",
+      "area": "Public",
+      "title": "Verify printed QR redirect and malformed codes",
+      "depends_on": [
+        "BE-018",
+        "FE-056"
+      ],
+      "acceptance": [
+        "/m/{PublicCode} is one valid temporary redirect to current canonical",
+        "Invalid code safely rejected and no stale slug after rename"
+      ],
+      "verification": "Redirect integration run",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-007",
+      "track": "Quality",
+      "area": "Media",
+      "title": "Run malformed and cross-tenant image tests",
+      "depends_on": [
+        "BE-016",
+        "FE-053"
+      ],
+      "acceptance": [
+        "Spoofed MIME, oversize and foreign IDs denied",
+        "Successful processed object strips metadata with stable dimensions"
+      ],
+      "verification": "Media API suite",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-008",
+      "track": "Quality",
+      "area": "Localization",
+      "title": "Run AR RTL/EN LTR and EGP bidi regression",
+      "depends_on": [
+        "FE-023",
+        "FE-027"
+      ],
+      "acceptance": [
+        "Correct lang/dir/price and Arabic fallback verified",
+        "No accidental mechanical fallback translations or clipped punctuation"
+      ],
+      "verification": "Locale component/e2e",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-009",
+      "track": "Quality",
+      "area": "Theme",
+      "title": "Verify Restaurant/Café theme component parity",
+      "depends_on": [
+        "FE-017",
+        "FE-014"
+      ],
+      "acceptance": [
+        "Same components implement correct accent/buttons/chips/prices for both",
+        "Semantic availability/error color unchanged"
+      ],
+      "verification": "Unit snapshots + one family visual check",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-010",
+      "track": "Quality",
+      "area": "Owner",
+      "title": "Run owner end-to-end categories, items, image, QR journeys",
+      "depends_on": [
+        "FE-047",
+        "FE-050",
+        "FE-053",
+        "FE-056"
+      ],
+      "acceptance": [
+        "Owner can complete actions or see honest errors only after API response",
+        "No direct foreign entity access in same journey"
+      ],
+      "verification": "Owner Playwright + SQL fixture",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-011",
+      "track": "Quality",
+      "area": "Platform",
+      "title": "Run admin create, status, publication, audit journey",
+      "depends_on": [
+        "FE-064",
+        "FE-069",
+        "FE-070",
+        "FE-071"
+      ],
+      "acceptance": [
+        "Privileged API writes and status history reflect audit",
+        "Owner role cannot open/execute platform controls"
+      ],
+      "verification": "Platform Playwright + HTTP tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-012",
+      "track": "Quality",
+      "area": "Demo",
+      "title": "Run complete Demo Restaurant/Café flow without persistence",
+      "depends_on": [
+        "FE-039"
+      ],
+      "acceptance": [
+        "Steps preserve local input and distinguish Café/Restaurant previews",
+        "No tenant/account/QR backend write occurs"
+      ],
+      "verification": "Demo Playwright with request interception",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-013",
+      "track": "Quality",
+      "area": "Accessibility",
+      "title": "Check keyboard, contrast, focus, dialogs and touch targets",
+      "depends_on": [
+        "FE-011",
+        "FE-073",
+        "FE-059"
+      ],
+      "acceptance": [
+        "WCAG 2.2 AA project criteria checked on representative screens",
+        "Visible actionable labels, no focus trap or clipped messages"
+      ],
+      "verification": "axe + keyboard audit with exceptions",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-014",
+      "track": "Quality",
+      "area": "Responsive",
+      "title": "Run width interpolation and no-horizontal-scroll browser QA",
+      "depends_on": [
+        "FE-029",
+        "FE-059",
+        "FE-073"
+      ],
+      "acceptance": [
+        "320/360/375/390/412/430/768/1024/1440 layouts tested where affected",
+        "No overlap, cut-off CTA or unexpected horizontal scroll"
+      ],
+      "verification": "Playwright viewport matrix",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-015",
+      "track": "Quality",
+      "area": "SEO",
+      "title": "Verify canonical, metadata, sitemap, noindex and structured data",
+      "depends_on": [
+        "BE-022",
+        "BE-023",
+        "BE-024"
+      ],
+      "acceptance": [
+        "Raw HTML and sitemap only show eligible published entities",
+        "Canonical, redirects and server statuses match source contract"
+      ],
+      "verification": "HTTP SEO matrix",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-016",
+      "track": "Quality",
+      "area": "Performance",
+      "title": "Run controlled SSR and mobile performance baseline",
+      "depends_on": [
+        "BE-025",
+        "FE-029",
+        "PM-007"
+      ],
+      "acceptance": [
+        "Document target region, fixture sizes, device profile and repeated CWV/LHCI",
+        "No claimed metric without actual run and artifact"
+      ],
+      "verification": "LHCI and SQL query trace",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-017",
+      "track": "Quality",
+      "area": "Concurrency",
+      "title": "Run stale RowVersion and publication/cache racing tests",
+      "depends_on": [
+        "BE-013",
+        "BE-025",
+        "QA-002"
+      ],
+      "acceptance": [
+        "Stale edit gets 412 without overwrite and fresh public version consistent",
+        "Concurrent A/B reads never share private content"
+      ],
+      "verification": "SQL/HTTP concurrent tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "QA-018",
+      "track": "Quality",
+      "area": "Final review",
+      "title": "Run final traceability/FR acceptance review",
+      "depends_on": [
+        "QA-003",
+        "QA-004",
+        "QA-005",
+        "QA-010",
+        "QA-011",
+        "QA-012",
+        "QA-013",
+        "QA-014",
+        "QA-015",
+        "QA-016",
+        "QA-017"
+      ],
+      "acceptance": [
+        "Every P0 FR and NFR has linked executed evidence or explicit blocker",
+        "Block GO if security/SSR/availability verification incomplete"
+      ],
+      "verification": "FR→story→PR→CI acceptance matrix",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)"
+    },
+    {
+      "id": "OPS-001",
+      "track": "Operations",
+      "area": "CI",
+      "title": "Define atomic PR quality checks and required statuses",
+      "depends_on": [
+        "PM-011",
+        "QA-001"
+      ],
+      "acceptance": [
+        "Branch checks cover affected Angular/.NET/SQL/SSR tests",
+        "No automatic merge on unverified high/critical change"
+      ],
+      "verification": "CI workflow review and test run",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-002",
+      "track": "Operations",
+      "area": "Process",
+      "title": "Set issue status workflow and reviewer handoff contract",
+      "depends_on": [
+        "PM-011"
+      ],
+      "acceptance": [
+        "BACKLOG/READY/IN_PROGRESS/IN_REVIEW/DONE/BLOCKED mapped to tracker",
+        "Closure requires merged PR + verified acceptance evidence, not just a comment"
+      ],
+      "verification": "Tracker dry-run and issue template",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-003",
+      "track": "Operations",
+      "area": "Hosting",
+      "title": "Document SSR host, TLS and proxy trust configuration",
+      "depends_on": [
+        "PM-007"
+      ],
+      "acceptance": [
+        "Planned same-origin ingress, Node SSR and API services recorded",
+        "No open proxy identity spoofing or SSR-only CSR fallback"
+      ],
+      "verification": "Staging topology runbook",
+      "mode": "DESIGN",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-004",
+      "track": "Operations",
+      "area": "Staging",
+      "title": "Provision isolated staging environment",
+      "depends_on": [
+        "OPS-003",
+        "PM-010"
+      ],
+      "acceptance": [
+        "Staging SSL and same-origin paths work without production credentials",
+        "Test SQL/media populated only from safe synthetic fixtures"
+      ],
+      "verification": "Staging readiness report",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-005",
+      "track": "Operations",
+      "area": "Backup",
+      "title": "Run SQL backup and restore drill in isolated staging",
+      "depends_on": [
+        "OPS-004",
+        "BE-030"
+      ],
+      "acceptance": [
+        "Backup restores schema, tenant constraints and representative data",
+        "Document RPO/RTO and exact restore commands"
+      ],
+      "verification": "Recovery drill report",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-006",
+      "track": "Operations",
+      "area": "Backup",
+      "title": "Run media object restore/reconciliation drill",
+      "depends_on": [
+        "OPS-004",
+        "BE-028"
+      ],
+      "acceptance": [
+        "Safe object backups restore image references correctly",
+        "No orphaned media or leaked public write credentials"
+      ],
+      "verification": "Media recovery report",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-007",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Configure redacted logs, correlation and health checks",
+      "depends_on": [
+        "OPS-004",
+        "BE-027"
+      ],
+      "acceptance": [
+        "Errors traced without private tenant metadata",
+        "Readiness and alerts identify SQL/media/SSR failures"
+      ],
+      "verification": "Staging fault-injection evidence",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-008",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Add release smoke test checklist",
+      "depends_on": [
+        "OPS-004",
+        "QA-005"
+      ],
+      "acceptance": [
+        "Smoke covers public QR/canonical, owner login, admin status and test tenant scope",
+        "Recovery and hidden-menu states included"
+      ],
+      "verification": "Executable smoke script/checklist",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-009",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Document staging deployment and rollback command path",
+      "depends_on": [
+        "OPS-004",
+        "OPS-001"
+      ],
+      "acceptance": [
+        "Deployment tied to immutable commit and reversibility documented",
+        "DB migration and media rollback risks explicitly reviewed"
+      ],
+      "verification": "Rollback runbook + dry run",
+      "mode": "DESIGN",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-010",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Run rollback tabletop and dependency failure rehearsal",
+      "depends_on": [
+        "OPS-007",
+        "OPS-009"
+      ],
+      "acceptance": [
+        "Simulated broken API/SSR/media shows safe degraded result",
+        "Rollback restores known good state without losing test data"
+      ],
+      "verification": "Staging rehearsal report",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    },
+    {
+      "id": "OPS-011",
+      "track": "Operations",
+      "area": "Release gate",
+      "title": "Prepare final GO/NO-GO release evidence decision",
+      "depends_on": [
+        "QA-018",
+        "OPS-005",
+        "OPS-006",
+        "OPS-008",
+        "OPS-010"
+      ],
+      "acceptance": [
+        "Block release on failed tenant/SSR/privacy or untested restore",
+        "Require explicit human approval; no autonomous deploy/merge"
+      ],
+      "verification": "Signed release checklist",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer"
+    }
+  ]
+}
