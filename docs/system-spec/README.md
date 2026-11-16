@@ -17,7 +17,9 @@
 8. [Traceability and tests](08-TRACEABILITY-AND-TESTS.md) — requirement ↔ story ↔ API ↔ test ↔ Figma.
 9. [Delivery roadmap](09-DELIVERY-PLAN.md) — phased PR-sized work, Definition of Ready/Done and handoffs.
 10. [Decisions, gaps and risks](10-DECISIONS-AND-RISKS.md) — do not silently treat proposals as approved.
-11. [Machine-readable requirements index](requirements.csv) — quick filtering and import into issue trackers.
+11. [API and data contract map](11-API-AND-DATA-MAP.md) — current contract families, screens and pending extensions.
+12. [Agent kickoff guide](12-AGENT-KICKOFF.md) — concrete scoped execution process and deliverables.
+13. [Machine-readable requirements index](requirements.csv) — 54 FR and 34 NFR records for filtering and issue trackers.
 
 ## Precedence and change control
 
@@ -34,4 +36,5 @@ Restaurant customer browses a published, safe, indexable bilingual menu from QR 
 ## Implementation status snapshot — NOT a production release claim
 
 The repository has F01–F09 backend feature code, S01 SSR foundation, schema and local tests. UI designs extend beyond currently wired Angular feature routes. S02/production hosting and several infrastructure decisions are still open. Existing verification reports describe historical local/CI evidence, not new testing by this documentation update.
+
 
