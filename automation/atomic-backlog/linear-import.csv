@@ -1,0 +1,2593 @@
+"Title","Description","Priority","Status","Assignee","Labels","Estimate","Created","Completed"
+"[PM-001] Audit existing code and completed milestone issues","**Atomic Task:** PM-001
+**Workstream:** Planning / Governance
+**Implementation mode:** AUDIT — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** None
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Document exact current main SHA, implemented endpoints and open PRs
+- [ ] Classify each legacy milestone as verified/retest/unfinished without reopening completed code
+
+**Verification required:** Source paths + issue links
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Todo","","Planning,Governance,AUDIT,medium","1","",""
+"[PM-002] Freeze approved Figma screens and theme token references","**Atomic Task:** PM-002
+**Workstream:** Planning / Governance
+**Implementation mode:** AUDIT — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-001
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Record source frame IDs, selected theme variables and component variants
+- [ ] Specify exact visual source priority and known non-approved drafts
+
+**Verification required:** Figma links + design source register
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Planning,Governance,AUDIT,medium","1","",""
+"[PM-003] Review system specification PR #46 and acceptance baseline","**Atomic Task:** PM-003
+**Workstream:** Planning / Governance
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-001
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Validate FR/NFR, US, ADR and Mermaid against current main
+- [ ] Record explicit accepted scope, discrepancies and sign-off, without merging automatically
+
+**Verification required:** Documentation review checklist
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Planning,Governance,REVIEW,medium","1","",""
+"[PM-004] Decide persistent Restaurant/Café theme representation","**Atomic Task:** PM-004
+**Workstream:** Planning / Architecture decision
+**Implementation mode:** DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-002, PM-003
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Approve or reject persisted ThemeId schema/API design distinct from PrimaryColor
+- [ ] Document default and migration/fallback/SSR behavior in approved ADR
+
+**Verification required:** Approved ADR D-01
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Planning,Architecture-decision,DECISION,high","1","",""
+"[PM-005] Decide whether restaurant owner may publish","**Atomic Task:** PM-005
+**Workstream:** Planning / Authorization decision
+**Implementation mode:** DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-003
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Clarify whether PlatformAdmin-only publication contract remains
+- [ ] If changing, approve policy, audit, CSRF and negative-role tests before coding
+
+**Verification required:** Approved ADR D-02
+**Risk:** critical; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Planning,Authorization-decision,DECISION,critical","1","",""
+"[PM-006] Confirm illustrative non-persistent Demo scope","**Atomic Task:** PM-006
+**Workstream:** Planning / Demo decision
+**Implementation mode:** DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-003
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Freeze the Demo as unpublished and non-persistent
+- [ ] Exclude public signup, live QR/account and real customer data
+
+**Verification required:** Approved scope note D-03
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Planning,Demo-decision,DECISION,medium","1","",""
+"[PM-007] Decide SSR deployment topology and trust boundaries","**Atomic Task:** PM-007
+**Workstream:** Planning / Infrastructure decision
+**Implementation mode:** DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-003
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Select feasible Node SSR + API same-origin topology and region
+- [ ] Document TLS, internal identity, cost and rollback before deploy
+
+**Verification required:** Approved ADR D-04
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Planning,Infrastructure-decision,DECISION,high","2","",""
+"[PM-008] Decide public rate limiter strategy for SSR traffic","**Atomic Task:** PM-008
+**Workstream:** Planning / Security decision
+**Implementation mode:** DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-007
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Select ingress vs service rate limits without grouping all SSR clients
+- [ ] Document trusted headers and abuse scenarios
+
+**Verification required:** Approved ADR D-05 + load scenario
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Planning,Security-decision,DECISION,high","1","",""
+"[PM-009] Resolve slug alias and reserved /r/demo policy","**Atomic Task:** PM-009
+**Workstream:** Planning / SEO decision
+**Implementation mode:** DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-003
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Specify reserved names, historical redirects and canonical behavior
+- [ ] Define one-hop redirects and rollback of collisions
+
+**Verification required:** Approved ADR D-06
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Planning,SEO-decision,DECISION,high","1","",""
+"[PM-010] Approve durable media storage and restore requirements","**Atomic Task:** PM-010
+**Workstream:** Planning / Infrastructure decision
+**Implementation mode:** DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-007
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Choose object store with region/cost and secure key policy
+- [ ] Approve SQL/media backup, retention and restore test conditions
+
+**Verification required:** Approved ADR D-07
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Planning,Infrastructure-decision,DECISION,high","1","",""
+"[PM-011] Agree small-task lifecycle and parallel work policy","**Atomic Task:** PM-011
+**Workstream:** Planning / Process
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-003
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Approve statuses and a one-task-per-agent-per-branch job protocol
+- [ ] Set max two concurrent independent tasks and review ownership
+
+**Verification required:** Reviewed atomic tracker rules
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Planning,Process,REVIEW,medium","1","",""
+"[PM-012] Approve low-credit visual review policy","**Atomic Task:** PM-012
+**Workstream:** Planning / Process
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** Product reviewer
+**Depends on (IDs):** PM-002
+**Requirements:** ADR, NFR-MNT-03
+**User story:** SPEC-PLANNING
+**Figma:** Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2
+
+**Acceptance criteria:**
+- [ ] Define component-family visual checkpoints rather than screenshot every change
+- [ ] Set exceptions for first screen, high-risk layout and final regression
+
+**Verification required:** Approved screenshot budget policy
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Planning,Process,REVIEW,medium","1","",""
+"[BE-001] Inventory current API endpoints and Domain entities","**Atomic Task:** BE-001
+**Workstream:** Backend / Baseline
+**Implementation mode:** AUDIT — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** PM-001
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Record actual ASP.NET endpoints, DTOs, status codes and EF entities
+- [ ] Map routes to FRs and separate missing code from existing feature
+
+**Verification required:** OpenAPI/source inventory + tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Backend,Baseline,AUDIT,medium","1","",""
+"[BE-002] Verify server-derived tenant context","**Atomic Task:** BE-002
+**Workstream:** Backend / Security
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-001
+**Requirements:** FR-080, FR-081
+**User story:** US-AUTH-01/US-SYS-01
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Owner requests cannot select tenant by client-controlled restaurant ID
+- [ ] Foreign IDs denied with no foreign record disclosure
+
+**Verification required:** Real SQL A/B negative tests
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Backend,Security,AUDIT_FIX,critical","2","",""
+"[BE-003] Verify composite tenant foreign keys and joins","**Atomic Task:** BE-003
+**Workstream:** Backend / Security
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-001
+**Requirements:** FR-080, FR-081
+**User story:** US-AUTH-01/US-SYS-01
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Foreign category/item/image associations fail at service and SQL layer
+- [ ] No partial writes occur for rejected relation
+
+**Verification required:** SQL integration tests
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Backend,Security,AUDIT_FIX,critical","2","",""
+"[BE-004] Verify Identity login/logout cookie and CSRF","**Atomic Task:** BE-004
+**Workstream:** Backend / Auth
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-001
+**Requirements:** FR-011, FR-012, FR-013
+**User story:** US-AUTH-01/US-SYS-01
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Secure HttpOnly cookie and CSRF checks present on unsafe operations
+- [ ] Logout revokes access and lockout is enforced
+
+**Verification required:** Auth API integration tests
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Backend,Auth,AUDIT_FIX,critical","2","",""
+"[BE-005] Verify provision transaction and duplicate owner handling","**Atomic Task:** BE-005
+**Workstream:** Backend / Platform
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-001
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Creation of restaurant, owner, membership and audit is atomic
+- [ ] Duplicate normalized owner email or slug yields 409 with rollback
+
+**Verification required:** Provision SQL integration tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Platform,AUDIT_FIX,high","2","",""
+"[BE-006] Verify restaurant suspend/reactivate concurrency","**Atomic Task:** BE-006
+**Workstream:** Backend / Platform
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-005
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Requires valid RowVersion and returns 412 on stale mutations
+- [ ] Suspension hides public menu without losing publication preference
+
+**Verification required:** Status and public projection tests
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Platform,AUDIT_FIX,high","1","",""
+"[BE-007] Verify platform-only restaurant publication authorization","**Atomic Task:** BE-007
+**Workstream:** Backend / Platform
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-004, PM-005
+**Requirements:** FR-011, FR-012, FR-013
+**User story:** US-PLAT-01/05
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Owner cannot call privileged publication API without an approved role change
+- [ ] Publication is audited and visibility updates correctly
+
+**Verification required:** Role matrix, CSRF and version tests
+**Risk:** critical; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Backend,Platform,AUDIT_FIX,critical","1","",""
+"[BE-008] Verify redacted audit logging for lifecycle operations","**Atomic Task:** BE-008
+**Workstream:** Backend / Platform
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-005
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Actor, action, tenant and timestamp recorded for privileged mutations
+- [ ] No secrets, passwords or invite tokens in audit/log data
+
+**Verification required:** Audit DTO tests and code review
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Platform,AUDIT_FIX,high","1","",""
+"[BE-009] Verify owner category API CRUD and sorting","**Atomic Task:** BE-009
+**Workstream:** Backend / Catalog
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-002
+**Requirements:** FR-020, FR-024, FR-027
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Category operations scoped to owner, validate Arabic name and sort order
+- [ ] Deleted/unpublished categories are absent from public results
+
+**Verification required:** Catalog service and HTTP tests
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Backend,Catalog,AUDIT_FIX,medium","2","",""
+"[BE-010] Verify category delete-with-items conflict rule","**Atomic Task:** BE-010
+**Workstream:** Backend / Catalog
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-009
+**Requirements:** FR-020, FR-024, FR-027
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Deleting category with active items returns 409, preserving data
+- [ ] Deleting an empty category remains soft-delete
+
+**Verification required:** SQL conflict integration test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Backend,Catalog,AUDIT_FIX,medium","1","",""
+"[BE-011] Verify item CRUD/price validation and availability","**Atomic Task:** BE-011
+**Workstream:** Backend / Catalog
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-009
+**Requirements:** FR-020, FR-024, FR-027
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Own valid item saves with nonnegative decimal EGP price
+- [ ] Unavailable, unpublished or deleted item excluded publicly
+
+**Verification required:** Item API and visibility test
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Backend,Catalog,AUDIT_FIX,medium","2","",""
+"[BE-012] Verify foreign item category and item references denied","**Atomic Task:** BE-012
+**Workstream:** Backend / Catalog
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-011, BE-003
+**Requirements:** FR-020, FR-024, FR-027
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Cannot assign item to a different restaurant category
+- [ ] No mutation of either tenant with cross-tenant identifiers
+
+**Verification required:** A/B HTTP+SQL tests
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Backend,Catalog,AUDIT_FIX,critical","2","",""
+"[BE-013] Verify RowVersion on editable categories/items","**Atomic Task:** BE-013
+**Workstream:** Backend / Catalog
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-009, BE-011
+**Requirements:** FR-020, FR-024, FR-027
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Stale write returns 412, no lost updates
+- [ ] Client receives safe version details for retry
+
+**Verification required:** Concurrency integration test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Backend,Catalog,AUDIT_FIX,medium","1","",""
+"[BE-014] Verify server-side published-only projection","**Atomic Task:** BE-014
+**Workstream:** Backend / Public API
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-011, BE-006
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Restaurant/category/item/availability/deleted predicates applied on server
+- [ ] Drafts and suspended content never leaked in DTO or HTML
+
+**Verification required:** Public two-tenant negative tests
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Backend,Public-API,AUDIT_FIX,critical","2","",""
+"[BE-015] Verify optional English fallback without fabricated translation","**Atomic Task:** BE-015
+**Workstream:** Backend / Localization
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-014
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] English missing field falls back to Arabic per contract
+- [ ] Price and category order remain correct under both locales
+
+**Verification required:** Projection locale tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Backend,Localization,AUDIT_FIX,medium","1","",""
+"[BE-016] Verify upload signature/size/re-encoding protections","**Atomic Task:** BE-016
+**Workstream:** Backend / Media
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-002
+**Requirements:** FR-028, FR-029
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Reject disguised or oversized files; strip EXIF and normalize
+- [ ] Foreign item image uploads do not write keys
+
+**Verification required:** Media API tests with malformed bytes
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Media,AUDIT_FIX,high","2","",""
+"[BE-017] Verify primary/order/alt text and cleanup semantics","**Atomic Task:** BE-017
+**Workstream:** Backend / Media
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-016
+**Requirements:** FR-028, FR-029
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Item/image relationship and sort/alt fields are consistent
+- [ ] Failed DB/object-store phases compensate safely or are recoverable
+
+**Verification required:** SQL + object store failure injection
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Media,AUDIT_FIX,high","2","",""
+"[BE-018] Verify immutable QR alias one-hop 302","**Atomic Task:** BE-018
+**Workstream:** Backend / Public routing
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-014
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Valid /m/{code} resolves to current canonical /r/{slug} once
+- [ ] Invalid codes never reveal private tenant details
+
+**Verification required:** HTTP redirect test
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Public-routing,AUDIT_FIX,high","1","",""
+"[BE-019] Approve ThemeId schema migration design without executing it","**Atomic Task:** BE-019
+**Workstream:** Backend / Theme
+**Implementation mode:** DESIGN — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** PM-004, BE-001
+**Requirements:** FR-031, FR-062
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Propose constrained theme ID and default for historical tenants
+- [ ] Include forward/rollback migration and SSR fallback
+
+**Verification required:** Reviewed migration and API diff
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Theme,DESIGN,high","1","",""
+"[BE-020] Implement approved theme persistence in settings contract","**Atomic Task:** BE-020
+**Workstream:** Backend / Theme
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-019
+**Requirements:** FR-031, FR-062
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Owner update persists only approved Restaurant/Café identities
+- [ ] SSR public projection returns the saved theme and default
+
+**Verification required:** Migration+API contract and integration tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Theme,BUILD,high","2","",""
+"[BE-021] Verify SSR public menu source HTML and statuses","**Atomic Task:** BE-021
+**Workstream:** Backend / SEO
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-014, PM-007
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Initial HTML has real visible category/item data with correct status
+- [ ] Suspended/unpublished/404 responses avoid indexable private content
+
+**Verification required:** raw HTTP/SSR source tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,SEO,AUDIT_FIX,high","2","",""
+"[BE-022] Implement approved metadata/canonical and JSON-LD policy","**Atomic Task:** BE-022
+**Workstream:** Backend / SEO
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-021, PM-009
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Published restaurant has truthful title/canonical/schema
+- [ ] No generated claims or unpublished structured data
+
+**Verification required:** Raw HTML schema tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,SEO,AUDIT_FIX,high","2","",""
+"[BE-023] Implement published-only sitemap and robots","**Atomic Task:** BE-023
+**Workstream:** Backend / SEO
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-022
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Only published eligible canonical menus included
+- [ ] Lifecycle changes remove stale URLs
+
+**Verification required:** Sitemap integration tests
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,SEO,AUDIT_FIX,high","1","",""
+"[BE-024] Implement approved slug alias and reserved name policy","**Atomic Task:** BE-024
+**Workstream:** Backend / SEO
+**Implementation mode:** DESIGN_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** PM-009, BE-018
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] No collision with reserved /r/demo and old slug redirects one hop
+- [ ] QR alias remains temporary 302 and canonical stays current
+
+**Verification required:** Routing HTTP tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,SEO,DESIGN_BUILD,high","2","",""
+"[BE-025] Verify tenant/locale/version-aware public cache","**Atomic Task:** BE-025
+**Workstream:** Backend / Cache
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-014
+**Requirements:** FR-050, FR-052, FR-059
+**User story:** US-PUB-01/06
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] No cross-tenant or private DTO cache key reuse
+- [ ] Update invalidates old public SSR HTML
+
+**Verification required:** Concurrent public read and invalidation test
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Backend,Cache,AUDIT_FIX,critical","2","",""
+"[BE-026] Implement trusted SSR public rate budget policy","**Atomic Task:** BE-026
+**Workstream:** Backend / Rate limiting
+**Implementation mode:** DESIGN_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** PM-008, BE-021
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Public SSR visitors do not share one accidental global throttle bucket
+- [ ] Spoofed forwarding headers cannot bypass limits
+
+**Verification required:** Multi-visitor abuse/load tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Rate-limiting,DESIGN_BUILD,high","2","",""
+"[BE-027] Verify safe ProblemDetails, correlation IDs and readiness","**Atomic Task:** BE-027
+**Workstream:** Backend / Operations
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-001
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Errors contain no stack traces/tenant secrets
+- [ ] Readiness indicates actual required SQL/media dependency
+
+**Verification required:** HTTP error and health tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Backend,Operations,AUDIT_FIX,medium","1","",""
+"[BE-028] Wire approved durable store with scoped object keys","**Atomic Task:** BE-028
+**Workstream:** Backend / Media
+**Implementation mode:** DESIGN_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** PM-010, BE-017
+**Requirements:** FR-028, FR-029
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] No anonymous writes; media keys tenant scoped and durable
+- [ ] Isolation and failure recovery proven in staging
+
+**Verification required:** Storage integration + restore evidence
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Media,DESIGN_BUILD,high","2","",""
+"[BE-029] Test revoked/suspended membership with existing cookie","**Atomic Task:** BE-029
+**Workstream:** Backend / Security
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** BE-004, BE-002
+**Requirements:** FR-080, FR-081
+**User story:** US-AUTH-01/US-SYS-01
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Revoked owner session cannot mutate tenant resources
+- [ ] Error response does not disclose sensitive IDs
+
+**Verification required:** Revocation HTTP tests
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Security,AUDIT_FIX,high","1","",""
+"[BE-030] Verify production-safe backup/migration playbook","**Atomic Task:** BE-030
+**Workstream:** Backend / Data
+**Implementation mode:** AUDIT — inspect existing code first; reuse whenever verified.
+**Agent role:** Codex Backend
+**Depends on (IDs):** PM-010, BE-003
+**Requirements:** FR-080, FR-081
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Migration plan has non-destructive staging path and rollback
+- [ ] Restore tested on isolated backup; never touch production without approval
+
+**Verification required:** Staging backup-restore report
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Backend,Data,AUDIT,high","2","",""
+"[FE-001] Audit existing Angular 22 routes/components without rewriting","**Atomic Task:** FE-001
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** PM-001
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] List currently implemented routes, CSS tokens and SSR behavior with file references
+- [ ] Classify reusable code, missing UI and conflict risks before edits
+
+**Verification required:** Source inventory and successful current build
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT,medium","1","",""
+"[FE-002] Extract Figma token mapping into code-friendly reference","**Atomic Task:** FE-002
+**Workstream:** Frontend / Foundation
+**Implementation mode:** DESIGN — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** PM-002, FE-001
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Map typography, spacing, radius, shadows, green/brown and semantic colors
+- [ ] Do not invent missing design tokens or alter approved master
+
+**Verification required:** Token mapping table + Figma nodes
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,DESIGN,medium","1","",""
+"[FE-003] Implement semantic CSS variables and type scale","**Atomic Task:** FE-003
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-002
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Shared tokens represent approved colors/spacing/fonts not per-screen hardcodes
+- [ ] No change to existing public SSR visible HTML contract
+
+**Verification required:** CSS unit check + build
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-004] Implement two-theme runtime styling resolver","**Atomic Task:** FE-004
+**Workstream:** Frontend / Foundation
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-003
+**Requirements:** FR-031, FR-062
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Restaurant and Café theme variants consistently supply accent/hero/button/chip styles
+- [ ] Semantic available/error status colors remain independent
+
+**Verification required:** Theme unit test + two static previews
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,BUILD,medium","1","",""
+"[FE-005] Implement reusable primary/secondary button variants","**Atomic Task:** FE-005
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-004
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Buttons render correct theme/state at mobile and desktop
+- [ ] Focus, disabled and loading semantics remain accessible
+
+**Verification required:** Component interaction tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-006] Implement category-chip variants and focus state","**Atomic Task:** FE-006
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-004
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Selected/unselected chip styles match approved themes
+- [ ] Chip text never clips at 320px
+
+**Verification required:** Unit + narrow width layout check
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-007] Implement reusable dish card layout and price slot","**Atomic Task:** FE-007
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-004
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Dish card supports name/description/price/image/availability in both languages
+- [ ] Correct mobile stacking and no order/cart controls
+
+**Verification required:** Component test + visual checkpoint
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-008] Implement reusable search field variant","**Atomic Task:** FE-008
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-003
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Search field with icon/clear/focus matches Figma
+- [ ] Keyboard and screen reader label are correct
+
+**Verification required:** Component keyboard test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-009] Implement shared form input/error variants","**Atomic Task:** FE-009
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-003
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Text/select/textarea/input errors use consistent approved Figma form style
+- [ ] Validation message readable and associated with field
+
+**Verification required:** Form component tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-010] Implement feedback badge/empty/loading components","**Atomic Task:** FE-010
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-003
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Availability/success/warning/error states have readable consistent visuals
+- [ ] Loading/empty/error do not incorrectly show success
+
+**Verification required:** Component state tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-011] Implement accessible confirm dialog component","**Atomic Task:** FE-011
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-005, FE-009
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Modal focus trapped/restored and Escape semantics checked
+- [ ] No destructive action before confirmed backend response
+
+**Verification required:** Keyboard + dialog tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-012] Implement AR RTL / EN LTR layout utilities","**Atomic Task:** FE-012
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-003
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Direction switches header/menu/forms correctly and preserves numeric bidi
+- [ ] Missing English content uses approved Arabic fallback
+
+**Verification required:** Locale/direction tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","1","",""
+"[FE-013] Implement shared owner/platform responsive shells","**Atomic Task:** FE-013
+**Workstream:** Frontend / Foundation
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-003, FE-012
+**Requirements:** NFR-MNT-01, NFR-ACC-04
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Mobile nav and 1024+ sidebar align with approved Figma variants
+- [ ] Correct active item, no overlap or horizontal scroll
+
+**Verification required:** Shell component tests
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,AUDIT_BUILD,medium","2","",""
+"[FE-014] Add component story/test fixtures for two themes","**Atomic Task:** FE-014
+**Workstream:** Frontend / Foundation
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-005, FE-006, FE-007, FE-008, FE-010
+**Requirements:** FR-031, FR-062
+**User story:** US-SYS-02
+**Figma:** Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Minimal deterministic Restaurant/Café fixtures cover selected/disabled/error states
+- [ ] Snapshot or DOM evidence; avoid screenshots per tiny change
+
+**Verification required:** Component test suite
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Foundation,BUILD,medium","1","",""
+"[FE-015] Preserve existing /r/:slug SSR and QR route foundation","**Atomic Task:** FE-015
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-001, BE-021
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Inspect and reuse source HTML rendering without replacing it with CSR shell
+- [ ] Guard status/canonical/raw HTML in regression tests
+
+**Verification required:** SSR raw HTTP regression
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Public-menu,AUDIT_FIX,high","2","",""
+"[FE-016] Implement Restaurant public menu page composition","**Atomic Task:** FE-016
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-007, FE-015, FE-012
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Matches approved restaurant hero/category/menu hierarchy
+- [ ] No draft data or cart/checkout buttons
+
+**Verification required:** One 390px AR Figma checkpoint + SSR test
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","2","",""
+"[FE-017] Implement Café menu variant on shared components","**Atomic Task:** FE-017
+**Workstream:** Frontend / Public menu
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-016, FE-004
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Café hero/chip/price/buttons use brown accent and approved styling
+- [ ] No forked duplicate menu templates
+
+**Verification required:** Theme snapshot/unit regression
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,BUILD,medium","2","",""
+"[FE-018] Build restaurant hero/branding responsive slots","**Atomic Task:** FE-018
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-016
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Cover, title and logo preserve aspect ratio and contrast
+- [ ] Long Arabic heading does not overlap action icons
+
+**Verification required:** Responsive DOM checks
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","1","",""
+"[FE-019] Connect visible category chips and selected state","**Atomic Task:** FE-019
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-006, FE-016
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Only visible categories shown in stored order
+- [ ] Selected category filters cards, including narrow chip wrapping
+
+**Verification required:** Interaction test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","1","",""
+"[FE-020] Connect menu search, clear and no-result state","**Atomic Task:** FE-020
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-008, FE-016
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Search filters only already visible safe catalog items
+- [ ] Clear resets, zero results meaningful in AR/EN
+
+**Verification required:** Search unit/e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","1","",""
+"[FE-021] Render optimized dish card media and availability","**Atomic Task:** FE-021
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-007, FE-016
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Safe media dimensions prevent layout shift
+- [ ] Unavailable unpublished items excluded per API
+
+**Verification required:** Component/SSR check
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","1","",""
+"[FE-022] Build dish details view and back behavior","**Atomic Task:** FE-022
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-016, FE-021
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Details typography and CTA follow approved design
+- [ ] Back returns to category/search without unexpected modal
+
+**Verification required:** Mobile navigation e2e
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","2","",""
+"[FE-023] Localize EGP price and numeric bidirectional layout","**Atomic Task:** FE-023
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-012, FE-021
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Arabic/English price text remains legible in RTL/LTR
+- [ ] Decimal formatting accurate; no misleading currency
+
+**Verification required:** Locale unit tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_FIX,medium","1","",""
+"[FE-024] Implement truly empty published menu view","**Atomic Task:** FE-024
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-016, FE-010
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] An empty menu has truthful explanation not demo dishes
+- [ ] No draft/unpublished content leaks
+
+**Verification required:** SSR empty fixture test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","1","",""
+"[FE-025] Implement restaurant suspended/unpublished customer state","**Atomic Task:** FE-025
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-015, FE-010
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Public unavailable state carries correct backend HTTP status
+- [ ] Noindex and no customer-private data
+
+**Verification required:** Raw HTTP test
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Public-menu,AUDIT_BUILD,high","1","",""
+"[FE-026] Implement public loading/network retry feedback","**Atomic Task:** FE-026
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-016, FE-010
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Retry remains available without reporting false success
+- [ ] Error text concise and accessible in both locales
+
+**Verification required:** Failure injection component test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","1","",""
+"[FE-027] Implement public AR/EN switch interaction","**Atomic Task:** FE-027
+**Workstream:** Frontend / Public menu
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-012, FE-016
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Switch updates content and dir without losing relevant page context
+- [ ] Café and Restaurant controls both reachable by keyboard
+
+**Verification required:** Locale e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,AUDIT_BUILD,medium","1","",""
+"[FE-028] Hook theme from approved persisted/public API setting","**Atomic Task:** FE-028
+**Workstream:** Frontend / Public menu
+**Implementation mode:** BLOCKED_BY_DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-017, BE-020
+**Requirements:** FR-031, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] If D-01 approved, saved theme drives SSR and browser consistently
+- [ ] Until approved, no fake persistence or client invented identity
+
+**Verification required:** SSR/hydration parity test
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Public-menu,BLOCKED_BY_DECISION,high","2","",""
+"[FE-029] Run public component-family visual checkpoint once","**Atomic Task:** FE-029
+**Workstream:** Frontend / Public menu
+**Implementation mode:** QA — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-022, FE-027
+**Requirements:** FR-050, FR-052, FR-054, FR-062
+**User story:** US-PUB-01/06
+**Figma:** Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Review representative 320/390/768/1440 and AR/EN after full menu family integration
+- [ ] Fix only detected mismatches, not screenshot every atomic task
+
+**Verification required:** Consolidated visual diff report
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Public-menu,QA,medium","1","",""
+"[FE-030] Reuse existing marketing route and approved hero layout","**Atomic Task:** FE-030
+**Workstream:** Frontend / Marketing
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-001, FE-003
+**Requirements:** FR-070
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Hero and primary CTA match Figma and do not fake product metrics
+- [ ] Prerender remains true and heading meaningful
+
+**Verification required:** Marketing source HTML + visual checkpoint
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Marketing,AUDIT_BUILD,medium","1","",""
+"[FE-031] Build benefits and how-it-works content sections","**Atomic Task:** FE-031
+**Workstream:** Frontend / Marketing
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-030
+**Requirements:** FR-070
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Copy concise, natural Egyptian Arabic and adapted English
+- [ ] No unsupported customer counts/experience claims
+
+**Verification required:** Content review + component test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Marketing,AUDIT_BUILD,medium","1","",""
+"[FE-032] Connect landing demo and sample menu CTA routes","**Atomic Task:** FE-032
+**Workstream:** Frontend / Marketing
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-030
+**Requirements:** FR-070
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] CTAs lead to real in-app pages without 404 or external dead end
+- [ ] No public signup or paid claim
+
+**Verification required:** Router navigation test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Marketing,AUDIT_BUILD,medium","1","",""
+"[FE-033] Build demo step 1 restaurant name input","**Atomic Task:** FE-033
+**Workstream:** Frontend / Demo
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-009, FE-032, PM-006
+**Requirements:** FR-071, FR-072
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Collect locally only, clear validation, correct next route
+- [ ] Never create a tenant remotely
+
+**Verification required:** Demo form test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Demo,BUILD,medium","1","",""
+"[FE-034] Build demo step 2 sample dishes editor","**Atomic Task:** FE-034
+**Workstream:** Frontend / Demo
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-033, FE-009
+**Requirements:** FR-071, FR-072
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Local add/edit sample dish list with validation
+- [ ] Values displayed in next preview without DB writes
+
+**Verification required:** Demo state test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Demo,BUILD,medium","1","",""
+"[FE-035] Build demo step 3 Restaurant/Café selector","**Atomic Task:** FE-035
+**Workstream:** Frontend / Demo
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-034, FE-004
+**Requirements:** FR-071, FR-072
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Theme selection uses approved chips/cards and is keyboard accessible
+- [ ] Previous/next preserves entered demo items
+
+**Verification required:** Demo selection test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Demo,BUILD,medium","1","",""
+"[FE-036] Build demo step 4 Restaurant preview","**Atomic Task:** FE-036
+**Workstream:** Frontend / Demo
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-035, FE-016
+**Requirements:** FR-071, FR-072
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Demo preview displays user-entered sample data and Restaurant accents
+- [ ] Clearly marked unpublished preview
+
+**Verification required:** Demo e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Demo,BUILD,medium","1","",""
+"[FE-037] Build demo step 4 Café preview on same components","**Atomic Task:** FE-037
+**Workstream:** Frontend / Demo
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-036, FE-017
+**Requirements:** FR-071, FR-072
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Café preview shows user sample items with Café design
+- [ ] No restaurant placeholder items after selecting Café
+
+**Verification required:** Demo theme variant test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Demo,BUILD,medium","1","",""
+"[FE-038] Build demo validation and back/forward flow","**Atomic Task:** FE-038
+**Workstream:** Frontend / Demo
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-033, FE-034, FE-035
+**Requirements:** FR-071, FR-072
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Back preserves draft; invalid fields block next with messages
+- [ ] No live QR, account or order implied
+
+**Verification required:** AR/EN form e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Demo,BUILD,medium","1","",""
+"[FE-039] Build truthful demo completion state","**Atomic Task:** FE-039
+**Workstream:** Frontend / Demo
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-036, FE-037
+**Requirements:** FR-071, FR-072
+**User story:** US-DEMO-01
+**Figma:** Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Completion shows illustrative success without claiming publish/signup
+- [ ] Return to marketing or preview works
+
+**Verification required:** Demo finish test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Demo,BUILD,medium","1","",""
+"[FE-040] Connect owner login form to existing Identity/CSRF","**Atomic Task:** FE-040
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-009, BE-004
+**Requirements:** FR-011, FR-012, FR-013
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Login state waits for actual API success before navigation
+- [ ] Wrong credentials and lockout show generic useful messages
+
+**Verification required:** Auth integration e2e
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Owner,AUDIT_BUILD,high","2","",""
+"[FE-041] Implement authorized owner route guard and logout","**Atomic Task:** FE-041
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-040, BE-029
+**Requirements:** FR-011, FR-012, FR-013
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Unauthenticated/suspended owner cannot access protected route
+- [ ] Logout removes access; no client-only privilege check
+
+**Verification required:** Role guard tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Owner,AUDIT_BUILD,high","2","",""
+"[FE-042] Build owner responsive navigation active state","**Atomic Task:** FE-042
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-013, FE-041
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Mobile bottom nav and desktop sidebar choose current destination
+- [ ] No hidden/unreachable actions on 320px
+
+**Verification required:** Navigation test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-043] Build owner dashboard KPI tiles from verified fields","**Atomic Task:** FE-043
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-042
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Display real fields or explicit unavailable state, no invented counters
+- [ ] Cards match approved Figma hierarchy
+
+**Verification required:** Owner dashboard tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-044] Connect category list to own tenant API","**Atomic Task:** FE-044
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-042, BE-009
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Rows show scoped categories, order and publication
+- [ ] Loading/error/empty states are clear
+
+**Verification required:** Category list integration test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-045] Implement create/edit category form","**Atomic Task:** FE-045
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-044, FE-009
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Valid Arabic category saves after API success
+- [ ] Required field errors retained for retry
+
+**Verification required:** Category form e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-046] Implement category order controls","**Atomic Task:** FE-046
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-044, BE-009
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Reordering persists and UI reflects backend order
+- [ ] Keyboard/accessible sort alternative provided
+
+**Verification required:** Category ordering test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-047] Implement category delete conflict and confirm flow","**Atomic Task:** FE-047
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-044, FE-011, BE-010
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] 409 when category not empty shows actionable explanation
+- [ ] No success visual before backend confirms deletion
+
+**Verification required:** Conflict e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-048] Connect item list and availability badges","**Atomic Task:** FE-048
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-042, BE-011
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] List shows own items only, accurate statuses and price
+- [ ] Filter/search does not reveal other tenants
+
+**Verification required:** Owner items integration test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-049] Build reusable create/edit dish form fields","**Atomic Task:** FE-049
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-048, FE-009
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Category selector/name/price/description match Figma and validate
+- [ ] Foreign category IDs blocked by backend, no client trust
+
+**Verification required:** Item form e2e
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","2","",""
+"[FE-050] Implement item save, conflict and retry states","**Atomic Task:** FE-050
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-049, BE-013
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Save success waits for server; 412 preserves user draft and warns
+- [ ] No silent overwrite under concurrent editors
+
+**Verification required:** Save/concurrency e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-051] Implement item publish/available toggle interactions","**Atomic Task:** FE-051
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-048, BE-011
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Status toggles use API only with correct permission
+- [ ] Public visibility changes after committed response
+
+**Verification required:** Toggle integration test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-052] Build own-item image list and primary indicator","**Atomic Task:** FE-052
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-049, BE-017
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Ordered images and selected primary state displayed
+- [ ] No foreign media links or broken placeholders
+
+**Verification required:** Image list test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-053] Implement image upload progress/errors","**Atomic Task:** FE-053
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-052, BE-016
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Unsupported image errors and progress show correctly
+- [ ] No success unless backend accepts actual image
+
+**Verification required:** Upload invalid/valid e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-054] Build logo/cover/public-contact settings","**Atomic Task:** FE-054
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-042, BE-017
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Brand settings fields persist based on actual settings API
+- [ ] Public contact opt-in only, meaningful preview
+
+**Verification required:** Settings integration test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-055] Implement Restaurant/Café selection form UI","**Atomic Task:** FE-055
+**Workstream:** Frontend / Owner
+**Implementation mode:** BLOCKED_BY_DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-054, FE-004
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Cards/chips match Figma with proper selection state
+- [ ] Only persist after D-01 approved API exists; otherwise visibly disabled
+
+**Verification required:** Variant selection test
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Owner,BLOCKED_BY_DECISION,high","1","",""
+"[FE-056] Render stable QR code and copy/download actions","**Atomic Task:** FE-056
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-042, BE-018
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] QR points to immutable code route, not mutable slug or mock link
+- [ ] Copy/download artifact remains scan-compatible
+
+**Verification required:** QR generation & browser test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,AUDIT_BUILD,medium","1","",""
+"[FE-057] Implement authenticated unpublished/draft preview","**Atomic Task:** FE-057
+**Workstream:** Frontend / Owner
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-042, BE-014
+**Requirements:** FR-011, FR-012, FR-013
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Owner sees drafts through authorized preview only
+- [ ] Guest cannot access preview with guessed ID
+
+**Verification required:** Security/preview e2e
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Owner,AUDIT_BUILD,high","2","",""
+"[FE-058] Show accurate publication status and authorized controls","**Atomic Task:** FE-058
+**Workstream:** Frontend / Owner
+**Implementation mode:** BLOCKED_BY_DECISION — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-043, BE-007, PM-005
+**Requirements:** FR-011, FR-012, FR-013
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Platform-only publication policy kept until D-02 approval
+- [ ] No owner-triggered privileged API by guessed URL
+
+**Verification required:** Role UI and API test
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Owner,BLOCKED_BY_DECISION,high","1","",""
+"[FE-059] Run owner screen-family responsive and accessibility checkpoint","**Atomic Task:** FE-059
+**Workstream:** Frontend / Owner
+**Implementation mode:** QA — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-047, FE-053, FE-054, FE-057
+**Requirements:** FR-020, FR-024, FR-030
+**User story:** US-OWNER-01/08
+**Figma:** Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Check representative owner screens at 320/390/768/1024/1440 RTL/LTR
+- [ ] Consolidate visual evidence without per-ticket screenshots
+
+**Verification required:** Owner visual + keyboard report
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Owner,QA,medium","2","",""
+"[FE-060] Create platform admin guarded shell and navigation","**Atomic Task:** FE-060
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-013, BE-004
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Only PlatformAdmin can enter routes; owner fails safely
+- [ ] Sidebar/mobile navigation active and labeled
+
+**Verification required:** Route guard e2e
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Platform,AUDIT_BUILD,high","2","",""
+"[FE-061] Implement platform dashboard summary without invented KPIs","**Atomic Task:** FE-061
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-060
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Actual safe API metrics or explicit empty placeholder
+- [ ] No fake metrics/tenants
+
+**Verification required:** Dashboard component/API test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-062] Build restaurant directory row/card presentation","**Atomic Task:** FE-062
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-060, BE-005
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Directory uses safe DTO and paginated results
+- [ ] Responsive cards on mobile, table where appropriate
+
+**Verification required:** List rendering test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-063] Implement directory search/filter/page controls","**Atomic Task:** FE-063
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-062
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Filters and pagination synchronize with API query
+- [ ] Empty results and retry UI useful
+
+**Verification required:** Directory filter tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-064] Implement create-restaurant form with owner details","**Atomic Task:** FE-064
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-060, BE-005
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Submit valid unique form, show 201 only after transaction
+- [ ] Duplicate owner/slug 409 preserves edits
+
+**Verification required:** Provision e2e
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Platform,AUDIT_BUILD,high","2","",""
+"[FE-065] Implement truthful owner invitation/setup status","**Atomic Task:** FE-065
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-064
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Do not claim email sent without configured delivery
+- [ ] Invitation token/password never displayed in logs/toasts
+
+**Verification required:** Onboarding UX test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-066] Build restaurant detail view and status","**Atomic Task:** FE-066
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-062
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Show normalized safe details, status and actions
+- [ ] No credential/private token appears
+
+**Verification required:** Detail view tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-067] Implement restaurant edit form and concurrency recovery","**Atomic Task:** FE-067
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-066, BE-006
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Update authorized fields after successful API response
+- [ ] On 412 prompt reload/reconcile, not silent overwrite
+
+**Verification required:** Edit concurrency e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-068] Implement suspend confirmation and result state","**Atomic Task:** FE-068
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-066, FE-011, BE-006
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Confirm action gated; results reflect backend status
+- [ ] Suspended menu becomes unavailable only on real API commit
+
+**Verification required:** Suspend integration test
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-069] Implement reactivate confirmation and result state","**Atomic Task:** FE-069
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-068, BE-006
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Reactivation retains publication choice and correct status
+- [ ] No owner account access grant implied
+
+**Verification required:** Reactivate e2e
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-070] Implement admin-only publish/unpublish controls","**Atomic Task:** FE-070
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-066, BE-007
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Control only visible/usable for platform role
+- [ ] Stale version, permission error and server error handled
+
+**Verification required:** Publish API/e2e
+**Risk:** high; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Frontend,Platform,AUDIT_BUILD,high","1","",""
+"[FE-071] Render safe audit trail table and filter","**Atomic Task:** FE-071
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-060, BE-008
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Audit shows actor/time/action without secrets
+- [ ] Mobile cards/desktop table readable
+
+**Verification required:** Audit view tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-072] Build owner account directory/detail screen","**Atomic Task:** FE-072
+**Workstream:** Frontend / Platform
+**Implementation mode:** AUDIT_BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-060, BE-005
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Safe owner identity/status shown only to admins
+- [ ] Suspension confirmation requires real backend contract
+
+**Verification required:** Owner detail tests
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,AUDIT_BUILD,medium","1","",""
+"[FE-073] Run platform screen-family responsive checkpoint","**Atomic Task:** FE-073
+**Workstream:** Frontend / Platform
+**Implementation mode:** QA — inspect existing code first; reuse whenever verified.
+**Agent role:** Frontend subagent (Angular)
+**Depends on (IDs):** FE-063, FE-069, FE-071, FE-072
+**Requirements:** FR-002, FR-004, FR-006, FR-008
+**User story:** US-PLAT-01/05
+**Figma:** Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2
+
+**Acceptance criteria:**
+- [ ] Review 320/390/768/1024/1440 and both languages
+- [ ] No crowding, focus traps or role leaks
+
+**Verification required:** Platform visual/accessibility review
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Frontend,Platform,QA,medium","2","",""
+"[QA-001] Audit existing CI status, broken checks and skipped suites","**Atomic Task:** QA-001
+**Workstream:** Quality / CI baseline
+**Implementation mode:** AUDIT — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** PM-001
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Record current branch SHA and exact status of existing checks
+- [ ] Separate environmental gaps from code failures, no invented pass claims
+
+**Verification required:** GitHub Actions report with links
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Quality,CI-baseline,AUDIT,medium","1","",""
+"[QA-002] Create repeatable two-tenant SQL seed and request matrix","**Atomic Task:** QA-002
+**Workstream:** Quality / Security
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-002, BE-003
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Two tenants with cross-linked IDs exercise each protected entity
+- [ ] Negative results prove no foreign mutation/disclosure
+
+**Verification required:** SQL integration fixture and test report
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Quality,Security,BUILD,critical","2","",""
+"[QA-003] Run HTTP tenant isolation regression across methods","**Atomic Task:** QA-003
+**Workstream:** Quality / Security
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** QA-002, BE-012
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] GET/POST/PUT/DELETE Owner A against B category/item/media denied
+- [ ] No response reveals B sensitive data
+
+**Verification required:** HTTP security suite
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Quality,Security,AUDIT_FIX,critical","2","",""
+"[QA-004] Test cookie/CSRF/logout/lockout/role matrix","**Atomic Task:** QA-004
+**Workstream:** Quality / Security
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-004, BE-029
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Missing CSRF, invalid cookie or revoked owner blocks write
+- [ ] Platform-only routes reject owner
+
+**Verification required:** Auth integration run
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Quality,Security,AUDIT_FIX,critical","2","",""
+"[QA-005] Test published/unpublished visibility in raw SSR HTML","**Atomic Task:** QA-005
+**Workstream:** Quality / Public
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-014, FE-015
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Draft/deleted/suspended menu content absent from raw response
+- [ ] Statuses, canonical and noindex match contract
+
+**Verification required:** Raw GET snapshots without JS
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Quality,Public,AUDIT_FIX,critical","2","",""
+"[QA-006] Verify printed QR redirect and malformed codes","**Atomic Task:** QA-006
+**Workstream:** Quality / Public
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-018, FE-056
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] /m/{PublicCode} is one valid temporary redirect to current canonical
+- [ ] Invalid code safely rejected and no stale slug after rename
+
+**Verification required:** Redirect integration run
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Quality,Public,AUDIT_FIX,medium","1","",""
+"[QA-007] Run malformed and cross-tenant image tests","**Atomic Task:** QA-007
+**Workstream:** Quality / Media
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-016, FE-053
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Spoofed MIME, oversize and foreign IDs denied
+- [ ] Successful processed object strips metadata with stable dimensions
+
+**Verification required:** Media API suite
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Quality,Media,AUDIT_FIX,high","2","",""
+"[QA-008] Run AR RTL/EN LTR and EGP bidi regression","**Atomic Task:** QA-008
+**Workstream:** Quality / Localization
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** FE-023, FE-027
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Correct lang/dir/price and Arabic fallback verified
+- [ ] No accidental mechanical fallback translations or clipped punctuation
+
+**Verification required:** Locale component/e2e
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Quality,Localization,AUDIT_FIX,medium","2","",""
+"[QA-009] Verify Restaurant/Café theme component parity","**Atomic Task:** QA-009
+**Workstream:** Quality / Theme
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** FE-017, FE-014
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Same components implement correct accent/buttons/chips/prices for both
+- [ ] Semantic availability/error color unchanged
+
+**Verification required:** Unit snapshots + one family visual check
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Quality,Theme,AUDIT_FIX,medium","1","",""
+"[QA-010] Run owner end-to-end categories, items, image, QR journeys","**Atomic Task:** QA-010
+**Workstream:** Quality / Owner
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** FE-047, FE-050, FE-053, FE-056
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Owner can complete actions or see honest errors only after API response
+- [ ] No direct foreign entity access in same journey
+
+**Verification required:** Owner Playwright + SQL fixture
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Quality,Owner,AUDIT_FIX,high","2","",""
+"[QA-011] Run admin create, status, publication, audit journey","**Atomic Task:** QA-011
+**Workstream:** Quality / Platform
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** FE-064, FE-069, FE-070, FE-071
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Privileged API writes and status history reflect audit
+- [ ] Owner role cannot open/execute platform controls
+
+**Verification required:** Platform Playwright + HTTP tests
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Quality,Platform,AUDIT_FIX,high","2","",""
+"[QA-012] Run complete Demo Restaurant/Café flow without persistence","**Atomic Task:** QA-012
+**Workstream:** Quality / Demo
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** FE-039
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Steps preserve local input and distinguish Café/Restaurant previews
+- [ ] No tenant/account/QR backend write occurs
+
+**Verification required:** Demo Playwright with request interception
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Quality,Demo,AUDIT_FIX,medium","1","",""
+"[QA-013] Check keyboard, contrast, focus, dialogs and touch targets","**Atomic Task:** QA-013
+**Workstream:** Quality / Accessibility
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** FE-011, FE-073, FE-059
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] WCAG 2.2 AA project criteria checked on representative screens
+- [ ] Visible actionable labels, no focus trap or clipped messages
+
+**Verification required:** axe + keyboard audit with exceptions
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Quality,Accessibility,AUDIT_FIX,medium","2","",""
+"[QA-014] Run width interpolation and no-horizontal-scroll browser QA","**Atomic Task:** QA-014
+**Workstream:** Quality / Responsive
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** FE-029, FE-059, FE-073
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] 320/360/375/390/412/430/768/1024/1440 layouts tested where affected
+- [ ] No overlap, cut-off CTA or unexpected horizontal scroll
+
+**Verification required:** Playwright viewport matrix
+**Risk:** medium; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Quality,Responsive,AUDIT_FIX,medium","2","",""
+"[QA-015] Verify canonical, metadata, sitemap, noindex and structured data","**Atomic Task:** QA-015
+**Workstream:** Quality / SEO
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-022, BE-023, BE-024
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Raw HTML and sitemap only show eligible published entities
+- [ ] Canonical, redirects and server statuses match source contract
+
+**Verification required:** HTTP SEO matrix
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Quality,SEO,AUDIT_FIX,high","2","",""
+"[QA-016] Run controlled SSR and mobile performance baseline","**Atomic Task:** QA-016
+**Workstream:** Quality / Performance
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-025, FE-029, PM-007
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Document target region, fixture sizes, device profile and repeated CWV/LHCI
+- [ ] No claimed metric without actual run and artifact
+
+**Verification required:** LHCI and SQL query trace
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Quality,Performance,AUDIT_FIX,high","2","",""
+"[QA-017] Run stale RowVersion and publication/cache racing tests","**Atomic Task:** QA-017
+**Workstream:** Quality / Concurrency
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** BE-013, BE-025, QA-002
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Stale edit gets 412 without overwrite and fresh public version consistent
+- [ ] Concurrent A/B reads never share private content
+
+**Verification required:** SQL/HTTP concurrent tests
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Quality,Concurrency,AUDIT_FIX,critical","2","",""
+"[QA-018] Run final traceability/FR acceptance review","**Atomic Task:** QA-018
+**Workstream:** Quality / Final review
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** QA subagent (independent reviewer)
+**Depends on (IDs):** QA-003, QA-004, QA-005, QA-010, QA-011, QA-012, QA-013, QA-014, QA-015, QA-016, QA-017
+**Requirements:** NFR-MNT-02, NFR-SEC-01, NFR-ACC-04
+**User story:** US-SYS-01/02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Every P0 FR and NFR has linked executed evidence or explicit blocker
+- [ ] Block GO if security/SSR/availability verification incomplete
+
+**Verification required:** FR→story→PR→CI acceptance matrix
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Quality,Final-review,REVIEW,critical","2","",""
+"[OPS-001] Define atomic PR quality checks and required statuses","**Atomic Task:** OPS-001
+**Workstream:** Operations / CI
+**Implementation mode:** AUDIT_FIX — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** PM-011, QA-001
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Branch checks cover affected Angular/.NET/SQL/SSR tests
+- [ ] No automatic merge on unverified high/critical change
+
+**Verification required:** CI workflow review and test run
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Operations,CI,AUDIT_FIX,high","2","",""
+"[OPS-002] Set issue status workflow and reviewer handoff contract","**Atomic Task:** OPS-002
+**Workstream:** Operations / Process
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** PM-011
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] BACKLOG/READY/IN_PROGRESS/IN_REVIEW/DONE/BLOCKED mapped to tracker
+- [ ] Closure requires merged PR + verified acceptance evidence, not just a comment
+
+**Verification required:** Tracker dry-run and issue template
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Operations,Process,BUILD,medium","1","",""
+"[OPS-003] Document SSR host, TLS and proxy trust configuration","**Atomic Task:** OPS-003
+**Workstream:** Operations / Hosting
+**Implementation mode:** DESIGN — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** PM-007
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Planned same-origin ingress, Node SSR and API services recorded
+- [ ] No open proxy identity spoofing or SSR-only CSR fallback
+
+**Verification required:** Staging topology runbook
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Operations,Hosting,DESIGN,high","2","",""
+"[OPS-004] Provision isolated staging environment","**Atomic Task:** OPS-004
+**Workstream:** Operations / Staging
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** OPS-003, PM-010
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Staging SSL and same-origin paths work without production credentials
+- [ ] Test SQL/media populated only from safe synthetic fixtures
+
+**Verification required:** Staging readiness report
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Operations,Staging,BUILD,high","2","",""
+"[OPS-005] Run SQL backup and restore drill in isolated staging","**Atomic Task:** OPS-005
+**Workstream:** Operations / Backup
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** OPS-004, BE-030
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Backup restores schema, tenant constraints and representative data
+- [ ] Document RPO/RTO and exact restore commands
+
+**Verification required:** Recovery drill report
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Operations,Backup,REVIEW,critical","2","",""
+"[OPS-006] Run media object restore/reconciliation drill","**Atomic Task:** OPS-006
+**Workstream:** Operations / Backup
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** OPS-004, BE-028
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Safe object backups restore image references correctly
+- [ ] No orphaned media or leaked public write credentials
+
+**Verification required:** Media recovery report
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Operations,Backup,REVIEW,high","2","",""
+"[OPS-007] Configure redacted logs, correlation and health checks","**Atomic Task:** OPS-007
+**Workstream:** Operations / Operations
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** OPS-004, BE-027
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Errors traced without private tenant metadata
+- [ ] Readiness and alerts identify SQL/media/SSR failures
+
+**Verification required:** Staging fault-injection evidence
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Operations,Operations,BUILD,high","2","",""
+"[OPS-008] Add release smoke test checklist","**Atomic Task:** OPS-008
+**Workstream:** Operations / Operations
+**Implementation mode:** BUILD — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** OPS-004, QA-005
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Smoke covers public QR/canonical, owner login, admin status and test tenant scope
+- [ ] Recovery and hidden-menu states included
+
+**Verification required:** Executable smoke script/checklist
+**Risk:** medium; **Size:** S (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","3","Backlog","","Operations,Operations,BUILD,medium","1","",""
+"[OPS-009] Document staging deployment and rollback command path","**Atomic Task:** OPS-009
+**Workstream:** Operations / Operations
+**Implementation mode:** DESIGN — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** OPS-004, OPS-001
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Deployment tied to immutable commit and reversibility documented
+- [ ] DB migration and media rollback risks explicitly reviewed
+
+**Verification required:** Rollback runbook + dry run
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Operations,Operations,DESIGN,high","2","",""
+"[OPS-010] Run rollback tabletop and dependency failure rehearsal","**Atomic Task:** OPS-010
+**Workstream:** Operations / Operations
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** OPS-007, OPS-009
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Simulated broken API/SSR/media shows safe degraded result
+- [ ] Rollback restores known good state without losing test data
+
+**Verification required:** Staging rehearsal report
+**Risk:** high; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","2","Backlog","","Operations,Operations,REVIEW,high","2","",""
+"[OPS-011] Prepare final GO/NO-GO release evidence decision","**Atomic Task:** OPS-011
+**Workstream:** Operations / Release gate
+**Implementation mode:** REVIEW — inspect existing code first; reuse whenever verified.
+**Agent role:** DevOps/Release reviewer
+**Depends on (IDs):** QA-018, OPS-005, OPS-006, OPS-008, OPS-010
+**Requirements:** NFR-REL-01, NFR-REL-02, NFR-REL-03
+**User story:** US-SYS-02
+**Figma:** Not needed except API-visible UI changes
+
+**Acceptance criteria:**
+- [ ] Block release on failed tenant/SSR/privacy or untested restore
+- [ ] Require explicit human approval; no autonomous deploy/merge
+
+**Verification required:** Signed release checklist
+**Risk:** critical; **Size:** M (S ≤2h, M ≤4h; split if larger).
+
+**Review & completion contract:** one subagent, one task, isolated branch/PR; affected tests run and evidenced. Do not take repetitive screenshots per small task. Mark Done only after reviewed merged PR (or approved documented audit-only outcome) and satisfied acceptance. Never deploy/alter production without human authorization.
+**Specification:** https://github.com/AbdallahSay/digital-menu-saas/tree/docs/menusaas-system-spec-v1/docs/system-spec","1","Backlog","","Operations,Release-gate,REVIEW,critical","2","",""

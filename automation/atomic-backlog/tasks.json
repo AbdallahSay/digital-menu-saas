@@ -1,0 +1,5257 @@
+{
+  "schema_version": 3,
+  "repository": "AbdallahSay/digital-menu-saas",
+  "document_branch": "docs/menusaas-system-spec-v1",
+  "source_documents": [
+    "automation/atomic-backlog/planning-backend.json",
+    "automation/atomic-backlog/frontend.json",
+    "automation/atomic-backlog/qa-operations.json"
+  ],
+  "counts": {
+    "total": 144,
+    "tracks": {
+      "Planning": 12,
+      "Backend": 30,
+      "Frontend": 73,
+      "Quality": 18,
+      "Operations": 11
+    },
+    "effort": {
+      "S": 88,
+      "M": 56
+    },
+    "ready_count": 1
+  },
+  "canonical_status_model": [
+    "BACKLOG",
+    "READY",
+    "IN_PROGRESS",
+    "IN_REVIEW",
+    "DONE",
+    "BLOCKED"
+  ],
+  "max_parallel_subagents": 2,
+  "all_task_ids": [
+    "PM-001",
+    "PM-002",
+    "PM-003",
+    "PM-004",
+    "PM-005",
+    "PM-006",
+    "PM-007",
+    "PM-008",
+    "PM-009",
+    "PM-010",
+    "PM-011",
+    "PM-012",
+    "BE-001",
+    "BE-002",
+    "BE-003",
+    "BE-004",
+    "BE-005",
+    "BE-006",
+    "BE-007",
+    "BE-008",
+    "BE-009",
+    "BE-010",
+    "BE-011",
+    "BE-012",
+    "BE-013",
+    "BE-014",
+    "BE-015",
+    "BE-016",
+    "BE-017",
+    "BE-018",
+    "BE-019",
+    "BE-020",
+    "BE-021",
+    "BE-022",
+    "BE-023",
+    "BE-024",
+    "BE-025",
+    "BE-026",
+    "BE-027",
+    "BE-028",
+    "BE-029",
+    "BE-030",
+    "FE-001",
+    "FE-002",
+    "FE-003",
+    "FE-004",
+    "FE-005",
+    "FE-006",
+    "FE-007",
+    "FE-008",
+    "FE-009",
+    "FE-010",
+    "FE-011",
+    "FE-012",
+    "FE-013",
+    "FE-014",
+    "FE-015",
+    "FE-016",
+    "FE-017",
+    "FE-018",
+    "FE-019",
+    "FE-020",
+    "FE-021",
+    "FE-022",
+    "FE-023",
+    "FE-024",
+    "FE-025",
+    "FE-026",
+    "FE-027",
+    "FE-028",
+    "FE-029",
+    "FE-030",
+    "FE-031",
+    "FE-032",
+    "FE-033",
+    "FE-034",
+    "FE-035",
+    "FE-036",
+    "FE-037",
+    "FE-038",
+    "FE-039",
+    "FE-040",
+    "FE-041",
+    "FE-042",
+    "FE-043",
+    "FE-044",
+    "FE-045",
+    "FE-046",
+    "FE-047",
+    "FE-048",
+    "FE-049",
+    "FE-050",
+    "FE-051",
+    "FE-052",
+    "FE-053",
+    "FE-054",
+    "FE-055",
+    "FE-056",
+    "FE-057",
+    "FE-058",
+    "FE-059",
+    "FE-060",
+    "FE-061",
+    "FE-062",
+    "FE-063",
+    "FE-064",
+    "FE-065",
+    "FE-066",
+    "FE-067",
+    "FE-068",
+    "FE-069",
+    "FE-070",
+    "FE-071",
+    "FE-072",
+    "FE-073",
+    "QA-001",
+    "QA-002",
+    "QA-003",
+    "QA-004",
+    "QA-005",
+    "QA-006",
+    "QA-007",
+    "QA-008",
+    "QA-009",
+    "QA-010",
+    "QA-011",
+    "QA-012",
+    "QA-013",
+    "QA-014",
+    "QA-015",
+    "QA-016",
+    "QA-017",
+    "QA-018",
+    "OPS-001",
+    "OPS-002",
+    "OPS-003",
+    "OPS-004",
+    "OPS-005",
+    "OPS-006",
+    "OPS-007",
+    "OPS-008",
+    "OPS-009",
+    "OPS-010",
+    "OPS-011"
+  ],
+  "source_of_truth": "Use only ONE live external board after import; this versioned GitHub JSON is the bootstrap snapshot, not an automatically synced board.",
+  "task_complete_rule": "Do not mark DONE until accepted evidence and reviewed PR merge, or documented approved audit-only task.",
+  "tasks": [
+    {
+      "id": "PM-001",
+      "track": "Planning",
+      "area": "Governance",
+      "title": "Audit existing code and completed milestone issues",
+      "depends_on": [],
+      "acceptance": [
+        "Document exact current main SHA, implemented endpoints and open PRs",
+        "Classify each legacy milestone as verified/retest/unfinished without reopening completed code"
+      ],
+      "verification": "Source paths + issue links",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "READY",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-002",
+      "track": "Planning",
+      "area": "Governance",
+      "title": "Freeze approved Figma screens and theme token references",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Record source frame IDs, selected theme variables and component variants",
+        "Specify exact visual source priority and known non-approved drafts"
+      ],
+      "verification": "Figma links + design source register",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-003",
+      "track": "Planning",
+      "area": "Governance",
+      "title": "Review system specification PR #46 and acceptance baseline",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Validate FR/NFR, US, ADR and Mermaid against current main",
+        "Record explicit accepted scope, discrepancies and sign-off, without merging automatically"
+      ],
+      "verification": "Documentation review checklist",
+      "mode": "REVIEW",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-004",
+      "track": "Planning",
+      "area": "Architecture decision",
+      "title": "Decide persistent Restaurant/Café theme representation",
+      "depends_on": [
+        "PM-002",
+        "PM-003"
+      ],
+      "acceptance": [
+        "Approve or reject persisted ThemeId schema/API design distinct from PrimaryColor",
+        "Document default and migration/fallback/SSR behavior in approved ADR"
+      ],
+      "verification": "Approved ADR D-01",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-005",
+      "track": "Planning",
+      "area": "Authorization decision",
+      "title": "Decide whether restaurant owner may publish",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Clarify whether PlatformAdmin-only publication contract remains",
+        "If changing, approve policy, audit, CSRF and negative-role tests before coding"
+      ],
+      "verification": "Approved ADR D-02",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-006",
+      "track": "Planning",
+      "area": "Demo decision",
+      "title": "Confirm illustrative non-persistent Demo scope",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Freeze the Demo as unpublished and non-persistent",
+        "Exclude public signup, live QR/account and real customer data"
+      ],
+      "verification": "Approved scope note D-03",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-007",
+      "track": "Planning",
+      "area": "Infrastructure decision",
+      "title": "Decide SSR deployment topology and trust boundaries",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Select feasible Node SSR + API same-origin topology and region",
+        "Document TLS, internal identity, cost and rollback before deploy"
+      ],
+      "verification": "Approved ADR D-04",
+      "mode": "DECISION",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-008",
+      "track": "Planning",
+      "area": "Security decision",
+      "title": "Decide public rate limiter strategy for SSR traffic",
+      "depends_on": [
+        "PM-007"
+      ],
+      "acceptance": [
+        "Select ingress vs service rate limits without grouping all SSR clients",
+        "Document trusted headers and abuse scenarios"
+      ],
+      "verification": "Approved ADR D-05 + load scenario",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-009",
+      "track": "Planning",
+      "area": "SEO decision",
+      "title": "Resolve slug alias and reserved /r/demo policy",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Specify reserved names, historical redirects and canonical behavior",
+        "Define one-hop redirects and rollback of collisions"
+      ],
+      "verification": "Approved ADR D-06",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-010",
+      "track": "Planning",
+      "area": "Infrastructure decision",
+      "title": "Approve durable media storage and restore requirements",
+      "depends_on": [
+        "PM-007"
+      ],
+      "acceptance": [
+        "Choose object store with region/cost and secure key policy",
+        "Approve SQL/media backup, retention and restore test conditions"
+      ],
+      "verification": "Approved ADR D-07",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-011",
+      "track": "Planning",
+      "area": "Process",
+      "title": "Agree small-task lifecycle and parallel work policy",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Approve statuses and a one-task-per-agent-per-branch job protocol",
+        "Set max two concurrent independent tasks and review ownership"
+      ],
+      "verification": "Reviewed atomic tracker rules",
+      "mode": "REVIEW",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "PM-012",
+      "track": "Planning",
+      "area": "Process",
+      "title": "Approve low-credit visual review policy",
+      "depends_on": [
+        "PM-002"
+      ],
+      "acceptance": [
+        "Define component-family visual checkpoints rather than screenshot every change",
+        "Set exceptions for first screen, high-risk layout and final regression"
+      ],
+      "verification": "Approved screenshot budget policy",
+      "mode": "REVIEW",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer",
+      "requirements": [
+        "ADR",
+        "NFR-MNT-03"
+      ],
+      "story_refs": "SPEC-PLANNING",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Approved Premium v2 — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=225-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-001",
+      "track": "Backend",
+      "area": "Baseline",
+      "title": "Inventory current API endpoints and Domain entities",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Record actual ASP.NET endpoints, DTOs, status codes and EF entities",
+        "Map routes to FRs and separate missing code from existing feature"
+      ],
+      "verification": "OpenAPI/source inventory + tests",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-002",
+      "track": "Backend",
+      "area": "Security",
+      "title": "Verify server-derived tenant context",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Owner requests cannot select tenant by client-controlled restaurant ID",
+        "Foreign IDs denied with no foreign record disclosure"
+      ],
+      "verification": "Real SQL A/B negative tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-080",
+        "FR-081"
+      ],
+      "story_refs": "US-AUTH-01/US-SYS-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-003",
+      "track": "Backend",
+      "area": "Security",
+      "title": "Verify composite tenant foreign keys and joins",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Foreign category/item/image associations fail at service and SQL layer",
+        "No partial writes occur for rejected relation"
+      ],
+      "verification": "SQL integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-080",
+        "FR-081"
+      ],
+      "story_refs": "US-AUTH-01/US-SYS-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-004",
+      "track": "Backend",
+      "area": "Auth",
+      "title": "Verify Identity login/logout cookie and CSRF",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Secure HttpOnly cookie and CSRF checks present on unsafe operations",
+        "Logout revokes access and lockout is enforced"
+      ],
+      "verification": "Auth API integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-011",
+        "FR-012",
+        "FR-013"
+      ],
+      "story_refs": "US-AUTH-01/US-SYS-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-005",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify provision transaction and duplicate owner handling",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Creation of restaurant, owner, membership and audit is atomic",
+        "Duplicate normalized owner email or slug yields 409 with rollback"
+      ],
+      "verification": "Provision SQL integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-006",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify restaurant suspend/reactivate concurrency",
+      "depends_on": [
+        "BE-005"
+      ],
+      "acceptance": [
+        "Requires valid RowVersion and returns 412 on stale mutations",
+        "Suspension hides public menu without losing publication preference"
+      ],
+      "verification": "Status and public projection tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-007",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify platform-only restaurant publication authorization",
+      "depends_on": [
+        "BE-004",
+        "PM-005"
+      ],
+      "acceptance": [
+        "Owner cannot call privileged publication API without an approved role change",
+        "Publication is audited and visibility updates correctly"
+      ],
+      "verification": "Role matrix, CSRF and version tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-011",
+        "FR-012",
+        "FR-013"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-008",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify redacted audit logging for lifecycle operations",
+      "depends_on": [
+        "BE-005"
+      ],
+      "acceptance": [
+        "Actor, action, tenant and timestamp recorded for privileged mutations",
+        "No secrets, passwords or invite tokens in audit/log data"
+      ],
+      "verification": "Audit DTO tests and code review",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-009",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify owner category API CRUD and sorting",
+      "depends_on": [
+        "BE-002"
+      ],
+      "acceptance": [
+        "Category operations scoped to owner, validate Arabic name and sort order",
+        "Deleted/unpublished categories are absent from public results"
+      ],
+      "verification": "Catalog service and HTTP tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-027"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-010",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify category delete-with-items conflict rule",
+      "depends_on": [
+        "BE-009"
+      ],
+      "acceptance": [
+        "Deleting category with active items returns 409, preserving data",
+        "Deleting an empty category remains soft-delete"
+      ],
+      "verification": "SQL conflict integration test",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-027"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-011",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify item CRUD/price validation and availability",
+      "depends_on": [
+        "BE-009"
+      ],
+      "acceptance": [
+        "Own valid item saves with nonnegative decimal EGP price",
+        "Unavailable, unpublished or deleted item excluded publicly"
+      ],
+      "verification": "Item API and visibility test",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-027"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-012",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify foreign item category and item references denied",
+      "depends_on": [
+        "BE-011",
+        "BE-003"
+      ],
+      "acceptance": [
+        "Cannot assign item to a different restaurant category",
+        "No mutation of either tenant with cross-tenant identifiers"
+      ],
+      "verification": "A/B HTTP+SQL tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-027"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-013",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify RowVersion on editable categories/items",
+      "depends_on": [
+        "BE-009",
+        "BE-011"
+      ],
+      "acceptance": [
+        "Stale write returns 412, no lost updates",
+        "Client receives safe version details for retry"
+      ],
+      "verification": "Concurrency integration test",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-027"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-014",
+      "track": "Backend",
+      "area": "Public API",
+      "title": "Verify server-side published-only projection",
+      "depends_on": [
+        "BE-011",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Restaurant/category/item/availability/deleted predicates applied on server",
+        "Drafts and suspended content never leaked in DTO or HTML"
+      ],
+      "verification": "Public two-tenant negative tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-015",
+      "track": "Backend",
+      "area": "Localization",
+      "title": "Verify optional English fallback without fabricated translation",
+      "depends_on": [
+        "BE-014"
+      ],
+      "acceptance": [
+        "English missing field falls back to Arabic per contract",
+        "Price and category order remain correct under both locales"
+      ],
+      "verification": "Projection locale tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-016",
+      "track": "Backend",
+      "area": "Media",
+      "title": "Verify upload signature/size/re-encoding protections",
+      "depends_on": [
+        "BE-002"
+      ],
+      "acceptance": [
+        "Reject disguised or oversized files; strip EXIF and normalize",
+        "Foreign item image uploads do not write keys"
+      ],
+      "verification": "Media API tests with malformed bytes",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-028",
+        "FR-029"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-017",
+      "track": "Backend",
+      "area": "Media",
+      "title": "Verify primary/order/alt text and cleanup semantics",
+      "depends_on": [
+        "BE-016"
+      ],
+      "acceptance": [
+        "Item/image relationship and sort/alt fields are consistent",
+        "Failed DB/object-store phases compensate safely or are recoverable"
+      ],
+      "verification": "SQL + object store failure injection",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-028",
+        "FR-029"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-018",
+      "track": "Backend",
+      "area": "Public routing",
+      "title": "Verify immutable QR alias one-hop 302",
+      "depends_on": [
+        "BE-014"
+      ],
+      "acceptance": [
+        "Valid /m/{code} resolves to current canonical /r/{slug} once",
+        "Invalid codes never reveal private tenant details"
+      ],
+      "verification": "HTTP redirect test",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-019",
+      "track": "Backend",
+      "area": "Theme",
+      "title": "Approve ThemeId schema migration design without executing it",
+      "depends_on": [
+        "PM-004",
+        "BE-001"
+      ],
+      "acceptance": [
+        "Propose constrained theme ID and default for historical tenants",
+        "Include forward/rollback migration and SSR fallback"
+      ],
+      "verification": "Reviewed migration and API diff",
+      "mode": "DESIGN",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-031",
+        "FR-062"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-020",
+      "track": "Backend",
+      "area": "Theme",
+      "title": "Implement approved theme persistence in settings contract",
+      "depends_on": [
+        "BE-019"
+      ],
+      "acceptance": [
+        "Owner update persists only approved Restaurant/Café identities",
+        "SSR public projection returns the saved theme and default"
+      ],
+      "verification": "Migration+API contract and integration tests",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-031",
+        "FR-062"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-021",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Verify SSR public menu source HTML and statuses",
+      "depends_on": [
+        "BE-014",
+        "PM-007"
+      ],
+      "acceptance": [
+        "Initial HTML has real visible category/item data with correct status",
+        "Suspended/unpublished/404 responses avoid indexable private content"
+      ],
+      "verification": "raw HTTP/SSR source tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-022",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Implement approved metadata/canonical and JSON-LD policy",
+      "depends_on": [
+        "BE-021",
+        "PM-009"
+      ],
+      "acceptance": [
+        "Published restaurant has truthful title/canonical/schema",
+        "No generated claims or unpublished structured data"
+      ],
+      "verification": "Raw HTML schema tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-023",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Implement published-only sitemap and robots",
+      "depends_on": [
+        "BE-022"
+      ],
+      "acceptance": [
+        "Only published eligible canonical menus included",
+        "Lifecycle changes remove stale URLs"
+      ],
+      "verification": "Sitemap integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-024",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Implement approved slug alias and reserved name policy",
+      "depends_on": [
+        "PM-009",
+        "BE-018"
+      ],
+      "acceptance": [
+        "No collision with reserved /r/demo and old slug redirects one hop",
+        "QR alias remains temporary 302 and canonical stays current"
+      ],
+      "verification": "Routing HTTP tests",
+      "mode": "DESIGN_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-025",
+      "track": "Backend",
+      "area": "Cache",
+      "title": "Verify tenant/locale/version-aware public cache",
+      "depends_on": [
+        "BE-014"
+      ],
+      "acceptance": [
+        "No cross-tenant or private DTO cache key reuse",
+        "Update invalidates old public SSR HTML"
+      ],
+      "verification": "Concurrent public read and invalidation test",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-059"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-026",
+      "track": "Backend",
+      "area": "Rate limiting",
+      "title": "Implement trusted SSR public rate budget policy",
+      "depends_on": [
+        "PM-008",
+        "BE-021"
+      ],
+      "acceptance": [
+        "Public SSR visitors do not share one accidental global throttle bucket",
+        "Spoofed forwarding headers cannot bypass limits"
+      ],
+      "verification": "Multi-visitor abuse/load tests",
+      "mode": "DESIGN_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-027",
+      "track": "Backend",
+      "area": "Operations",
+      "title": "Verify safe ProblemDetails, correlation IDs and readiness",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Errors contain no stack traces/tenant secrets",
+        "Readiness indicates actual required SQL/media dependency"
+      ],
+      "verification": "HTTP error and health tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-028",
+      "track": "Backend",
+      "area": "Media",
+      "title": "Wire approved durable store with scoped object keys",
+      "depends_on": [
+        "PM-010",
+        "BE-017"
+      ],
+      "acceptance": [
+        "No anonymous writes; media keys tenant scoped and durable",
+        "Isolation and failure recovery proven in staging"
+      ],
+      "verification": "Storage integration + restore evidence",
+      "mode": "DESIGN_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-028",
+        "FR-029"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-029",
+      "track": "Backend",
+      "area": "Security",
+      "title": "Test revoked/suspended membership with existing cookie",
+      "depends_on": [
+        "BE-004",
+        "BE-002"
+      ],
+      "acceptance": [
+        "Revoked owner session cannot mutate tenant resources",
+        "Error response does not disclose sensitive IDs"
+      ],
+      "verification": "Revocation HTTP tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-080",
+        "FR-081"
+      ],
+      "story_refs": "US-AUTH-01/US-SYS-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "BE-030",
+      "track": "Backend",
+      "area": "Data",
+      "title": "Verify production-safe backup/migration playbook",
+      "depends_on": [
+        "PM-010",
+        "BE-003"
+      ],
+      "acceptance": [
+        "Migration plan has non-destructive staging path and rollback",
+        "Restore tested on isolated backup; never touch production without approval"
+      ],
+      "verification": "Staging backup-restore report",
+      "mode": "AUDIT",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend",
+      "requirements": [
+        "FR-080",
+        "FR-081"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-001",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Audit existing Angular 22 routes/components without rewriting",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "List currently implemented routes, CSS tokens and SSR behavior with file references",
+        "Classify reusable code, missing UI and conflict risks before edits"
+      ],
+      "verification": "Source inventory and successful current build",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-002",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Extract Figma token mapping into code-friendly reference",
+      "depends_on": [
+        "PM-002",
+        "FE-001"
+      ],
+      "acceptance": [
+        "Map typography, spacing, radius, shadows, green/brown and semantic colors",
+        "Do not invent missing design tokens or alter approved master"
+      ],
+      "verification": "Token mapping table + Figma nodes",
+      "mode": "DESIGN",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-003",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement semantic CSS variables and type scale",
+      "depends_on": [
+        "FE-002"
+      ],
+      "acceptance": [
+        "Shared tokens represent approved colors/spacing/fonts not per-screen hardcodes",
+        "No change to existing public SSR visible HTML contract"
+      ],
+      "verification": "CSS unit check + build",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-004",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement two-theme runtime styling resolver",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Restaurant and Café theme variants consistently supply accent/hero/button/chip styles",
+        "Semantic available/error status colors remain independent"
+      ],
+      "verification": "Theme unit test + two static previews",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "FR-031",
+        "FR-062"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-005",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement reusable primary/secondary button variants",
+      "depends_on": [
+        "FE-004"
+      ],
+      "acceptance": [
+        "Buttons render correct theme/state at mobile and desktop",
+        "Focus, disabled and loading semantics remain accessible"
+      ],
+      "verification": "Component interaction tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-006",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement category-chip variants and focus state",
+      "depends_on": [
+        "FE-004"
+      ],
+      "acceptance": [
+        "Selected/unselected chip styles match approved themes",
+        "Chip text never clips at 320px"
+      ],
+      "verification": "Unit + narrow width layout check",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-007",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement reusable dish card layout and price slot",
+      "depends_on": [
+        "FE-004"
+      ],
+      "acceptance": [
+        "Dish card supports name/description/price/image/availability in both languages",
+        "Correct mobile stacking and no order/cart controls"
+      ],
+      "verification": "Component test + visual checkpoint",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-008",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement reusable search field variant",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Search field with icon/clear/focus matches Figma",
+        "Keyboard and screen reader label are correct"
+      ],
+      "verification": "Component keyboard test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-009",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement shared form input/error variants",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Text/select/textarea/input errors use consistent approved Figma form style",
+        "Validation message readable and associated with field"
+      ],
+      "verification": "Form component tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-010",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement feedback badge/empty/loading components",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Availability/success/warning/error states have readable consistent visuals",
+        "Loading/empty/error do not incorrectly show success"
+      ],
+      "verification": "Component state tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-011",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement accessible confirm dialog component",
+      "depends_on": [
+        "FE-005",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Modal focus trapped/restored and Escape semantics checked",
+        "No destructive action before confirmed backend response"
+      ],
+      "verification": "Keyboard + dialog tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-012",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement AR RTL / EN LTR layout utilities",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Direction switches header/menu/forms correctly and preserves numeric bidi",
+        "Missing English content uses approved Arabic fallback"
+      ],
+      "verification": "Locale/direction tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-013",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement shared owner/platform responsive shells",
+      "depends_on": [
+        "FE-003",
+        "FE-012"
+      ],
+      "acceptance": [
+        "Mobile nav and 1024+ sidebar align with approved Figma variants",
+        "Correct active item, no overlap or horizontal scroll"
+      ],
+      "verification": "Shell component tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "NFR-MNT-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-014",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Add component story/test fixtures for two themes",
+      "depends_on": [
+        "FE-005",
+        "FE-006",
+        "FE-007",
+        "FE-008",
+        "FE-010"
+      ],
+      "acceptance": [
+        "Minimal deterministic Restaurant/Café fixtures cover selected/disabled/error states",
+        "Snapshot or DOM evidence; avoid screenshots per tiny change"
+      ],
+      "verification": "Component test suite",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System",
+      "requirements": [
+        "FR-031",
+        "FR-062"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Design System — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-015",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Preserve existing /r/:slug SSR and QR route foundation",
+      "depends_on": [
+        "FE-001",
+        "BE-021"
+      ],
+      "acceptance": [
+        "Inspect and reuse source HTML rendering without replacing it with CSR shell",
+        "Guard status/canonical/raw HTML in regression tests"
+      ],
+      "verification": "SSR raw HTTP regression",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-016",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement Restaurant public menu page composition",
+      "depends_on": [
+        "FE-007",
+        "FE-015",
+        "FE-012"
+      ],
+      "acceptance": [
+        "Matches approved restaurant hero/category/menu hierarchy",
+        "No draft data or cart/checkout buttons"
+      ],
+      "verification": "One 390px AR Figma checkpoint + SSR test",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-017",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement Café menu variant on shared components",
+      "depends_on": [
+        "FE-016",
+        "FE-004"
+      ],
+      "acceptance": [
+        "Café hero/chip/price/buttons use brown accent and approved styling",
+        "No forked duplicate menu templates"
+      ],
+      "verification": "Theme snapshot/unit regression",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-018",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Build restaurant hero/branding responsive slots",
+      "depends_on": [
+        "FE-016"
+      ],
+      "acceptance": [
+        "Cover, title and logo preserve aspect ratio and contrast",
+        "Long Arabic heading does not overlap action icons"
+      ],
+      "verification": "Responsive DOM checks",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-019",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Connect visible category chips and selected state",
+      "depends_on": [
+        "FE-006",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Only visible categories shown in stored order",
+        "Selected category filters cards, including narrow chip wrapping"
+      ],
+      "verification": "Interaction test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-020",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Connect menu search, clear and no-result state",
+      "depends_on": [
+        "FE-008",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Search filters only already visible safe catalog items",
+        "Clear resets, zero results meaningful in AR/EN"
+      ],
+      "verification": "Search unit/e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-021",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Render optimized dish card media and availability",
+      "depends_on": [
+        "FE-007",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Safe media dimensions prevent layout shift",
+        "Unavailable unpublished items excluded per API"
+      ],
+      "verification": "Component/SSR check",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-022",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Build dish details view and back behavior",
+      "depends_on": [
+        "FE-016",
+        "FE-021"
+      ],
+      "acceptance": [
+        "Details typography and CTA follow approved design",
+        "Back returns to category/search without unexpected modal"
+      ],
+      "verification": "Mobile navigation e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-023",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Localize EGP price and numeric bidirectional layout",
+      "depends_on": [
+        "FE-012",
+        "FE-021"
+      ],
+      "acceptance": [
+        "Arabic/English price text remains legible in RTL/LTR",
+        "Decimal formatting accurate; no misleading currency"
+      ],
+      "verification": "Locale unit tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-024",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement truly empty published menu view",
+      "depends_on": [
+        "FE-016",
+        "FE-010"
+      ],
+      "acceptance": [
+        "An empty menu has truthful explanation not demo dishes",
+        "No draft/unpublished content leaks"
+      ],
+      "verification": "SSR empty fixture test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-025",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement restaurant suspended/unpublished customer state",
+      "depends_on": [
+        "FE-015",
+        "FE-010"
+      ],
+      "acceptance": [
+        "Public unavailable state carries correct backend HTTP status",
+        "Noindex and no customer-private data"
+      ],
+      "verification": "Raw HTTP test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-026",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement public loading/network retry feedback",
+      "depends_on": [
+        "FE-016",
+        "FE-010"
+      ],
+      "acceptance": [
+        "Retry remains available without reporting false success",
+        "Error text concise and accessible in both locales"
+      ],
+      "verification": "Failure injection component test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-027",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement public AR/EN switch interaction",
+      "depends_on": [
+        "FE-012",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Switch updates content and dir without losing relevant page context",
+        "Café and Restaurant controls both reachable by keyboard"
+      ],
+      "verification": "Locale e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-028",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Hook theme from approved persisted/public API setting",
+      "depends_on": [
+        "FE-017",
+        "BE-020"
+      ],
+      "acceptance": [
+        "If D-01 approved, saved theme drives SSR and browser consistently",
+        "Until approved, no fake persistence or client invented identity"
+      ],
+      "verification": "SSR/hydration parity test",
+      "mode": "BLOCKED_BY_DECISION",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-031",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-029",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Run public component-family visual checkpoint once",
+      "depends_on": [
+        "FE-022",
+        "FE-027"
+      ],
+      "acceptance": [
+        "Review representative 320/390/768/1440 and AR/EN after full menu family integration",
+        "Fix only detected mismatches, not screenshot every atomic task"
+      ],
+      "verification": "Consolidated visual diff report",
+      "mode": "QA",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu",
+      "requirements": [
+        "FR-050",
+        "FR-052",
+        "FR-054",
+        "FR-062"
+      ],
+      "story_refs": "US-PUB-01/06",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Public Menu — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-030",
+      "track": "Frontend",
+      "area": "Marketing",
+      "title": "Reuse existing marketing route and approved hero layout",
+      "depends_on": [
+        "FE-001",
+        "FE-003"
+      ],
+      "acceptance": [
+        "Hero and primary CTA match Figma and do not fake product metrics",
+        "Prerender remains true and heading meaningful"
+      ],
+      "verification": "Marketing source HTML + visual checkpoint",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-070"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-031",
+      "track": "Frontend",
+      "area": "Marketing",
+      "title": "Build benefits and how-it-works content sections",
+      "depends_on": [
+        "FE-030"
+      ],
+      "acceptance": [
+        "Copy concise, natural Egyptian Arabic and adapted English",
+        "No unsupported customer counts/experience claims"
+      ],
+      "verification": "Content review + component test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-070"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-032",
+      "track": "Frontend",
+      "area": "Marketing",
+      "title": "Connect landing demo and sample menu CTA routes",
+      "depends_on": [
+        "FE-030"
+      ],
+      "acceptance": [
+        "CTAs lead to real in-app pages without 404 or external dead end",
+        "No public signup or paid claim"
+      ],
+      "verification": "Router navigation test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-070"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-033",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 1 restaurant name input",
+      "depends_on": [
+        "FE-009",
+        "FE-032",
+        "PM-006"
+      ],
+      "acceptance": [
+        "Collect locally only, clear validation, correct next route",
+        "Never create a tenant remotely"
+      ],
+      "verification": "Demo form test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-071",
+        "FR-072"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-034",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 2 sample dishes editor",
+      "depends_on": [
+        "FE-033",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Local add/edit sample dish list with validation",
+        "Values displayed in next preview without DB writes"
+      ],
+      "verification": "Demo state test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-071",
+        "FR-072"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-035",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 3 Restaurant/Café selector",
+      "depends_on": [
+        "FE-034",
+        "FE-004"
+      ],
+      "acceptance": [
+        "Theme selection uses approved chips/cards and is keyboard accessible",
+        "Previous/next preserves entered demo items"
+      ],
+      "verification": "Demo selection test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-071",
+        "FR-072"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-036",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 4 Restaurant preview",
+      "depends_on": [
+        "FE-035",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Demo preview displays user-entered sample data and Restaurant accents",
+        "Clearly marked unpublished preview"
+      ],
+      "verification": "Demo e2e",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-071",
+        "FR-072"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-037",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 4 Café preview on same components",
+      "depends_on": [
+        "FE-036",
+        "FE-017"
+      ],
+      "acceptance": [
+        "Café preview shows user sample items with Café design",
+        "No restaurant placeholder items after selecting Café"
+      ],
+      "verification": "Demo theme variant test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-071",
+        "FR-072"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-038",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo validation and back/forward flow",
+      "depends_on": [
+        "FE-033",
+        "FE-034",
+        "FE-035"
+      ],
+      "acceptance": [
+        "Back preserves draft; invalid fields block next with messages",
+        "No live QR, account or order implied"
+      ],
+      "verification": "AR/EN form e2e",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-071",
+        "FR-072"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-039",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build truthful demo completion state",
+      "depends_on": [
+        "FE-036",
+        "FE-037"
+      ],
+      "acceptance": [
+        "Completion shows illustrative success without claiming publish/signup",
+        "Return to marketing or preview works"
+      ],
+      "verification": "Demo finish test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo",
+      "requirements": [
+        "FR-071",
+        "FR-072"
+      ],
+      "story_refs": "US-DEMO-01",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Marketing + Demo — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-040",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Connect owner login form to existing Identity/CSRF",
+      "depends_on": [
+        "FE-009",
+        "BE-004"
+      ],
+      "acceptance": [
+        "Login state waits for actual API success before navigation",
+        "Wrong credentials and lockout show generic useful messages"
+      ],
+      "verification": "Auth integration e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-011",
+        "FR-012",
+        "FR-013"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-041",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement authorized owner route guard and logout",
+      "depends_on": [
+        "FE-040",
+        "BE-029"
+      ],
+      "acceptance": [
+        "Unauthenticated/suspended owner cannot access protected route",
+        "Logout removes access; no client-only privilege check"
+      ],
+      "verification": "Role guard tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-011",
+        "FR-012",
+        "FR-013"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-042",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build owner responsive navigation active state",
+      "depends_on": [
+        "FE-013",
+        "FE-041"
+      ],
+      "acceptance": [
+        "Mobile bottom nav and desktop sidebar choose current destination",
+        "No hidden/unreachable actions on 320px"
+      ],
+      "verification": "Navigation test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-043",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build owner dashboard KPI tiles from verified fields",
+      "depends_on": [
+        "FE-042"
+      ],
+      "acceptance": [
+        "Display real fields or explicit unavailable state, no invented counters",
+        "Cards match approved Figma hierarchy"
+      ],
+      "verification": "Owner dashboard tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-044",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Connect category list to own tenant API",
+      "depends_on": [
+        "FE-042",
+        "BE-009"
+      ],
+      "acceptance": [
+        "Rows show scoped categories, order and publication",
+        "Loading/error/empty states are clear"
+      ],
+      "verification": "Category list integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-045",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement create/edit category form",
+      "depends_on": [
+        "FE-044",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Valid Arabic category saves after API success",
+        "Required field errors retained for retry"
+      ],
+      "verification": "Category form e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-046",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement category order controls",
+      "depends_on": [
+        "FE-044",
+        "BE-009"
+      ],
+      "acceptance": [
+        "Reordering persists and UI reflects backend order",
+        "Keyboard/accessible sort alternative provided"
+      ],
+      "verification": "Category ordering test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-047",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement category delete conflict and confirm flow",
+      "depends_on": [
+        "FE-044",
+        "FE-011",
+        "BE-010"
+      ],
+      "acceptance": [
+        "409 when category not empty shows actionable explanation",
+        "No success visual before backend confirms deletion"
+      ],
+      "verification": "Conflict e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-048",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Connect item list and availability badges",
+      "depends_on": [
+        "FE-042",
+        "BE-011"
+      ],
+      "acceptance": [
+        "List shows own items only, accurate statuses and price",
+        "Filter/search does not reveal other tenants"
+      ],
+      "verification": "Owner items integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-049",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build reusable create/edit dish form fields",
+      "depends_on": [
+        "FE-048",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Category selector/name/price/description match Figma and validate",
+        "Foreign category IDs blocked by backend, no client trust"
+      ],
+      "verification": "Item form e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-050",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement item save, conflict and retry states",
+      "depends_on": [
+        "FE-049",
+        "BE-013"
+      ],
+      "acceptance": [
+        "Save success waits for server; 412 preserves user draft and warns",
+        "No silent overwrite under concurrent editors"
+      ],
+      "verification": "Save/concurrency e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-051",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement item publish/available toggle interactions",
+      "depends_on": [
+        "FE-048",
+        "BE-011"
+      ],
+      "acceptance": [
+        "Status toggles use API only with correct permission",
+        "Public visibility changes after committed response"
+      ],
+      "verification": "Toggle integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-052",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build own-item image list and primary indicator",
+      "depends_on": [
+        "FE-049",
+        "BE-017"
+      ],
+      "acceptance": [
+        "Ordered images and selected primary state displayed",
+        "No foreign media links or broken placeholders"
+      ],
+      "verification": "Image list test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-053",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement image upload progress/errors",
+      "depends_on": [
+        "FE-052",
+        "BE-016"
+      ],
+      "acceptance": [
+        "Unsupported image errors and progress show correctly",
+        "No success unless backend accepts actual image"
+      ],
+      "verification": "Upload invalid/valid e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-054",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build logo/cover/public-contact settings",
+      "depends_on": [
+        "FE-042",
+        "BE-017"
+      ],
+      "acceptance": [
+        "Brand settings fields persist based on actual settings API",
+        "Public contact opt-in only, meaningful preview"
+      ],
+      "verification": "Settings integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-055",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement Restaurant/Café selection form UI",
+      "depends_on": [
+        "FE-054",
+        "FE-004"
+      ],
+      "acceptance": [
+        "Cards/chips match Figma with proper selection state",
+        "Only persist after D-01 approved API exists; otherwise visibly disabled"
+      ],
+      "verification": "Variant selection test",
+      "mode": "BLOCKED_BY_DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-056",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Render stable QR code and copy/download actions",
+      "depends_on": [
+        "FE-042",
+        "BE-018"
+      ],
+      "acceptance": [
+        "QR points to immutable code route, not mutable slug or mock link",
+        "Copy/download artifact remains scan-compatible"
+      ],
+      "verification": "QR generation & browser test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-057",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement authenticated unpublished/draft preview",
+      "depends_on": [
+        "FE-042",
+        "BE-014"
+      ],
+      "acceptance": [
+        "Owner sees drafts through authorized preview only",
+        "Guest cannot access preview with guessed ID"
+      ],
+      "verification": "Security/preview e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-011",
+        "FR-012",
+        "FR-013"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-058",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Show accurate publication status and authorized controls",
+      "depends_on": [
+        "FE-043",
+        "BE-007",
+        "PM-005"
+      ],
+      "acceptance": [
+        "Platform-only publication policy kept until D-02 approval",
+        "No owner-triggered privileged API by guessed URL"
+      ],
+      "verification": "Role UI and API test",
+      "mode": "BLOCKED_BY_DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-011",
+        "FR-012",
+        "FR-013"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-059",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Run owner screen-family responsive and accessibility checkpoint",
+      "depends_on": [
+        "FE-047",
+        "FE-053",
+        "FE-054",
+        "FE-057"
+      ],
+      "acceptance": [
+        "Check representative owner screens at 320/390/768/1024/1440 RTL/LTR",
+        "Consolidate visual evidence without per-ticket screenshots"
+      ],
+      "verification": "Owner visual + keyboard report",
+      "mode": "QA",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner",
+      "requirements": [
+        "FR-020",
+        "FR-024",
+        "FR-030"
+      ],
+      "story_refs": "US-OWNER-01/08",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Owner — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-060",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Create platform admin guarded shell and navigation",
+      "depends_on": [
+        "FE-013",
+        "BE-004"
+      ],
+      "acceptance": [
+        "Only PlatformAdmin can enter routes; owner fails safely",
+        "Sidebar/mobile navigation active and labeled"
+      ],
+      "verification": "Route guard e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-061",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement platform dashboard summary without invented KPIs",
+      "depends_on": [
+        "FE-060"
+      ],
+      "acceptance": [
+        "Actual safe API metrics or explicit empty placeholder",
+        "No fake metrics/tenants"
+      ],
+      "verification": "Dashboard component/API test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-062",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Build restaurant directory row/card presentation",
+      "depends_on": [
+        "FE-060",
+        "BE-005"
+      ],
+      "acceptance": [
+        "Directory uses safe DTO and paginated results",
+        "Responsive cards on mobile, table where appropriate"
+      ],
+      "verification": "List rendering test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-063",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement directory search/filter/page controls",
+      "depends_on": [
+        "FE-062"
+      ],
+      "acceptance": [
+        "Filters and pagination synchronize with API query",
+        "Empty results and retry UI useful"
+      ],
+      "verification": "Directory filter tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-064",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement create-restaurant form with owner details",
+      "depends_on": [
+        "FE-060",
+        "BE-005"
+      ],
+      "acceptance": [
+        "Submit valid unique form, show 201 only after transaction",
+        "Duplicate owner/slug 409 preserves edits"
+      ],
+      "verification": "Provision e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-065",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement truthful owner invitation/setup status",
+      "depends_on": [
+        "FE-064"
+      ],
+      "acceptance": [
+        "Do not claim email sent without configured delivery",
+        "Invitation token/password never displayed in logs/toasts"
+      ],
+      "verification": "Onboarding UX test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-066",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Build restaurant detail view and status",
+      "depends_on": [
+        "FE-062"
+      ],
+      "acceptance": [
+        "Show normalized safe details, status and actions",
+        "No credential/private token appears"
+      ],
+      "verification": "Detail view tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-067",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement restaurant edit form and concurrency recovery",
+      "depends_on": [
+        "FE-066",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Update authorized fields after successful API response",
+        "On 412 prompt reload/reconcile, not silent overwrite"
+      ],
+      "verification": "Edit concurrency e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-068",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement suspend confirmation and result state",
+      "depends_on": [
+        "FE-066",
+        "FE-011",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Confirm action gated; results reflect backend status",
+        "Suspended menu becomes unavailable only on real API commit"
+      ],
+      "verification": "Suspend integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-069",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement reactivate confirmation and result state",
+      "depends_on": [
+        "FE-068",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Reactivation retains publication choice and correct status",
+        "No owner account access grant implied"
+      ],
+      "verification": "Reactivate e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-070",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement admin-only publish/unpublish controls",
+      "depends_on": [
+        "FE-066",
+        "BE-007"
+      ],
+      "acceptance": [
+        "Control only visible/usable for platform role",
+        "Stale version, permission error and server error handled"
+      ],
+      "verification": "Publish API/e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-071",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Render safe audit trail table and filter",
+      "depends_on": [
+        "FE-060",
+        "BE-008"
+      ],
+      "acceptance": [
+        "Audit shows actor/time/action without secrets",
+        "Mobile cards/desktop table readable"
+      ],
+      "verification": "Audit view tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-072",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Build owner account directory/detail screen",
+      "depends_on": [
+        "FE-060",
+        "BE-005"
+      ],
+      "acceptance": [
+        "Safe owner identity/status shown only to admins",
+        "Suspension confirmation requires real backend contract"
+      ],
+      "verification": "Owner detail tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "FE-073",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Run platform screen-family responsive checkpoint",
+      "depends_on": [
+        "FE-063",
+        "FE-069",
+        "FE-071",
+        "FE-072"
+      ],
+      "acceptance": [
+        "Review 320/390/768/1024/1440 and both languages",
+        "No crowding, focus traps or role leaks"
+      ],
+      "verification": "Platform visual/accessibility review",
+      "mode": "QA",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform",
+      "requirements": [
+        "FR-002",
+        "FR-004",
+        "FR-006",
+        "FR-008"
+      ],
+      "story_refs": "US-PLAT-01/05",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Premium v2 / Platform — https://www.figma.com/design/8kUunvUTX27tuIJcWLrXDe/Digital-Menu-SaaS?node-id=7-2",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-001",
+      "track": "Quality",
+      "area": "CI baseline",
+      "title": "Audit existing CI status, broken checks and skipped suites",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Record current branch SHA and exact status of existing checks",
+        "Separate environmental gaps from code failures, no invented pass claims"
+      ],
+      "verification": "GitHub Actions report with links",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-002",
+      "track": "Quality",
+      "area": "Security",
+      "title": "Create repeatable two-tenant SQL seed and request matrix",
+      "depends_on": [
+        "BE-002",
+        "BE-003"
+      ],
+      "acceptance": [
+        "Two tenants with cross-linked IDs exercise each protected entity",
+        "Negative results prove no foreign mutation/disclosure"
+      ],
+      "verification": "SQL integration fixture and test report",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-003",
+      "track": "Quality",
+      "area": "Security",
+      "title": "Run HTTP tenant isolation regression across methods",
+      "depends_on": [
+        "QA-002",
+        "BE-012"
+      ],
+      "acceptance": [
+        "GET/POST/PUT/DELETE Owner A against B category/item/media denied",
+        "No response reveals B sensitive data"
+      ],
+      "verification": "HTTP security suite",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-004",
+      "track": "Quality",
+      "area": "Security",
+      "title": "Test cookie/CSRF/logout/lockout/role matrix",
+      "depends_on": [
+        "BE-004",
+        "BE-029"
+      ],
+      "acceptance": [
+        "Missing CSRF, invalid cookie or revoked owner blocks write",
+        "Platform-only routes reject owner"
+      ],
+      "verification": "Auth integration run",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-005",
+      "track": "Quality",
+      "area": "Public",
+      "title": "Test published/unpublished visibility in raw SSR HTML",
+      "depends_on": [
+        "BE-014",
+        "FE-015"
+      ],
+      "acceptance": [
+        "Draft/deleted/suspended menu content absent from raw response",
+        "Statuses, canonical and noindex match contract"
+      ],
+      "verification": "Raw GET snapshots without JS",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-006",
+      "track": "Quality",
+      "area": "Public",
+      "title": "Verify printed QR redirect and malformed codes",
+      "depends_on": [
+        "BE-018",
+        "FE-056"
+      ],
+      "acceptance": [
+        "/m/{PublicCode} is one valid temporary redirect to current canonical",
+        "Invalid code safely rejected and no stale slug after rename"
+      ],
+      "verification": "Redirect integration run",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-007",
+      "track": "Quality",
+      "area": "Media",
+      "title": "Run malformed and cross-tenant image tests",
+      "depends_on": [
+        "BE-016",
+        "FE-053"
+      ],
+      "acceptance": [
+        "Spoofed MIME, oversize and foreign IDs denied",
+        "Successful processed object strips metadata with stable dimensions"
+      ],
+      "verification": "Media API suite",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-008",
+      "track": "Quality",
+      "area": "Localization",
+      "title": "Run AR RTL/EN LTR and EGP bidi regression",
+      "depends_on": [
+        "FE-023",
+        "FE-027"
+      ],
+      "acceptance": [
+        "Correct lang/dir/price and Arabic fallback verified",
+        "No accidental mechanical fallback translations or clipped punctuation"
+      ],
+      "verification": "Locale component/e2e",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-009",
+      "track": "Quality",
+      "area": "Theme",
+      "title": "Verify Restaurant/Café theme component parity",
+      "depends_on": [
+        "FE-017",
+        "FE-014"
+      ],
+      "acceptance": [
+        "Same components implement correct accent/buttons/chips/prices for both",
+        "Semantic availability/error color unchanged"
+      ],
+      "verification": "Unit snapshots + one family visual check",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-010",
+      "track": "Quality",
+      "area": "Owner",
+      "title": "Run owner end-to-end categories, items, image, QR journeys",
+      "depends_on": [
+        "FE-047",
+        "FE-050",
+        "FE-053",
+        "FE-056"
+      ],
+      "acceptance": [
+        "Owner can complete actions or see honest errors only after API response",
+        "No direct foreign entity access in same journey"
+      ],
+      "verification": "Owner Playwright + SQL fixture",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-011",
+      "track": "Quality",
+      "area": "Platform",
+      "title": "Run admin create, status, publication, audit journey",
+      "depends_on": [
+        "FE-064",
+        "FE-069",
+        "FE-070",
+        "FE-071"
+      ],
+      "acceptance": [
+        "Privileged API writes and status history reflect audit",
+        "Owner role cannot open/execute platform controls"
+      ],
+      "verification": "Platform Playwright + HTTP tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-012",
+      "track": "Quality",
+      "area": "Demo",
+      "title": "Run complete Demo Restaurant/Café flow without persistence",
+      "depends_on": [
+        "FE-039"
+      ],
+      "acceptance": [
+        "Steps preserve local input and distinguish Café/Restaurant previews",
+        "No tenant/account/QR backend write occurs"
+      ],
+      "verification": "Demo Playwright with request interception",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-013",
+      "track": "Quality",
+      "area": "Accessibility",
+      "title": "Check keyboard, contrast, focus, dialogs and touch targets",
+      "depends_on": [
+        "FE-011",
+        "FE-073",
+        "FE-059"
+      ],
+      "acceptance": [
+        "WCAG 2.2 AA project criteria checked on representative screens",
+        "Visible actionable labels, no focus trap or clipped messages"
+      ],
+      "verification": "axe + keyboard audit with exceptions",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-014",
+      "track": "Quality",
+      "area": "Responsive",
+      "title": "Run width interpolation and no-horizontal-scroll browser QA",
+      "depends_on": [
+        "FE-029",
+        "FE-059",
+        "FE-073"
+      ],
+      "acceptance": [
+        "320/360/375/390/412/430/768/1024/1440 layouts tested where affected",
+        "No overlap, cut-off CTA or unexpected horizontal scroll"
+      ],
+      "verification": "Playwright viewport matrix",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-015",
+      "track": "Quality",
+      "area": "SEO",
+      "title": "Verify canonical, metadata, sitemap, noindex and structured data",
+      "depends_on": [
+        "BE-022",
+        "BE-023",
+        "BE-024"
+      ],
+      "acceptance": [
+        "Raw HTML and sitemap only show eligible published entities",
+        "Canonical, redirects and server statuses match source contract"
+      ],
+      "verification": "HTTP SEO matrix",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-016",
+      "track": "Quality",
+      "area": "Performance",
+      "title": "Run controlled SSR and mobile performance baseline",
+      "depends_on": [
+        "BE-025",
+        "FE-029",
+        "PM-007"
+      ],
+      "acceptance": [
+        "Document target region, fixture sizes, device profile and repeated CWV/LHCI",
+        "No claimed metric without actual run and artifact"
+      ],
+      "verification": "LHCI and SQL query trace",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-017",
+      "track": "Quality",
+      "area": "Concurrency",
+      "title": "Run stale RowVersion and publication/cache racing tests",
+      "depends_on": [
+        "BE-013",
+        "BE-025",
+        "QA-002"
+      ],
+      "acceptance": [
+        "Stale edit gets 412 without overwrite and fresh public version consistent",
+        "Concurrent A/B reads never share private content"
+      ],
+      "verification": "SQL/HTTP concurrent tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "QA-018",
+      "track": "Quality",
+      "area": "Final review",
+      "title": "Run final traceability/FR acceptance review",
+      "depends_on": [
+        "QA-003",
+        "QA-004",
+        "QA-005",
+        "QA-010",
+        "QA-011",
+        "QA-012",
+        "QA-013",
+        "QA-014",
+        "QA-015",
+        "QA-016",
+        "QA-017"
+      ],
+      "acceptance": [
+        "Every P0 FR and NFR has linked executed evidence or explicit blocker",
+        "Block GO if security/SSR/availability verification incomplete"
+      ],
+      "verification": "FR→story→PR→CI acceptance matrix",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "QA subagent (independent reviewer)",
+      "requirements": [
+        "NFR-MNT-02",
+        "NFR-SEC-01",
+        "NFR-ACC-04"
+      ],
+      "story_refs": "US-SYS-01/02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-001",
+      "track": "Operations",
+      "area": "CI",
+      "title": "Define atomic PR quality checks and required statuses",
+      "depends_on": [
+        "PM-011",
+        "QA-001"
+      ],
+      "acceptance": [
+        "Branch checks cover affected Angular/.NET/SQL/SSR tests",
+        "No automatic merge on unverified high/critical change"
+      ],
+      "verification": "CI workflow review and test run",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-002",
+      "track": "Operations",
+      "area": "Process",
+      "title": "Set issue status workflow and reviewer handoff contract",
+      "depends_on": [
+        "PM-011"
+      ],
+      "acceptance": [
+        "BACKLOG/READY/IN_PROGRESS/IN_REVIEW/DONE/BLOCKED mapped to tracker",
+        "Closure requires merged PR + verified acceptance evidence, not just a comment"
+      ],
+      "verification": "Tracker dry-run and issue template",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-003",
+      "track": "Operations",
+      "area": "Hosting",
+      "title": "Document SSR host, TLS and proxy trust configuration",
+      "depends_on": [
+        "PM-007"
+      ],
+      "acceptance": [
+        "Planned same-origin ingress, Node SSR and API services recorded",
+        "No open proxy identity spoofing or SSR-only CSR fallback"
+      ],
+      "verification": "Staging topology runbook",
+      "mode": "DESIGN",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-004",
+      "track": "Operations",
+      "area": "Staging",
+      "title": "Provision isolated staging environment",
+      "depends_on": [
+        "OPS-003",
+        "PM-010"
+      ],
+      "acceptance": [
+        "Staging SSL and same-origin paths work without production credentials",
+        "Test SQL/media populated only from safe synthetic fixtures"
+      ],
+      "verification": "Staging readiness report",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-005",
+      "track": "Operations",
+      "area": "Backup",
+      "title": "Run SQL backup and restore drill in isolated staging",
+      "depends_on": [
+        "OPS-004",
+        "BE-030"
+      ],
+      "acceptance": [
+        "Backup restores schema, tenant constraints and representative data",
+        "Document RPO/RTO and exact restore commands"
+      ],
+      "verification": "Recovery drill report",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-006",
+      "track": "Operations",
+      "area": "Backup",
+      "title": "Run media object restore/reconciliation drill",
+      "depends_on": [
+        "OPS-004",
+        "BE-028"
+      ],
+      "acceptance": [
+        "Safe object backups restore image references correctly",
+        "No orphaned media or leaked public write credentials"
+      ],
+      "verification": "Media recovery report",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-007",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Configure redacted logs, correlation and health checks",
+      "depends_on": [
+        "OPS-004",
+        "BE-027"
+      ],
+      "acceptance": [
+        "Errors traced without private tenant metadata",
+        "Readiness and alerts identify SQL/media/SSR failures"
+      ],
+      "verification": "Staging fault-injection evidence",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-008",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Add release smoke test checklist",
+      "depends_on": [
+        "OPS-004",
+        "QA-005"
+      ],
+      "acceptance": [
+        "Smoke covers public QR/canonical, owner login, admin status and test tenant scope",
+        "Recovery and hidden-menu states included"
+      ],
+      "verification": "Executable smoke script/checklist",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-009",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Document staging deployment and rollback command path",
+      "depends_on": [
+        "OPS-004",
+        "OPS-001"
+      ],
+      "acceptance": [
+        "Deployment tied to immutable commit and reversibility documented",
+        "DB migration and media rollback risks explicitly reviewed"
+      ],
+      "verification": "Rollback runbook + dry run",
+      "mode": "DESIGN",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-010",
+      "track": "Operations",
+      "area": "Operations",
+      "title": "Run rollback tabletop and dependency failure rehearsal",
+      "depends_on": [
+        "OPS-007",
+        "OPS-009"
+      ],
+      "acceptance": [
+        "Simulated broken API/SSR/media shows safe degraded result",
+        "Rollback restores known good state without losing test data"
+      ],
+      "verification": "Staging rehearsal report",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    },
+    {
+      "id": "OPS-011",
+      "track": "Operations",
+      "area": "Release gate",
+      "title": "Prepare final GO/NO-GO release evidence decision",
+      "depends_on": [
+        "QA-018",
+        "OPS-005",
+        "OPS-006",
+        "OPS-008",
+        "OPS-010"
+      ],
+      "acceptance": [
+        "Block release on failed tenant/SSR/privacy or untested restore",
+        "Require explicit human approval; no autonomous deploy/merge"
+      ],
+      "verification": "Signed release checklist",
+      "mode": "REVIEW",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "DevOps/Release reviewer",
+      "requirements": [
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-REL-03"
+      ],
+      "story_refs": "US-SYS-02",
+      "source_spec": "docs/system-spec/README.md",
+      "figma_reference": "Not needed except API-visible UI changes",
+      "tracker": {
+        "external_id": null,
+        "pr_url": null,
+        "merged_sha": null,
+        "evidence_url": null
+      },
+      "worktree_policy": "isolated branch per issue; no merge or deploy"
+    }
+  ]
+}
