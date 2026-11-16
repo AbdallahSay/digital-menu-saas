@@ -20,6 +20,7 @@
 11. [API and data contract map](11-API-AND-DATA-MAP.md) — current contract families, screens and pending extensions.
 12. [Agent kickoff guide](12-AGENT-KICKOFF.md) — concrete scoped execution process and deliverables.
 13. [Machine-readable requirements index](requirements.csv) — 54 FR and 34 NFR records for filtering and issue trackers.
+14. [Atomic development board](13-ATOMIC-EXECUTION-BOARD.md) — 144 small dependency-checked Frontend/Backend/QA/Operations tasks, import instructions and subagent execution.
 
 ## Precedence and change control
 
@@ -36,5 +37,6 @@ Restaurant customer browses a published, safe, indexable bilingual menu from QR 
 ## Implementation status snapshot — NOT a production release claim
 
 The repository has F01–F09 backend feature code, S01 SSR foundation, schema and local tests. UI designs extend beyond currently wired Angular feature routes. S02/production hosting and several infrastructure decisions are still open. Existing verification reports describe historical local/CI evidence, not new testing by this documentation update.
+
 
 
