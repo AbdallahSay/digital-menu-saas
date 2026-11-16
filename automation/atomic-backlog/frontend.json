@@ -1,0 +1,1536 @@
+{
+  "schema_version": 2,
+  "repo": "AbdallahSay/digital-menu-saas",
+  "task_count": 73,
+  "default_status": "BACKLOG",
+  "tasks": [
+    {
+      "id": "FE-001",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Audit existing Angular 22 routes/components without rewriting",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "List currently implemented routes, CSS tokens and SSR behavior with file references",
+        "Classify reusable code, missing UI and conflict risks before edits"
+      ],
+      "verification": "Source inventory and successful current build",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-002",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Extract Figma token mapping into code-friendly reference",
+      "depends_on": [
+        "PM-002",
+        "FE-001"
+      ],
+      "acceptance": [
+        "Map typography, spacing, radius, shadows, green/brown and semantic colors",
+        "Do not invent missing design tokens or alter approved master"
+      ],
+      "verification": "Token mapping table + Figma nodes",
+      "mode": "DESIGN",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-003",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement semantic CSS variables and type scale",
+      "depends_on": [
+        "FE-002"
+      ],
+      "acceptance": [
+        "Shared tokens represent approved colors/spacing/fonts not per-screen hardcodes",
+        "No change to existing public SSR visible HTML contract"
+      ],
+      "verification": "CSS unit check + build",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-004",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement two-theme runtime styling resolver",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Restaurant and Café theme variants consistently supply accent/hero/button/chip styles",
+        "Semantic available/error status colors remain independent"
+      ],
+      "verification": "Theme unit test + two static previews",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-005",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement reusable primary/secondary button variants",
+      "depends_on": [
+        "FE-004"
+      ],
+      "acceptance": [
+        "Buttons render correct theme/state at mobile and desktop",
+        "Focus, disabled and loading semantics remain accessible"
+      ],
+      "verification": "Component interaction tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-006",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement category-chip variants and focus state",
+      "depends_on": [
+        "FE-004"
+      ],
+      "acceptance": [
+        "Selected/unselected chip styles match approved themes",
+        "Chip text never clips at 320px"
+      ],
+      "verification": "Unit + narrow width layout check",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-007",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement reusable dish card layout and price slot",
+      "depends_on": [
+        "FE-004"
+      ],
+      "acceptance": [
+        "Dish card supports name/description/price/image/availability in both languages",
+        "Correct mobile stacking and no order/cart controls"
+      ],
+      "verification": "Component test + visual checkpoint",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-008",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement reusable search field variant",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Search field with icon/clear/focus matches Figma",
+        "Keyboard and screen reader label are correct"
+      ],
+      "verification": "Component keyboard test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-009",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement shared form input/error variants",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Text/select/textarea/input errors use consistent approved Figma form style",
+        "Validation message readable and associated with field"
+      ],
+      "verification": "Form component tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-010",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement feedback badge/empty/loading components",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Availability/success/warning/error states have readable consistent visuals",
+        "Loading/empty/error do not incorrectly show success"
+      ],
+      "verification": "Component state tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-011",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement accessible confirm dialog component",
+      "depends_on": [
+        "FE-005",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Modal focus trapped/restored and Escape semantics checked",
+        "No destructive action before confirmed backend response"
+      ],
+      "verification": "Keyboard + dialog tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-012",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement AR RTL / EN LTR layout utilities",
+      "depends_on": [
+        "FE-003"
+      ],
+      "acceptance": [
+        "Direction switches header/menu/forms correctly and preserves numeric bidi",
+        "Missing English content uses approved Arabic fallback"
+      ],
+      "verification": "Locale/direction tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-013",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Implement shared owner/platform responsive shells",
+      "depends_on": [
+        "FE-003",
+        "FE-012"
+      ],
+      "acceptance": [
+        "Mobile nav and 1024+ sidebar align with approved Figma variants",
+        "Correct active item, no overlap or horizontal scroll"
+      ],
+      "verification": "Shell component tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-014",
+      "track": "Frontend",
+      "area": "Foundation",
+      "title": "Add component story/test fixtures for two themes",
+      "depends_on": [
+        "FE-005",
+        "FE-006",
+        "FE-007",
+        "FE-008",
+        "FE-010"
+      ],
+      "acceptance": [
+        "Minimal deterministic Restaurant/Café fixtures cover selected/disabled/error states",
+        "Snapshot or DOM evidence; avoid screenshots per tiny change"
+      ],
+      "verification": "Component test suite",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Design System"
+    },
+    {
+      "id": "FE-015",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Preserve existing /r/:slug SSR and QR route foundation",
+      "depends_on": [
+        "FE-001",
+        "BE-021"
+      ],
+      "acceptance": [
+        "Inspect and reuse source HTML rendering without replacing it with CSR shell",
+        "Guard status/canonical/raw HTML in regression tests"
+      ],
+      "verification": "SSR raw HTTP regression",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-016",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement Restaurant public menu page composition",
+      "depends_on": [
+        "FE-007",
+        "FE-015",
+        "FE-012"
+      ],
+      "acceptance": [
+        "Matches approved restaurant hero/category/menu hierarchy",
+        "No draft data or cart/checkout buttons"
+      ],
+      "verification": "One 390px AR Figma checkpoint + SSR test",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-017",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement Café menu variant on shared components",
+      "depends_on": [
+        "FE-016",
+        "FE-004"
+      ],
+      "acceptance": [
+        "Café hero/chip/price/buttons use brown accent and approved styling",
+        "No forked duplicate menu templates"
+      ],
+      "verification": "Theme snapshot/unit regression",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-018",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Build restaurant hero/branding responsive slots",
+      "depends_on": [
+        "FE-016"
+      ],
+      "acceptance": [
+        "Cover, title and logo preserve aspect ratio and contrast",
+        "Long Arabic heading does not overlap action icons"
+      ],
+      "verification": "Responsive DOM checks",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-019",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Connect visible category chips and selected state",
+      "depends_on": [
+        "FE-006",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Only visible categories shown in stored order",
+        "Selected category filters cards, including narrow chip wrapping"
+      ],
+      "verification": "Interaction test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-020",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Connect menu search, clear and no-result state",
+      "depends_on": [
+        "FE-008",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Search filters only already visible safe catalog items",
+        "Clear resets, zero results meaningful in AR/EN"
+      ],
+      "verification": "Search unit/e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-021",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Render optimized dish card media and availability",
+      "depends_on": [
+        "FE-007",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Safe media dimensions prevent layout shift",
+        "Unavailable unpublished items excluded per API"
+      ],
+      "verification": "Component/SSR check",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-022",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Build dish details view and back behavior",
+      "depends_on": [
+        "FE-016",
+        "FE-021"
+      ],
+      "acceptance": [
+        "Details typography and CTA follow approved design",
+        "Back returns to category/search without unexpected modal"
+      ],
+      "verification": "Mobile navigation e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-023",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Localize EGP price and numeric bidirectional layout",
+      "depends_on": [
+        "FE-012",
+        "FE-021"
+      ],
+      "acceptance": [
+        "Arabic/English price text remains legible in RTL/LTR",
+        "Decimal formatting accurate; no misleading currency"
+      ],
+      "verification": "Locale unit tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-024",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement truly empty published menu view",
+      "depends_on": [
+        "FE-016",
+        "FE-010"
+      ],
+      "acceptance": [
+        "An empty menu has truthful explanation not demo dishes",
+        "No draft/unpublished content leaks"
+      ],
+      "verification": "SSR empty fixture test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-025",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement restaurant suspended/unpublished customer state",
+      "depends_on": [
+        "FE-015",
+        "FE-010"
+      ],
+      "acceptance": [
+        "Public unavailable state carries correct backend HTTP status",
+        "Noindex and no customer-private data"
+      ],
+      "verification": "Raw HTTP test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-026",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement public loading/network retry feedback",
+      "depends_on": [
+        "FE-016",
+        "FE-010"
+      ],
+      "acceptance": [
+        "Retry remains available without reporting false success",
+        "Error text concise and accessible in both locales"
+      ],
+      "verification": "Failure injection component test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-027",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Implement public AR/EN switch interaction",
+      "depends_on": [
+        "FE-012",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Switch updates content and dir without losing relevant page context",
+        "Café and Restaurant controls both reachable by keyboard"
+      ],
+      "verification": "Locale e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-028",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Hook theme from approved persisted/public API setting",
+      "depends_on": [
+        "FE-017",
+        "BE-020"
+      ],
+      "acceptance": [
+        "If D-01 approved, saved theme drives SSR and browser consistently",
+        "Until approved, no fake persistence or client invented identity"
+      ],
+      "verification": "SSR/hydration parity test",
+      "mode": "BLOCKED_BY_DECISION",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-029",
+      "track": "Frontend",
+      "area": "Public menu",
+      "title": "Run public component-family visual checkpoint once",
+      "depends_on": [
+        "FE-022",
+        "FE-027"
+      ],
+      "acceptance": [
+        "Review representative 320/390/768/1440 and AR/EN after full menu family integration",
+        "Fix only detected mismatches, not screenshot every atomic task"
+      ],
+      "verification": "Consolidated visual diff report",
+      "mode": "QA",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Public Menu"
+    },
+    {
+      "id": "FE-030",
+      "track": "Frontend",
+      "area": "Marketing",
+      "title": "Reuse existing marketing route and approved hero layout",
+      "depends_on": [
+        "FE-001",
+        "FE-003"
+      ],
+      "acceptance": [
+        "Hero and primary CTA match Figma and do not fake product metrics",
+        "Prerender remains true and heading meaningful"
+      ],
+      "verification": "Marketing source HTML + visual checkpoint",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-031",
+      "track": "Frontend",
+      "area": "Marketing",
+      "title": "Build benefits and how-it-works content sections",
+      "depends_on": [
+        "FE-030"
+      ],
+      "acceptance": [
+        "Copy concise, natural Egyptian Arabic and adapted English",
+        "No unsupported customer counts/experience claims"
+      ],
+      "verification": "Content review + component test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-032",
+      "track": "Frontend",
+      "area": "Marketing",
+      "title": "Connect landing demo and sample menu CTA routes",
+      "depends_on": [
+        "FE-030"
+      ],
+      "acceptance": [
+        "CTAs lead to real in-app pages without 404 or external dead end",
+        "No public signup or paid claim"
+      ],
+      "verification": "Router navigation test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-033",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 1 restaurant name input",
+      "depends_on": [
+        "FE-009",
+        "FE-032",
+        "PM-006"
+      ],
+      "acceptance": [
+        "Collect locally only, clear validation, correct next route",
+        "Never create a tenant remotely"
+      ],
+      "verification": "Demo form test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-034",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 2 sample dishes editor",
+      "depends_on": [
+        "FE-033",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Local add/edit sample dish list with validation",
+        "Values displayed in next preview without DB writes"
+      ],
+      "verification": "Demo state test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-035",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 3 Restaurant/Café selector",
+      "depends_on": [
+        "FE-034",
+        "FE-004"
+      ],
+      "acceptance": [
+        "Theme selection uses approved chips/cards and is keyboard accessible",
+        "Previous/next preserves entered demo items"
+      ],
+      "verification": "Demo selection test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-036",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 4 Restaurant preview",
+      "depends_on": [
+        "FE-035",
+        "FE-016"
+      ],
+      "acceptance": [
+        "Demo preview displays user-entered sample data and Restaurant accents",
+        "Clearly marked unpublished preview"
+      ],
+      "verification": "Demo e2e",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-037",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo step 4 Café preview on same components",
+      "depends_on": [
+        "FE-036",
+        "FE-017"
+      ],
+      "acceptance": [
+        "Café preview shows user sample items with Café design",
+        "No restaurant placeholder items after selecting Café"
+      ],
+      "verification": "Demo theme variant test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-038",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build demo validation and back/forward flow",
+      "depends_on": [
+        "FE-033",
+        "FE-034",
+        "FE-035"
+      ],
+      "acceptance": [
+        "Back preserves draft; invalid fields block next with messages",
+        "No live QR, account or order implied"
+      ],
+      "verification": "AR/EN form e2e",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-039",
+      "track": "Frontend",
+      "area": "Demo",
+      "title": "Build truthful demo completion state",
+      "depends_on": [
+        "FE-036",
+        "FE-037"
+      ],
+      "acceptance": [
+        "Completion shows illustrative success without claiming publish/signup",
+        "Return to marketing or preview works"
+      ],
+      "verification": "Demo finish test",
+      "mode": "BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Marketing + Demo"
+    },
+    {
+      "id": "FE-040",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Connect owner login form to existing Identity/CSRF",
+      "depends_on": [
+        "FE-009",
+        "BE-004"
+      ],
+      "acceptance": [
+        "Login state waits for actual API success before navigation",
+        "Wrong credentials and lockout show generic useful messages"
+      ],
+      "verification": "Auth integration e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-041",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement authorized owner route guard and logout",
+      "depends_on": [
+        "FE-040",
+        "BE-029"
+      ],
+      "acceptance": [
+        "Unauthenticated/suspended owner cannot access protected route",
+        "Logout removes access; no client-only privilege check"
+      ],
+      "verification": "Role guard tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-042",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build owner responsive navigation active state",
+      "depends_on": [
+        "FE-013",
+        "FE-041"
+      ],
+      "acceptance": [
+        "Mobile bottom nav and desktop sidebar choose current destination",
+        "No hidden/unreachable actions on 320px"
+      ],
+      "verification": "Navigation test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-043",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build owner dashboard KPI tiles from verified fields",
+      "depends_on": [
+        "FE-042"
+      ],
+      "acceptance": [
+        "Display real fields or explicit unavailable state, no invented counters",
+        "Cards match approved Figma hierarchy"
+      ],
+      "verification": "Owner dashboard tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-044",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Connect category list to own tenant API",
+      "depends_on": [
+        "FE-042",
+        "BE-009"
+      ],
+      "acceptance": [
+        "Rows show scoped categories, order and publication",
+        "Loading/error/empty states are clear"
+      ],
+      "verification": "Category list integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-045",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement create/edit category form",
+      "depends_on": [
+        "FE-044",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Valid Arabic category saves after API success",
+        "Required field errors retained for retry"
+      ],
+      "verification": "Category form e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-046",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement category order controls",
+      "depends_on": [
+        "FE-044",
+        "BE-009"
+      ],
+      "acceptance": [
+        "Reordering persists and UI reflects backend order",
+        "Keyboard/accessible sort alternative provided"
+      ],
+      "verification": "Category ordering test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-047",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement category delete conflict and confirm flow",
+      "depends_on": [
+        "FE-044",
+        "FE-011",
+        "BE-010"
+      ],
+      "acceptance": [
+        "409 when category not empty shows actionable explanation",
+        "No success visual before backend confirms deletion"
+      ],
+      "verification": "Conflict e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-048",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Connect item list and availability badges",
+      "depends_on": [
+        "FE-042",
+        "BE-011"
+      ],
+      "acceptance": [
+        "List shows own items only, accurate statuses and price",
+        "Filter/search does not reveal other tenants"
+      ],
+      "verification": "Owner items integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-049",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build reusable create/edit dish form fields",
+      "depends_on": [
+        "FE-048",
+        "FE-009"
+      ],
+      "acceptance": [
+        "Category selector/name/price/description match Figma and validate",
+        "Foreign category IDs blocked by backend, no client trust"
+      ],
+      "verification": "Item form e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-050",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement item save, conflict and retry states",
+      "depends_on": [
+        "FE-049",
+        "BE-013"
+      ],
+      "acceptance": [
+        "Save success waits for server; 412 preserves user draft and warns",
+        "No silent overwrite under concurrent editors"
+      ],
+      "verification": "Save/concurrency e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-051",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement item publish/available toggle interactions",
+      "depends_on": [
+        "FE-048",
+        "BE-011"
+      ],
+      "acceptance": [
+        "Status toggles use API only with correct permission",
+        "Public visibility changes after committed response"
+      ],
+      "verification": "Toggle integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-052",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build own-item image list and primary indicator",
+      "depends_on": [
+        "FE-049",
+        "BE-017"
+      ],
+      "acceptance": [
+        "Ordered images and selected primary state displayed",
+        "No foreign media links or broken placeholders"
+      ],
+      "verification": "Image list test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-053",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement image upload progress/errors",
+      "depends_on": [
+        "FE-052",
+        "BE-016"
+      ],
+      "acceptance": [
+        "Unsupported image errors and progress show correctly",
+        "No success unless backend accepts actual image"
+      ],
+      "verification": "Upload invalid/valid e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-054",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Build logo/cover/public-contact settings",
+      "depends_on": [
+        "FE-042",
+        "BE-017"
+      ],
+      "acceptance": [
+        "Brand settings fields persist based on actual settings API",
+        "Public contact opt-in only, meaningful preview"
+      ],
+      "verification": "Settings integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-055",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement Restaurant/Café selection form UI",
+      "depends_on": [
+        "FE-054",
+        "FE-004"
+      ],
+      "acceptance": [
+        "Cards/chips match Figma with proper selection state",
+        "Only persist after D-01 approved API exists; otherwise visibly disabled"
+      ],
+      "verification": "Variant selection test",
+      "mode": "BLOCKED_BY_DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-056",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Render stable QR code and copy/download actions",
+      "depends_on": [
+        "FE-042",
+        "BE-018"
+      ],
+      "acceptance": [
+        "QR points to immutable code route, not mutable slug or mock link",
+        "Copy/download artifact remains scan-compatible"
+      ],
+      "verification": "QR generation & browser test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-057",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Implement authenticated unpublished/draft preview",
+      "depends_on": [
+        "FE-042",
+        "BE-014"
+      ],
+      "acceptance": [
+        "Owner sees drafts through authorized preview only",
+        "Guest cannot access preview with guessed ID"
+      ],
+      "verification": "Security/preview e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-058",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Show accurate publication status and authorized controls",
+      "depends_on": [
+        "FE-043",
+        "BE-007",
+        "PM-005"
+      ],
+      "acceptance": [
+        "Platform-only publication policy kept until D-02 approval",
+        "No owner-triggered privileged API by guessed URL"
+      ],
+      "verification": "Role UI and API test",
+      "mode": "BLOCKED_BY_DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-059",
+      "track": "Frontend",
+      "area": "Owner",
+      "title": "Run owner screen-family responsive and accessibility checkpoint",
+      "depends_on": [
+        "FE-047",
+        "FE-053",
+        "FE-054",
+        "FE-057"
+      ],
+      "acceptance": [
+        "Check representative owner screens at 320/390/768/1024/1440 RTL/LTR",
+        "Consolidate visual evidence without per-ticket screenshots"
+      ],
+      "verification": "Owner visual + keyboard report",
+      "mode": "QA",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Owner"
+    },
+    {
+      "id": "FE-060",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Create platform admin guarded shell and navigation",
+      "depends_on": [
+        "FE-013",
+        "BE-004"
+      ],
+      "acceptance": [
+        "Only PlatformAdmin can enter routes; owner fails safely",
+        "Sidebar/mobile navigation active and labeled"
+      ],
+      "verification": "Route guard e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-061",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement platform dashboard summary without invented KPIs",
+      "depends_on": [
+        "FE-060"
+      ],
+      "acceptance": [
+        "Actual safe API metrics or explicit empty placeholder",
+        "No fake metrics/tenants"
+      ],
+      "verification": "Dashboard component/API test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-062",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Build restaurant directory row/card presentation",
+      "depends_on": [
+        "FE-060",
+        "BE-005"
+      ],
+      "acceptance": [
+        "Directory uses safe DTO and paginated results",
+        "Responsive cards on mobile, table where appropriate"
+      ],
+      "verification": "List rendering test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-063",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement directory search/filter/page controls",
+      "depends_on": [
+        "FE-062"
+      ],
+      "acceptance": [
+        "Filters and pagination synchronize with API query",
+        "Empty results and retry UI useful"
+      ],
+      "verification": "Directory filter tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-064",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement create-restaurant form with owner details",
+      "depends_on": [
+        "FE-060",
+        "BE-005"
+      ],
+      "acceptance": [
+        "Submit valid unique form, show 201 only after transaction",
+        "Duplicate owner/slug 409 preserves edits"
+      ],
+      "verification": "Provision e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-065",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement truthful owner invitation/setup status",
+      "depends_on": [
+        "FE-064"
+      ],
+      "acceptance": [
+        "Do not claim email sent without configured delivery",
+        "Invitation token/password never displayed in logs/toasts"
+      ],
+      "verification": "Onboarding UX test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-066",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Build restaurant detail view and status",
+      "depends_on": [
+        "FE-062"
+      ],
+      "acceptance": [
+        "Show normalized safe details, status and actions",
+        "No credential/private token appears"
+      ],
+      "verification": "Detail view tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-067",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement restaurant edit form and concurrency recovery",
+      "depends_on": [
+        "FE-066",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Update authorized fields after successful API response",
+        "On 412 prompt reload/reconcile, not silent overwrite"
+      ],
+      "verification": "Edit concurrency e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-068",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement suspend confirmation and result state",
+      "depends_on": [
+        "FE-066",
+        "FE-011",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Confirm action gated; results reflect backend status",
+        "Suspended menu becomes unavailable only on real API commit"
+      ],
+      "verification": "Suspend integration test",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-069",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement reactivate confirmation and result state",
+      "depends_on": [
+        "FE-068",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Reactivation retains publication choice and correct status",
+        "No owner account access grant implied"
+      ],
+      "verification": "Reactivate e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-070",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Implement admin-only publish/unpublish controls",
+      "depends_on": [
+        "FE-066",
+        "BE-007"
+      ],
+      "acceptance": [
+        "Control only visible/usable for platform role",
+        "Stale version, permission error and server error handled"
+      ],
+      "verification": "Publish API/e2e",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-071",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Render safe audit trail table and filter",
+      "depends_on": [
+        "FE-060",
+        "BE-008"
+      ],
+      "acceptance": [
+        "Audit shows actor/time/action without secrets",
+        "Mobile cards/desktop table readable"
+      ],
+      "verification": "Audit view tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-072",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Build owner account directory/detail screen",
+      "depends_on": [
+        "FE-060",
+        "BE-005"
+      ],
+      "acceptance": [
+        "Safe owner identity/status shown only to admins",
+        "Suspension confirmation requires real backend contract"
+      ],
+      "verification": "Owner detail tests",
+      "mode": "AUDIT_BUILD",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    },
+    {
+      "id": "FE-073",
+      "track": "Frontend",
+      "area": "Platform",
+      "title": "Run platform screen-family responsive checkpoint",
+      "depends_on": [
+        "FE-063",
+        "FE-069",
+        "FE-071",
+        "FE-072"
+      ],
+      "acceptance": [
+        "Review 320/390/768/1024/1440 and both languages",
+        "No crowding, focus traps or role leaks"
+      ],
+      "verification": "Platform visual/accessibility review",
+      "mode": "QA",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Frontend subagent (Angular)",
+      "figma_source": "Premium v2 / Platform"
+    }
+  ]
+}
