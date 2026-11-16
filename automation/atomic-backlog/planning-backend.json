@@ -1,0 +1,818 @@
+{
+  "schema_version": 2,
+  "repo": "AbdallahSay/digital-menu-saas",
+  "source": "docs/system-spec + docs/10-BACKLOG.md + Figma Premium v2",
+  "task_count": 42,
+  "default_status": "BACKLOG",
+  "tasks": [
+    {
+      "id": "PM-001",
+      "track": "Planning",
+      "area": "Governance",
+      "title": "Audit existing code and completed milestone issues",
+      "depends_on": [],
+      "acceptance": [
+        "Document exact current main SHA, implemented endpoints and open PRs",
+        "Classify each legacy milestone as verified/retest/unfinished without reopening completed code"
+      ],
+      "verification": "Source paths + issue links",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-002",
+      "track": "Planning",
+      "area": "Governance",
+      "title": "Freeze approved Figma screens and theme token references",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Record source frame IDs, selected theme variables and component variants",
+        "Specify exact visual source priority and known non-approved drafts"
+      ],
+      "verification": "Figma links + design source register",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-003",
+      "track": "Planning",
+      "area": "Governance",
+      "title": "Review system specification PR #46 and acceptance baseline",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Validate FR/NFR, US, ADR and Mermaid against current main",
+        "Record explicit accepted scope, discrepancies and sign-off, without merging automatically"
+      ],
+      "verification": "Documentation review checklist",
+      "mode": "REVIEW",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-004",
+      "track": "Planning",
+      "area": "Architecture decision",
+      "title": "Decide persistent Restaurant/Café theme representation",
+      "depends_on": [
+        "PM-002",
+        "PM-003"
+      ],
+      "acceptance": [
+        "Approve or reject persisted ThemeId schema/API design distinct from PrimaryColor",
+        "Document default and migration/fallback/SSR behavior in approved ADR"
+      ],
+      "verification": "Approved ADR D-01",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-005",
+      "track": "Planning",
+      "area": "Authorization decision",
+      "title": "Decide whether restaurant owner may publish",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Clarify whether PlatformAdmin-only publication contract remains",
+        "If changing, approve policy, audit, CSRF and negative-role tests before coding"
+      ],
+      "verification": "Approved ADR D-02",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-006",
+      "track": "Planning",
+      "area": "Demo decision",
+      "title": "Confirm illustrative non-persistent Demo scope",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Freeze the Demo as unpublished and non-persistent",
+        "Exclude public signup, live QR/account and real customer data"
+      ],
+      "verification": "Approved scope note D-03",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-007",
+      "track": "Planning",
+      "area": "Infrastructure decision",
+      "title": "Decide SSR deployment topology and trust boundaries",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Select feasible Node SSR + API same-origin topology and region",
+        "Document TLS, internal identity, cost and rollback before deploy"
+      ],
+      "verification": "Approved ADR D-04",
+      "mode": "DECISION",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-008",
+      "track": "Planning",
+      "area": "Security decision",
+      "title": "Decide public rate limiter strategy for SSR traffic",
+      "depends_on": [
+        "PM-007"
+      ],
+      "acceptance": [
+        "Select ingress vs service rate limits without grouping all SSR clients",
+        "Document trusted headers and abuse scenarios"
+      ],
+      "verification": "Approved ADR D-05 + load scenario",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-009",
+      "track": "Planning",
+      "area": "SEO decision",
+      "title": "Resolve slug alias and reserved /r/demo policy",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Specify reserved names, historical redirects and canonical behavior",
+        "Define one-hop redirects and rollback of collisions"
+      ],
+      "verification": "Approved ADR D-06",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-010",
+      "track": "Planning",
+      "area": "Infrastructure decision",
+      "title": "Approve durable media storage and restore requirements",
+      "depends_on": [
+        "PM-007"
+      ],
+      "acceptance": [
+        "Choose object store with region/cost and secure key policy",
+        "Approve SQL/media backup, retention and restore test conditions"
+      ],
+      "verification": "Approved ADR D-07",
+      "mode": "DECISION",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-011",
+      "track": "Planning",
+      "area": "Process",
+      "title": "Agree small-task lifecycle and parallel work policy",
+      "depends_on": [
+        "PM-003"
+      ],
+      "acceptance": [
+        "Approve statuses and a one-task-per-agent-per-branch job protocol",
+        "Set max two concurrent independent tasks and review ownership"
+      ],
+      "verification": "Reviewed atomic tracker rules",
+      "mode": "REVIEW",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "PM-012",
+      "track": "Planning",
+      "area": "Process",
+      "title": "Approve low-credit visual review policy",
+      "depends_on": [
+        "PM-002"
+      ],
+      "acceptance": [
+        "Define component-family visual checkpoints rather than screenshot every change",
+        "Set exceptions for first screen, high-risk layout and final regression"
+      ],
+      "verification": "Approved screenshot budget policy",
+      "mode": "REVIEW",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Product reviewer"
+    },
+    {
+      "id": "BE-001",
+      "track": "Backend",
+      "area": "Baseline",
+      "title": "Inventory current API endpoints and Domain entities",
+      "depends_on": [
+        "PM-001"
+      ],
+      "acceptance": [
+        "Record actual ASP.NET endpoints, DTOs, status codes and EF entities",
+        "Map routes to FRs and separate missing code from existing feature"
+      ],
+      "verification": "OpenAPI/source inventory + tests",
+      "mode": "AUDIT",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-002",
+      "track": "Backend",
+      "area": "Security",
+      "title": "Verify server-derived tenant context",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Owner requests cannot select tenant by client-controlled restaurant ID",
+        "Foreign IDs denied with no foreign record disclosure"
+      ],
+      "verification": "Real SQL A/B negative tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-003",
+      "track": "Backend",
+      "area": "Security",
+      "title": "Verify composite tenant foreign keys and joins",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Foreign category/item/image associations fail at service and SQL layer",
+        "No partial writes occur for rejected relation"
+      ],
+      "verification": "SQL integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-004",
+      "track": "Backend",
+      "area": "Auth",
+      "title": "Verify Identity login/logout cookie and CSRF",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Secure HttpOnly cookie and CSRF checks present on unsafe operations",
+        "Logout revokes access and lockout is enforced"
+      ],
+      "verification": "Auth API integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-005",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify provision transaction and duplicate owner handling",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Creation of restaurant, owner, membership and audit is atomic",
+        "Duplicate normalized owner email or slug yields 409 with rollback"
+      ],
+      "verification": "Provision SQL integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-006",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify restaurant suspend/reactivate concurrency",
+      "depends_on": [
+        "BE-005"
+      ],
+      "acceptance": [
+        "Requires valid RowVersion and returns 412 on stale mutations",
+        "Suspension hides public menu without losing publication preference"
+      ],
+      "verification": "Status and public projection tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-007",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify platform-only restaurant publication authorization",
+      "depends_on": [
+        "BE-004",
+        "PM-005"
+      ],
+      "acceptance": [
+        "Owner cannot call privileged publication API without an approved role change",
+        "Publication is audited and visibility updates correctly"
+      ],
+      "verification": "Role matrix, CSRF and version tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-008",
+      "track": "Backend",
+      "area": "Platform",
+      "title": "Verify redacted audit logging for lifecycle operations",
+      "depends_on": [
+        "BE-005"
+      ],
+      "acceptance": [
+        "Actor, action, tenant and timestamp recorded for privileged mutations",
+        "No secrets, passwords or invite tokens in audit/log data"
+      ],
+      "verification": "Audit DTO tests and code review",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-009",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify owner category API CRUD and sorting",
+      "depends_on": [
+        "BE-002"
+      ],
+      "acceptance": [
+        "Category operations scoped to owner, validate Arabic name and sort order",
+        "Deleted/unpublished categories are absent from public results"
+      ],
+      "verification": "Catalog service and HTTP tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-010",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify category delete-with-items conflict rule",
+      "depends_on": [
+        "BE-009"
+      ],
+      "acceptance": [
+        "Deleting category with active items returns 409, preserving data",
+        "Deleting an empty category remains soft-delete"
+      ],
+      "verification": "SQL conflict integration test",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-011",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify item CRUD/price validation and availability",
+      "depends_on": [
+        "BE-009"
+      ],
+      "acceptance": [
+        "Own valid item saves with nonnegative decimal EGP price",
+        "Unavailable, unpublished or deleted item excluded publicly"
+      ],
+      "verification": "Item API and visibility test",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-012",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify foreign item category and item references denied",
+      "depends_on": [
+        "BE-011",
+        "BE-003"
+      ],
+      "acceptance": [
+        "Cannot assign item to a different restaurant category",
+        "No mutation of either tenant with cross-tenant identifiers"
+      ],
+      "verification": "A/B HTTP+SQL tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-013",
+      "track": "Backend",
+      "area": "Catalog",
+      "title": "Verify RowVersion on editable categories/items",
+      "depends_on": [
+        "BE-009",
+        "BE-011"
+      ],
+      "acceptance": [
+        "Stale write returns 412, no lost updates",
+        "Client receives safe version details for retry"
+      ],
+      "verification": "Concurrency integration test",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-014",
+      "track": "Backend",
+      "area": "Public API",
+      "title": "Verify server-side published-only projection",
+      "depends_on": [
+        "BE-011",
+        "BE-006"
+      ],
+      "acceptance": [
+        "Restaurant/category/item/availability/deleted predicates applied on server",
+        "Drafts and suspended content never leaked in DTO or HTML"
+      ],
+      "verification": "Public two-tenant negative tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-015",
+      "track": "Backend",
+      "area": "Localization",
+      "title": "Verify optional English fallback without fabricated translation",
+      "depends_on": [
+        "BE-014"
+      ],
+      "acceptance": [
+        "English missing field falls back to Arabic per contract",
+        "Price and category order remain correct under both locales"
+      ],
+      "verification": "Projection locale tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-016",
+      "track": "Backend",
+      "area": "Media",
+      "title": "Verify upload signature/size/re-encoding protections",
+      "depends_on": [
+        "BE-002"
+      ],
+      "acceptance": [
+        "Reject disguised or oversized files; strip EXIF and normalize",
+        "Foreign item image uploads do not write keys"
+      ],
+      "verification": "Media API tests with malformed bytes",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-017",
+      "track": "Backend",
+      "area": "Media",
+      "title": "Verify primary/order/alt text and cleanup semantics",
+      "depends_on": [
+        "BE-016"
+      ],
+      "acceptance": [
+        "Item/image relationship and sort/alt fields are consistent",
+        "Failed DB/object-store phases compensate safely or are recoverable"
+      ],
+      "verification": "SQL + object store failure injection",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-018",
+      "track": "Backend",
+      "area": "Public routing",
+      "title": "Verify immutable QR alias one-hop 302",
+      "depends_on": [
+        "BE-014"
+      ],
+      "acceptance": [
+        "Valid /m/{code} resolves to current canonical /r/{slug} once",
+        "Invalid codes never reveal private tenant details"
+      ],
+      "verification": "HTTP redirect test",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-019",
+      "track": "Backend",
+      "area": "Theme",
+      "title": "Approve ThemeId schema migration design without executing it",
+      "depends_on": [
+        "PM-004",
+        "BE-001"
+      ],
+      "acceptance": [
+        "Propose constrained theme ID and default for historical tenants",
+        "Include forward/rollback migration and SSR fallback"
+      ],
+      "verification": "Reviewed migration and API diff",
+      "mode": "DESIGN",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-020",
+      "track": "Backend",
+      "area": "Theme",
+      "title": "Implement approved theme persistence in settings contract",
+      "depends_on": [
+        "BE-019"
+      ],
+      "acceptance": [
+        "Owner update persists only approved Restaurant/Café identities",
+        "SSR public projection returns the saved theme and default"
+      ],
+      "verification": "Migration+API contract and integration tests",
+      "mode": "BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-021",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Verify SSR public menu source HTML and statuses",
+      "depends_on": [
+        "BE-014",
+        "PM-007"
+      ],
+      "acceptance": [
+        "Initial HTML has real visible category/item data with correct status",
+        "Suspended/unpublished/404 responses avoid indexable private content"
+      ],
+      "verification": "raw HTTP/SSR source tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-022",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Implement approved metadata/canonical and JSON-LD policy",
+      "depends_on": [
+        "BE-021",
+        "PM-009"
+      ],
+      "acceptance": [
+        "Published restaurant has truthful title/canonical/schema",
+        "No generated claims or unpublished structured data"
+      ],
+      "verification": "Raw HTML schema tests",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-023",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Implement published-only sitemap and robots",
+      "depends_on": [
+        "BE-022"
+      ],
+      "acceptance": [
+        "Only published eligible canonical menus included",
+        "Lifecycle changes remove stale URLs"
+      ],
+      "verification": "Sitemap integration tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-024",
+      "track": "Backend",
+      "area": "SEO",
+      "title": "Implement approved slug alias and reserved name policy",
+      "depends_on": [
+        "PM-009",
+        "BE-018"
+      ],
+      "acceptance": [
+        "No collision with reserved /r/demo and old slug redirects one hop",
+        "QR alias remains temporary 302 and canonical stays current"
+      ],
+      "verification": "Routing HTTP tests",
+      "mode": "DESIGN_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-025",
+      "track": "Backend",
+      "area": "Cache",
+      "title": "Verify tenant/locale/version-aware public cache",
+      "depends_on": [
+        "BE-014"
+      ],
+      "acceptance": [
+        "No cross-tenant or private DTO cache key reuse",
+        "Update invalidates old public SSR HTML"
+      ],
+      "verification": "Concurrent public read and invalidation test",
+      "mode": "AUDIT_FIX",
+      "effort": "M",
+      "risk": "critical",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-026",
+      "track": "Backend",
+      "area": "Rate limiting",
+      "title": "Implement trusted SSR public rate budget policy",
+      "depends_on": [
+        "PM-008",
+        "BE-021"
+      ],
+      "acceptance": [
+        "Public SSR visitors do not share one accidental global throttle bucket",
+        "Spoofed forwarding headers cannot bypass limits"
+      ],
+      "verification": "Multi-visitor abuse/load tests",
+      "mode": "DESIGN_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-027",
+      "track": "Backend",
+      "area": "Operations",
+      "title": "Verify safe ProblemDetails, correlation IDs and readiness",
+      "depends_on": [
+        "BE-001"
+      ],
+      "acceptance": [
+        "Errors contain no stack traces/tenant secrets",
+        "Readiness indicates actual required SQL/media dependency"
+      ],
+      "verification": "HTTP error and health tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "medium",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-028",
+      "track": "Backend",
+      "area": "Media",
+      "title": "Wire approved durable store with scoped object keys",
+      "depends_on": [
+        "PM-010",
+        "BE-017"
+      ],
+      "acceptance": [
+        "No anonymous writes; media keys tenant scoped and durable",
+        "Isolation and failure recovery proven in staging"
+      ],
+      "verification": "Storage integration + restore evidence",
+      "mode": "DESIGN_BUILD",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-029",
+      "track": "Backend",
+      "area": "Security",
+      "title": "Test revoked/suspended membership with existing cookie",
+      "depends_on": [
+        "BE-004",
+        "BE-002"
+      ],
+      "acceptance": [
+        "Revoked owner session cannot mutate tenant resources",
+        "Error response does not disclose sensitive IDs"
+      ],
+      "verification": "Revocation HTTP tests",
+      "mode": "AUDIT_FIX",
+      "effort": "S",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    },
+    {
+      "id": "BE-030",
+      "track": "Backend",
+      "area": "Data",
+      "title": "Verify production-safe backup/migration playbook",
+      "depends_on": [
+        "PM-010",
+        "BE-003"
+      ],
+      "acceptance": [
+        "Migration plan has non-destructive staging path and rollback",
+        "Restore tested on isolated backup; never touch production without approval"
+      ],
+      "verification": "Staging backup-restore report",
+      "mode": "AUDIT",
+      "effort": "M",
+      "risk": "high",
+      "status": "BACKLOG",
+      "agent": "Codex Backend"
+    }
+  ]
+}
