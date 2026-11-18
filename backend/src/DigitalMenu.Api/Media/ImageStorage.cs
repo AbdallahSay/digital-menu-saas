@@ -1,14 +1,19 @@
+using DigitalMenu.Application;
+
 namespace DigitalMenu.Api.Media;
 
 public interface IImageStorage
 {
     Task PutAsync(string key, NormalizedImage image, CancellationToken ct);
     Task RemoveAsync(string key, CancellationToken ct);
+    // Returns null when the object is absent or pending deletion. Caller must authorize the key first.
+    Task<Stream?> OpenReadAsync(string key, PublicImageVariant variant, CancellationToken ct);
 }
 public sealed class UnavailableImageStorage : IImageStorage
 {
     public Task PutAsync(string key, NormalizedImage image, CancellationToken ct) => throw new MediaException(503);
     public Task RemoveAsync(string key, CancellationToken ct) => throw new MediaException(503);
+    public Task<Stream?> OpenReadAsync(string key, PublicImageVariant variant, CancellationToken ct) => throw new MediaException(503);
 }
 
 // Private local adapter; no HTTP/static-file serving. Trusted OS user owns this directory.
@@ -61,6 +66,20 @@ public sealed class LocalImageStorage : IImageStorage
             catch (Exception) { logger.LogWarning("Private media cleanup pending."); }
             throw;
         }
+    }
+    public Task<Stream?> OpenReadAsync(string key, PublicImageVariant variant, CancellationToken ct)
+    {
+        var path = Bundle(key);
+        if (!Directory.Exists(path) || File.Exists(Path.Combine(path, "delete.pending"))) return Task.FromResult<Stream?>(null);
+        var file = Path.Combine(path, variant == PublicImageVariant.Main ? "main.webp" : "thumbnail.webp");
+        try
+        {
+            if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0) throw new IOException("Media path is not permitted.");
+            return Task.FromResult<Stream?>(new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 65536,
+                FileOptions.Asynchronous | FileOptions.SequentialScan));
+        }
+        catch (FileNotFoundException) { return Task.FromResult<Stream?>(null); }
+        catch (DirectoryNotFoundException) { return Task.FromResult<Stream?>(null); }
     }
     private static async Task WriteNew(string path, byte[] bytes, CancellationToken ct)
     {

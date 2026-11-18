@@ -31,7 +31,7 @@ public sealed class PersistenceTests
         try
         {
             await db.Database.MigrateAsync();
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            Assert.Equal(new[] { "20261012030220_InitialTenantModel", "20261118192703_L1bPublicImagesAndTheme" }, await db.Database.GetAppliedMigrationsAsync());
             Assert.False(db.Database.HasPendingModelChanges());
             await db.Database.MigrateAsync(); // repeat migration is idempotent
             var fixture = TwoRestaurantFixture.Create();
@@ -67,6 +67,13 @@ public sealed class PersistenceTests
             db.Add(new AuditEntry { RestaurantId = fixture.A.Id, ActorUserId = user.Id, Action = "Fixture", ResourceType = "Restaurant" });
             await db.SaveChangesAsync();
             await Reject($"UPDATE RestaurantSettings SET DefaultLocale='xx' WHERE RestaurantId={fixture.A.Id}", 547);
+            // L1b: closed theme allowlist and paired, bounded branding dimensions.
+            Assert.Equal("teal", await db.Database.SqlQuery<string>($"SELECT ThemeKey AS Value FROM RestaurantSettings WHERE RestaurantId={fixture.A.Id}").SingleAsync());
+            await Reject($"UPDATE RestaurantSettings SET ThemeKey='neon' WHERE RestaurantId={fixture.A.Id}", 547);
+            await Reject($"UPDATE RestaurantSettings SET ThemeKey='<script>' WHERE RestaurantId={fixture.A.Id}", 547);
+            await Reject($"UPDATE RestaurantSettings SET LogoWidth=400 WHERE RestaurantId={fixture.A.Id}", 547);
+            await Reject($"UPDATE RestaurantSettings SET CoverWidth=0, CoverHeight=10 WHERE RestaurantId={fixture.A.Id}", 547);
+            await Reject($"UPDATE RestaurantSettings SET LogoWidth=6001, LogoHeight=10 WHERE RestaurantId={fixture.A.Id}", 547);
             await Reject($"UPDATE MenuItemImages SET Width=0 WHERE RestaurantId={fixture.A.Id}", 547);
             await Reject($"UPDATE MenuItemImages SET ObjectKey={fixture.A.Id + "/changed.webp"} WHERE RestaurantId={fixture.A.Id}", 51000);
             await Reject($"UPDATE RestaurantUsers SET UserId={Guid.NewGuid()} WHERE RestaurantId={fixture.A.Id}", 547);
@@ -89,7 +96,7 @@ public sealed class PersistenceTests
                     if (!string.IsNullOrWhiteSpace(batch))
                         await db.Database.ExecuteSqlRawAsync(batch);
             }
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            Assert.Equal(new[] { "20261012030220_InitialTenantModel", "20261118192703_L1bPublicImagesAndTheme" }, await db.Database.GetAppliedMigrationsAsync());
             Assert.Empty(await db.Set<Restaurant>().AsNoTracking().ToListAsync());
         }
         finally

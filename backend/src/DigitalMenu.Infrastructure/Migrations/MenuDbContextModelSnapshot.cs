@@ -335,9 +335,15 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
 
+                    b.Property<int?>("CoverHeight")
+                        .HasColumnType("int");
+
                     b.Property<string>("CoverObjectKey")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
+
+                    b.Property<int?>("CoverWidth")
+                        .HasColumnType("int");
 
                     b.Property<string>("DefaultLocale")
                         .IsRequired()
@@ -348,9 +354,15 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<int?>("LogoHeight")
+                        .HasColumnType("int");
+
                     b.Property<string>("LogoObjectKey")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
+
+                    b.Property<int?>("LogoWidth")
+                        .HasColumnType("int");
 
                     b.Property<string>("PrimaryColor")
                         .IsRequired()
@@ -366,6 +378,14 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<string>("ThemeKey")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)")
+                        .HasDefaultValue("teal");
+
                     b.HasKey("RestaurantId");
 
                     b.ToTable("RestaurantSettings", null, t =>
@@ -374,7 +394,13 @@ namespace DigitalMenu.Infrastructure.Migrations
 
                             t.HasCheckConstraint("CK_Settings_Contacts", "[PublishedContactDetailsFlags] BETWEEN 0 AND 3");
 
+                            t.HasCheckConstraint("CK_Settings_CoverSize", "([CoverWidth] IS NULL AND [CoverHeight] IS NULL) OR ([CoverWidth] IS NOT NULL AND [CoverHeight] IS NOT NULL AND [CoverWidth] BETWEEN 1 AND 6000 AND [CoverHeight] BETWEEN 1 AND 6000)");
+
                             t.HasCheckConstraint("CK_Settings_Locale", "[DefaultLocale] IN ('ar','en')");
+
+                            t.HasCheckConstraint("CK_Settings_LogoSize", "([LogoWidth] IS NULL AND [LogoHeight] IS NULL) OR ([LogoWidth] IS NOT NULL AND [LogoHeight] IS NOT NULL AND [LogoWidth] BETWEEN 1 AND 6000 AND [LogoHeight] BETWEEN 1 AND 6000)");
+
+                            t.HasCheckConstraint("CK_Settings_Theme", "[ThemeKey] IN ('teal','amber','burgundy')");
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);

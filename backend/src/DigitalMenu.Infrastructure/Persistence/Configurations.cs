@@ -123,6 +123,9 @@ public sealed class SettingsConfiguration : IEntityTypeConfiguration<RestaurantS
             t.HasCheckConstraint("CK_Settings_Locale", "[DefaultLocale] IN ('ar','en')");
             t.HasCheckConstraint("CK_Settings_Color", "LEN([PrimaryColor]) = 7 AND LEFT([PrimaryColor],1) = '#' AND SUBSTRING([PrimaryColor],2,6) COLLATE Latin1_General_100_BIN2 NOT LIKE '%[^0-9A-Fa-f]%'");
             t.HasCheckConstraint("CK_Settings_Contacts", "[PublishedContactDetailsFlags] BETWEEN 0 AND 3");
+            t.HasCheckConstraint("CK_Settings_Theme", "[ThemeKey] IN ('teal','amber','burgundy')");
+            t.HasCheckConstraint("CK_Settings_LogoSize", "([LogoWidth] IS NULL AND [LogoHeight] IS NULL) OR ([LogoWidth] IS NOT NULL AND [LogoHeight] IS NOT NULL AND [LogoWidth] BETWEEN 1 AND 6000 AND [LogoHeight] BETWEEN 1 AND 6000)");
+            t.HasCheckConstraint("CK_Settings_CoverSize", "([CoverWidth] IS NULL AND [CoverHeight] IS NULL) OR ([CoverWidth] IS NOT NULL AND [CoverHeight] IS NOT NULL AND [CoverWidth] BETWEEN 1 AND 6000 AND [CoverHeight] BETWEEN 1 AND 6000)");
         });
         b.HasKey(x => x.RestaurantId);
         b.HasOne<Restaurant>().WithOne().HasForeignKey<RestaurantSettings>(x => x.RestaurantId);
@@ -133,6 +136,7 @@ public sealed class SettingsConfiguration : IEntityTypeConfiguration<RestaurantS
         b.Property(x => x.AddressOptional).HasMaxLength(500);
         b.Property(x => x.Description).HasMaxLength(2000);
         b.Property(x => x.DefaultLocale).HasMaxLength(2);
+        b.Property(x => x.ThemeKey).HasMaxLength(16).IsUnicode(false).HasDefaultValue(DigitalMenu.Domain.ThemeKeys.Default);
         b.Property(x => x.RowVersion).IsRowVersion();
     }
 }

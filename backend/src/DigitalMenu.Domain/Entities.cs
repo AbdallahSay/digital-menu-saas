@@ -73,6 +73,12 @@ public sealed class RestaurantSettings
     public string PrimaryColor { get; set; } = "#0F766E";
     public string? LogoObjectKey { get; set; }
     public string? CoverObjectKey { get; set; }
+    // Normalized main-variant dimensions; public DTO omits logo/cover unless both are present.
+    public int? LogoWidth { get; set; }
+    public int? LogoHeight { get; set; }
+    public int? CoverWidth { get; set; }
+    public int? CoverHeight { get; set; }
+    public string ThemeKey { get; set; } = ThemeKeys.Default;
     public string? ContactPhoneOptional { get; set; }
     public string? AddressOptional { get; set; }
     public int PublishedContactDetailsFlags { get; set; }
@@ -91,4 +97,11 @@ public sealed class AuditEntry
     public Guid? ResourceId { get; set; }
     public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
     public string? CorrelationId { get; set; }
+}
+
+public static class ThemeKeys
+{
+    public const string Default = "teal";
+    // Closed allowlist mirrored by CK_Settings_Theme; public clients map keys to vetted CSS tokens.
+    public static readonly IReadOnlyList<string> All = ["teal", "amber", "burgundy"];
 }

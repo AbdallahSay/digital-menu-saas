@@ -42,7 +42,7 @@ public sealed class MediaTests
         };
     }
     private static string Route(Guid item) => $"/api/v1/admin/items/{item}/images";
-    private sealed class Storage : IImageStorage
+    internal sealed class Storage : IImageStorage
     {
         public ConcurrentDictionary<string, NormalizedImage> Objects { get; } = new();
         public Func<Task>? AfterPut { get; set; }
@@ -55,6 +55,9 @@ public sealed class MediaTests
             Assert.True(Objects.TryAdd(key, image));
             if (AfterPut is not null) await AfterPut();
         }
+        public Task<Stream?> OpenReadAsync(string key, DigitalMenu.Application.PublicImageVariant variant, CancellationToken ct) =>
+            Task.FromResult<Stream?>(Objects.TryGetValue(key, out var image)
+                ? new MemoryStream(variant == DigitalMenu.Application.PublicImageVariant.Main ? image.Main : image.Thumbnail, false) : null);
         public Task RemoveAsync(string key, CancellationToken ct)
         {
             Removals++;

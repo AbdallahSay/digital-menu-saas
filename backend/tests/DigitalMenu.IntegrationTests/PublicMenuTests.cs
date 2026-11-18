@@ -79,12 +79,12 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     }
 
     [SqlServerFact]
-    public async Task Code_and_slug_return_public_allowlists_locale_fallback_and_no_media_or_private_data()
+    public async Task Code_and_slug_return_public_allowlists_locale_fallback_and_no_private_data_or_object_keys()
     {
         await using var f = await Fixture.Create();
         using var client = f.Client;
         var arabic = await Menu(client, Code(f.A));
-        Assert.Equal(3, f.Queries.Count);
+        Assert.Equal(4, f.Queries.Count); // restaurant, categories, items, images (L1b)
         Assert.Equal("ar", arabic.Language);
         Assert.Equal("#123456", arabic.Restaurant.PrimaryColor);
         Assert.Equal("قهوة", Assert.Single(Assert.Single(arabic.Categories).Items).Name);
@@ -95,10 +95,13 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         var slug = await Menu(client, Slug(f.A));
         Assert.Equal(arabic.Restaurant, slug.Restaurant);
         var body = await (await client.GetAsync(Code(f.A))).Content.ReadAsStringAsync();
-        foreach (var forbidden in new[] { "private", f.A.Id.ToString(), f.B.Id.ToString(), f.Owner.ToString(), "restaurantId", "userId", "objectKey", "rowVersion", "isPublished", "isAvailable", "imageUrl", "logoUrl", "token", "email", "status" })
+        foreach (var forbidden in new[] { "private", f.A.Id.ToString(), f.B.Id.ToString(), f.Owner.ToString(), "restaurantId", "userId", "objectKey", "rowVersion", "isPublished", "isAvailable", "imageUrl", "logoUrl", "token", "email", "status", "objectKey", "private-image" })
             Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
         var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(body);
         Assert.Equal(new[] { "categories", "language", "publishedMenuVersion", "restaurant" }, json.EnumerateObject().Select(p => p.Name).Order());
+        // Legacy non-canonical logo key and image key are never surfaced; the canonical-key image contract is covered by PublicMediaTests.
+        Assert.Null(arabic.Restaurant.Logo);
+        Assert.Null(Assert.Single(Assert.Single(arabic.Categories).Items).PrimaryImage);
     }
 
     [SqlServerFact]
@@ -254,7 +257,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         using var client = f.Client;
         f.Queries.Reset();
         Assert.Equal(200, Assert.Single((await Menu(client, Code(f.A))).Categories).Items.Count);
-        Assert.Equal(3, f.Queries.Count);
+        Assert.Equal(4, f.Queries.Count);
         var elapsed = await Task.WhenAll(Enumerable.Range(0, 20).Select(async i =>
         {
             using var browser = f.Client;
@@ -265,8 +268,8 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             return timer.Elapsed.TotalMilliseconds;
         }));
         Array.Sort(elapsed);
-        Assert.Equal(63, f.Queries.Count);
-        output.WriteLine($"Local TestServer + LocalDB, 20 parallel A/B GETs, A=200 items/B=empty, 3 SELECT/request: p50={elapsed[9]:F1}ms p95={elapsed[18]:F1}ms max={elapsed[19]:F1}ms, zero errors. No shared cache; not production evidence.");
+        Assert.Equal(74, f.Queries.Count); // 4 + 10x4 (A, with items) + 10x3 (B, empty: image query skipped)
+        output.WriteLine($"Local TestServer + SQL Server, 20 parallel A/B GETs, A=200 items/B=empty, 4/3 SELECT/request: p50={elapsed[9]:F1}ms p95={elapsed[18]:F1}ms max={elapsed[19]:F1}ms, zero errors. No shared cache; not production evidence.");
     }
 
     [SqlServerFact]

@@ -31,6 +31,8 @@ backend-only increment, one Draft PR, human review before merge.
   normal safe serialization; future HTML/JSON-LD consumers must escape it.
 - No images/logo/cover URLs or blobs are projected: F08 Production/Staging media
   storage/delivery remains deliberately unavailable (503). Do not fabricate URLs.
+  *Superseded by L1b* ([L1b verification](L1b-VERIFICATION.md)): published images,
+  logo/cover and themeKey are now projected and served; production storage is still unavailable.
 - At most 100 visible categories/1000 visible items; SQL takes limit+1 and returns
   generic 503 for excess, never a silently truncated menu. Missing SQL config and
   SQL deadlock contention also return generic 503. Public GET rate is 120/minute

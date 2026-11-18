@@ -99,6 +99,7 @@ app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
 app.MapPublicMenus();
+app.MapPublicMedia();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
 app.MapHealthChecks("/api/health/ready").AllowAnonymous();

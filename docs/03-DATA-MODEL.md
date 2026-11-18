@@ -18,7 +18,7 @@ authorization remain F03/F05. No production migration is authorized.
 
 `MenuItemImage`: Id uniqueidentifier, RestaurantId, MenuItemId, ObjectKey opaque unique, AltAr/AltEn, SortOrder int, Width int, Height int, ContentType approved, CreatedAtUtc; composite `(RestaurantId, MenuItemId)` FK to MenuItem and `(RestaurantId, Id)` alt unique on MenuItem.
 
-`RestaurantSettings`: RestaurantId PK/FK, PrimaryColor constrained hex token, LogoObjectKey, CoverObjectKey, ContactPhoneOptional, AddressOptional, PublishedContactDetailsFlags, default locale, optional description. Never expose internal owner credential info.
+`RestaurantSettings`: RestaurantId PK/FK, PrimaryColor constrained hex token, LogoObjectKey, CoverObjectKey, LogoWidth/LogoHeight and CoverWidth/CoverHeight (nullable int, CHECK both-null or both 1..6000), ThemeKey varchar(16) NOT NULL default `teal` (CHECK `teal|amber|burgundy`), ContactPhoneOptional, AddressOptional, PublishedContactDetailsFlags, default locale, optional description. Never expose internal owner credential info. Logo/cover object keys are not SQL-constrained (legacy rows may exist); the public projection only exposes canonical tenant-bound keys with dimensions. L1b migration `20261118192703_L1bPublicImagesAndTheme` is additive only (script: `backend/L1b-migration.sql`).
 
 `AuditEntry`: Id, ActorUserId nullable, RestaurantId nullable, Action, ResourceType, ResourceId, TimestampUtc, CorrelationId, minimal redacted metadata; no passwords, raw tokens or user-supplied secrets.
 

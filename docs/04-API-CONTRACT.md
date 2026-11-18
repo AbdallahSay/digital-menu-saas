@@ -309,7 +309,8 @@ Evidence and local commands: [F07 verification](../backend/F07-VERIFICATION.md).
   native concurrency to two. Boundaries max 128 chars, form value limits bounded.
 - 201 returns `{ id, menuItemId, width, height, contentType: "image/webp", sortOrder: 0 }`.
   No Location for an unimplemented image GET, public URL, object key, restaurant/user
-  ID, private path or original filename. Images are not publicly served by F08.
+  ID, private path or original filename. F08 itself serves no images; public
+  delivery of published images is the separate L1b contract below.
 - DELETE `/api/v1/admin/items/{id}/images/{imageId}` requires the same cookie,
   TenantOwner, HTTPS and CSRF; no request body. Checks owned non-deleted item,
   owned image and exact item/image relationship. Foreign/missing/deleted item,
@@ -339,6 +340,59 @@ Evidence and local commands: [F07 verification](../backend/F07-VERIFICATION.md).
   transaction or automatic recovery is claimed. Public cache consumers remain F09/S03.
 
 Setup, licensing, SQL evidence and limits: [F08 report](../backend/F08-VERIFICATION.md).
+
+### L1b public images contract (local/test storage)
+
+Extends the F09 DTO; existing fields are unchanged and still allowlisted.
+
+- `restaurant` adds `themeKey` (closed set `teal|amber|burgundy`, default `teal`,
+  SQL CHECK; clients map it to vetted CSS tokens, never to raw CSS) plus nullable
+  `logo` and `cover`. Each item adds nullable `primaryImage` and `gallery` (array).
+- Image object: `{ url, width, height, thumbnailUrl, thumbnailWidth, thumbnailHeight, alt }`.
+  `width/height` are the stored main-variant (max side 1600) dimensions;
+  thumbnail (max side 480, never upscaled) dimensions are derived with the F08
+  scaling formula and may differ from the encoded file by at most 1px. URLs are
+  root-relative to the public API origin.
+- Item images: only for items already in the F09 visible set (same SQL predicates
+  and composite tenant joins), `image/webp`, canonical tenant-bound key. Order
+  `SortOrder, CreatedAtUtc, Id`; first is `primaryImage`, the rest `gallery`.
+  At most 8 images per item (bounded in SQL, deterministic; 7 gallery entries).
+  Alt: locale alt, then Arabic alt, then the visible localized item name.
+- Logo/cover: emitted only when the key is canonical for this restaurant
+  (`{restaurantId:D}/{guid:N}.webp`) **and** stored dimensions exist; otherwise
+  `null` (legacy/foreign keys are silently omitted, never invented). Logo alt is
+  the restaurant name; cover alt is empty (decorative). F08 has no branding upload
+  endpoint yet, so these appear only once a future owner branding writer sets them.
+- Never returned: ObjectKey (or any segment of it), restaurant/user IDs, private
+  paths, storage names, sort/created/content-type metadata, unpublished images.
+- One extra bounded SELECT per menu read when it has visible items (4 total;
+  empty menus stay 3).
+
+Delivery (anonymous, cookie authentication skipped, GET/HEAD only, `public-media`
+limiter 600/min per remote IP, queue 0, independent of the 120/min menu limiter):
+
+- `GET /api/v1/public/media/items/{imageId:N32 lowercase}/{main|thumb}.webp`
+- `GET /api/v1/public/media/restaurants/{publicCode}/{logo|cover}/{token}/{main|thumb}.webp`
+  where `token` = first 32 lowercase hex of SHA-256(ObjectKey): opaque,
+  non-reversible and changes whenever the immutable key is replaced.
+- Every request re-checks the full visibility chain in one SELECT (restaurant
+  Active+published, category, item published/available/non-deleted, image row) and
+  the canonical key before touching storage. Unknown, foreign, draft, unavailable,
+  deleted, replaced (stale token), wrong kind/code and missing-blob requests return
+  the same `404 "Image not found."`, no-store, no ETag. Malformed id/code/token/
+  variant returns 400. Unavailable storage (default outside Development) returns
+  503 no-store; SQL deadlock 503.
+- 200/304: `Content-Type: image/webp`, strong ETag (derived from public id/token +
+  variant, not the key), `Cache-Control: public, max-age=31536000, s-maxage=600,
+  immutable`, `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy:
+  same-site`, existing CSP/frame headers, no Set-Cookie. `If-None-Match` returns 304.
+- Cache trade-off (human review requested): URL bytes are immutable, so browsers
+  may keep a copy for a year. Shared caches must revalidate after 10 minutes, so an
+  unpublished/deleted image stops being served by a CDN within that bound; only
+  devices that already downloaded it retain it. S03 may shorten/remove this with
+  explicit CDN purge.
+
+Evidence: [L1b verification](../backend/L1b-VERIFICATION.md).
 
 ## Public endpoints
 - `GET /api/v1/public/menus/{publicCode}?lang=ar|en` — active + published restaurant only; visible categories and items only; response `200`, `404` when nonexistent or intentionally hidden (exact unavailable strategy clarified before coding); cache only response safe for public reuse. Search in frontend over visible menu.
