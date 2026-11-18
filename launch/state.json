@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "project": "MenuSaaS launch track",
+  "branch_prefix": "claude/",
+  "statuses": ["todo", "done", "blocked", "skipped"],
+  "note": "A phase becomes 'done' inside its own PR, so merging the PR is what completes it. Never edit statuses on main directly.",
+  "phases": [
+    { "id": "P00", "slug": "baseline-and-decisions", "title_ar": "تجهيز الأساس وحسم القرارات", "file": "launch/phases/P00-baseline-and-decisions.md", "depends_on": [], "decisions": [], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P01", "slug": "restaurant-settings-api", "title_ar": "API إعدادات المطعم والهوية والثيم", "file": "launch/phases/P01-restaurant-settings-api.md", "depends_on": ["P00"], "decisions": ["D6"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P02", "slug": "public-media-api", "title_ar": "عرض الصور والهوية في المنيو العامة (API)", "file": "launch/phases/P02-public-media-api.md", "depends_on": ["P01"], "decisions": ["D11"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P03", "slug": "owner-tools-api", "title_ar": "أدوات المالك: QR وملخص ونشر وترتيب", "file": "launch/phases/P03-owner-tools-api.md", "depends_on": ["P01"], "decisions": ["D8"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P04", "slug": "platform-ops-api", "title_ar": "عمليات المنصة: سجل، تعليق، روابط تفعيل، اشتراك", "file": "launch/phases/P04-platform-ops-api.md", "depends_on": ["P00"], "decisions": ["D3", "D4"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P05", "slug": "admin-app-foundation", "title_ar": "أساس تطبيق الإدارة: الدخول والتخطيط والحالات", "file": "launch/phases/P05-admin-app-foundation.md", "depends_on": ["P00"], "decisions": [], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P06", "slug": "owner-dashboard-categories", "title_ar": "لوحة المالك: الرئيسية والأقسام", "file": "launch/phases/P06-owner-dashboard-categories.md", "depends_on": ["P03", "P05"], "decisions": [], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P07", "slug": "owner-items-photos", "title_ar": "لوحة المالك: الأطباق والأسعار والصور", "file": "launch/phases/P07-owner-items-photos.md", "depends_on": ["P02", "P06"], "decisions": [], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P08", "slug": "owner-brand-qr-publish", "title_ar": "لوحة المالك: الهوية والإعدادات وQR والنشر والمعاينة", "file": "launch/phases/P08-owner-brand-qr-publish.md", "depends_on": ["P01", "P03", "P07"], "decisions": ["D6"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P09", "slug": "platform-console", "title_ar": "لوحة إدارة المنصة", "file": "launch/phases/P09-platform-console.md", "depends_on": ["P04", "P05"], "decisions": ["D4"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P10", "slug": "public-menu-premium-v2", "title_ar": "المنيو العامة بتصميم Premium v2 والثيمين", "file": "launch/phases/P10-public-menu-premium-v2.md", "depends_on": ["P02"], "decisions": ["D6", "D11"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P11", "slug": "seo-and-slugs", "title_ar": "SEO كامل وتغيير الرابط بأمان (S02)", "file": "launch/phases/P11-seo-and-slugs.md", "depends_on": ["P04", "P10"], "decisions": ["D8"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P12", "slug": "performance-and-ssr-trust", "title_ar": "الأداء وحماية الـSSR من الضغط (S03)", "file": "launch/phases/P12-performance-and-ssr-trust.md", "depends_on": ["P10"], "decisions": ["D1"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P13", "slug": "production-infrastructure", "title_ar": "بنية الإنتاج: Docker وتخزين الصور والباك أب", "file": "launch/phases/P13-production-infrastructure.md", "depends_on": ["P02", "P12"], "decisions": ["D1", "D2", "D3", "D8"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P14", "slug": "qa-hardening", "title_ar": "اختبار شامل وأمان وتحميل (Q01/Q02)", "file": "launch/phases/P14-qa-hardening.md", "depends_on": ["P08", "P09", "P11", "P13"], "decisions": [], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P15", "slug": "marketing-demo-legal", "title_ar": "صفحة التسويق والديمو المجاني والصفحات القانونية", "file": "launch/phases/P15-marketing-demo-legal.md", "depends_on": ["P10"], "decisions": ["D4", "D5", "D7", "D8"], "approval_gate": false, "status": "todo", "pr": null },
+    { "id": "P16", "slug": "go-live", "title_ar": "الإطلاق على الإنتاج والـPilot", "file": "launch/phases/P16-go-live.md", "depends_on": ["P14", "P15"], "decisions": ["D1", "D2", "D8"], "approval_gate": true, "status": "todo", "pr": null }
+  ]
+}
