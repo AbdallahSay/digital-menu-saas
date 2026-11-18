@@ -47,6 +47,7 @@ public static class Categories
     public static void MapCategories(this WebApplication app)
     {
         var group = app.MapGroup("/api/v1/admin/categories").RequireAuthorization("TenantOwner");
+        group.MapReorder<Category>(c => !c.IsDeleted, (c, order) => c.SortOrder = order, c => c.SortOrder);
         group.MapGet("/{id:guid}", async (Guid id, ITenantDataSession session, CancellationToken ct) =>
             Results.Ok(Response(await Owned(session, id, ct))));
         group.MapGet("", async (int? page, int? pageSize, ITenantDataSession session, CancellationToken ct) =>

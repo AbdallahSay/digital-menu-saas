@@ -52,6 +52,9 @@ public static partial class Provisioning
 {
     [GeneratedRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
     private static partial Regex SlugPattern();
+    // Route/namespace words that must never become tenant slugs (e.g. /r/demo is the illustrative S01 page).
+    public static readonly IReadOnlySet<string> ReservedSlugs =
+        new HashSet<string>(["demo", "admin", "platform", "api", "m", "r"], StringComparer.Ordinal);
     public static string NewPublicCode() => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(10));
     private static IResult Problem(int status, string title) => Results.Problem(statusCode: status, title: title);
     private static RestaurantResponse Response(Restaurant r) => new(r.Id, r.Name, r.Slug, r.PublicCode,
@@ -106,6 +109,7 @@ public static partial class Provisioning
             string.IsNullOrEmpty(slug) || slug.Length > 100 || !SlugPattern().IsMatch(slug) ||
             string.IsNullOrEmpty(email) || email.Length > 256 || !new EmailAddressAttribute().IsValid(email))
             return Problem(400, "Invalid restaurant or owner fields.");
+        if (ReservedSlugs.Contains(slug)) return Problem(409, "Restaurant slug is reserved.");
         // Explicit local/test boundary. A production delivery/outbox requires a separate reviewed increment.
         if (!environment.IsDevelopment() || !delivery.IsAvailable)
             return Problem(503, "Owner onboarding delivery is not configured for local testing.");

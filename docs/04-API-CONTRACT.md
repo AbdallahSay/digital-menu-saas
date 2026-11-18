@@ -69,6 +69,12 @@ Only the server assigns ownership. Unknown JSON properties (including `role`,
   the restaurant DTO. Slug, email, generated PublicCode collisions and SQL deadlock
   contention return 409; retry requires a fresh request. This is duplicate-safe,
   not an idempotency-key API.
+- L1c reserved slugs: after normalization, `demo`, `admin`, `platform`, `api`, `m`
+  and `r` are rejected with 409 ProblemDetails `Restaurant slug is reserved.`
+  before any account/restaurant row or onboarding token is created. Only exact
+  matches are reserved (`demo-cafe` remains valid). Application-level only: no
+  migration/check constraint; pre-existing rows using these slugs are NOT
+  remediated by this increment and still need an owner-approved legacy plan.
 - Response DTO: `id`, `name`, `slug`, `publicCode`, `status`, `isPublished`,
   `publishedMenuVersion`, `rowVersion` (base64 SQL rowversion). No owner ID/email,
   credentials or invitation token. New restaurants are Active and unpublished;
@@ -191,7 +197,9 @@ executed SQL evidence: [F05 verification](../backend/F05-VERIFICATION.md).
 - `GET /api/v1/admin/items/{id}` / `PUT /api/v1/admin/items/{id}` / `DELETE /api/v1/admin/items/{id}` — soft delete.
 - `POST /api/v1/admin/items/{id}/images` — multipart with image validation and bounded size.
 - `DELETE /api/v1/admin/items/{id}/images/{imageId}` — verify both item/image belong to active owner tenant.
-- `GET /api/v1/admin/qr` — returns public URL and optional QR asset reference; QR downloadable without exposing internal credentials.
+- `GET /api/v1/admin/qr` — returns public URL and optional QR asset reference; QR downloadable without exposing internal credentials. Implemented in L1c below.
+- `GET /api/v1/admin/summary` — owner dashboard counts. Implemented in L1c below.
+- `POST /api/v1/admin/categories/reorder` / `POST /api/v1/admin/items/reorder` — bulk sort order. Implemented in L1c below.
 
 ### F06 implemented category contract
 
@@ -340,6 +348,56 @@ Evidence and local commands: [F07 verification](../backend/F07-VERIFICATION.md).
 
 Setup, licensing, SQL evidence and limits: [F08 report](../backend/F08-VERIFICATION.md).
 
+### L1c implemented owner utilities (QR, summary, bulk reorder)
+
+All routes require `TenantOwner`, the validated Identity cookie and HTTPS; the
+restaurant is always the caller's single server-resolved membership via
+`ITenantDataSession` (headers/query/body tenant hints are ignored). Responses are
+no-store ProblemDetails on error; no restaurant/user IDs are returned.
+
+- `PublicSite:Origin` (env `PublicSite__Origin`) is trusted configuration only,
+  never derived from Host/forwarded headers, mirroring the SSR `PUBLIC_ORIGIN`
+  rules: bare HTTPS origin, or explicit HTTP loopback for local work, max 100
+  characters, no path/query/fragment/userinfo. The Development file sets
+  `http://localhost:4000`; production must set the real public origin. Missing or
+  invalid configuration is treated as unconfigured.
+- `GET /api/v1/admin/qr` -> 200 `{ publicUrl, canonicalUrl, isPublished, svgUrl, pngUrl }`.
+  `publicUrl` is the permanent `{origin}/m/{publicCode}` alias; `canonicalUrl` is
+  `{origin}/r/{slug}`. The QR is available while the restaurant is unpublished so
+  owners can print in advance; `isPublished=false` lets U03 warn that the link is
+  not live yet. Unconfigured origin -> 503 `Public site origin is not configured.`
+- `GET /api/v1/admin/qr/svg` and `/qr/png` -> generated on the server on every
+  request, `Content-Disposition: attachment; filename="{slug}-qr.{svg|png}"`,
+  `image/svg+xml` or `image/png`, plus the global nosniff and
+  `default-src 'none'` CSP. Both always encode the permanent `/m/{publicCode}`
+  alias, so renaming the slug never invalidates printed codes. QR: ISO/IEC 18004
+  byte mode, error-correction level M, versions 1-10, 4-module quiet zone;
+  PNG is 16 px per module, lossless grayscale. The SVG contains only module
+  geometry, never caller text. Other formats -> 404; unconfigured origin -> 503.
+  The in-repo encoder (no new package) is verified by an independent
+  ISO-table read-back decoder in tests; see the L1c report.
+- `GET /api/v1/admin/summary` -> 200 `{ name, slug, isPublished, publicUrl,
+  canonicalUrl, categories: { total, published }, items: { total, published,
+  unavailable } }`. Counts are own non-deleted rows only, including drafts.
+  `published` is the row flag, not public visibility (a published item in a draft
+  category is still hidden publicly). URLs are null when the origin is
+  unconfigured; the summary itself stays available. Read-only: no audit and no
+  PublishedMenuVersion change. Content counts only, not analytics/scan tracking.
+- `POST /api/v1/admin/categories/reorder` and `POST /api/v1/admin/items/reorder`
+  require CSRF and body `{ items: [{ id, sortOrder, rowVersion }] }` with 1..100
+  distinct non-empty IDs, `sortOrder` 0..2147483647 (ties allowed) and the
+  base64 rowVersion from the latest DTO. Unknown fields (including any
+  `restaurantId`) -> 400. Body cap: 16 KiB for categories (items keep 32 KiB).
+  The batch is all-or-nothing: any foreign, missing or soft-deleted ID -> one
+  generic 404 decided before versions are compared; otherwise any stale
+  rowVersion -> 412. A successful batch commits sort orders, one
+  PublishedMenuVersion increment and one F05 audit row in the Serializable
+  transaction and returns 200 `{ items: [{ id, sortOrder, rowVersion }] }` in
+  request order with the new rowVersions. Items may span categories; ordering is
+  still applied per category by readers. Only sort order changes.
+
+Verification and limits: [L1c report](../backend/L1C-VERIFICATION.md).
+
 ## Public endpoints
 - `GET /api/v1/public/menus/{publicCode}?lang=ar|en` — active + published restaurant only; visible categories and items only; response `200`, `404` when nonexistent or intentionally hidden (exact unavailable strategy clarified before coding); cache only response safe for public reuse. Search in frontend over visible menu.
 
@@ -395,7 +453,8 @@ No `RestaurantId`, `UserId`, status internals, private drafts, e-mail, storage b
 - Human-approved reservation: `/r/demo` and `/m/demo-code` remain illustrative.
   A real F09 restaurant resolving to slug `demo` cannot be represented there;
   its QR returns generic 503 until it has a different slug. S01 does not change
-  existing restaurant records or F04 provisioning validation.
+  existing restaurant records. L1c now rejects `demo` (and other route words)
+  for new provisioning; existing records are still unchanged.
 - `PUBLIC_API_ORIGIN` and `PUBLIC_ORIGIN` are trusted server configuration only;
   never derive them from Host/forwarded headers. Bare HTTPS origins required,
   except explicit HTTP loopback for local tests. Defaults remain local-only.

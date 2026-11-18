@@ -348,6 +348,30 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
     }
 
     [SqlServerFact]
+    public async Task Reserved_route_slugs_are_rejected_case_insensitively_without_partial_rows()
+    {
+        var (fixture, admin, delivery) = await Setup();
+        await using var cleanup = fixture;
+        foreach (var slug in new[] { "demo", "admin", "platform", "api", "m", "r", " DEMO ", "Api" })
+        {
+            var response = await admin.Send(HttpMethod.Post, Route, Request(slug, "reserved-" + Guid.NewGuid().ToString("N") + "@example.test"));
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.Equal("application/problem+json", response.Content.Headers.ContentType!.MediaType);
+            Assert.Equal("Restaurant slug is reserved.", (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetProperty("title").GetString());
+        }
+        Assert.Empty(delivery.Invitations);
+        using (var scope = fixture.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+            Assert.Equal(2, await db.Set<Restaurant>().CountAsync()); // Only the fixture's A and B.
+            Assert.False(await db.Users.AnyAsync(u => u.Email!.StartsWith("reserved-")));
+        }
+        // Words that merely contain a reserved slug remain valid tenant slugs.
+        foreach (var slug in new[] { "demo-cafe", "mr", "rapid", "admins" }) await Provision(admin, slug);
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.Send(HttpMethod.Post, Route, Request("demo-cafe", "x@example.test"))).StatusCode);
+    }
+
+    [SqlServerFact]
     public async Task Generated_public_code_collision_returns_conflict_and_rolls_back_the_new_owner()
     {
         var (fixture, admin, _) = await Setup(s => s.AddSingleton<IRestaurantPublicCodeGenerator, CollidingCodes>());

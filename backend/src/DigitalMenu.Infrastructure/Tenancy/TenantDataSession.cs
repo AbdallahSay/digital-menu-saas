@@ -132,6 +132,47 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
         { db.ChangeTracker.Clear(); throw new TenantBoundaryException(TenantFailure.Concurrency); }
         return entity;
     }
+    public async Task<int> CountAsync<TEntity>(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default) where TEntity : class
+    {
+        try
+        {
+            await BindAsync(cancellationToken);
+            return await Owned<TEntity>().AsNoTracking().CountAsync(filter, cancellationToken);
+        }
+        catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
+    }
+    public async Task<IReadOnlyList<TEntity>> EditManyAsync<TEntity>(IReadOnlyDictionary<Guid, byte[]> expectedRowVersions,
+        Expression<Func<TEntity, bool>> eligible, CancellationToken cancellationToken = default) where TEntity : class
+    {
+        try
+        {
+            await BindAsync(cancellationToken);
+            if (expectedRowVersions.Count is < 1 or > ITenantDataSession.MaxBatchEdit ||
+                expectedRowVersions.Any(e => e.Key == Guid.Empty || e.Value is not { Length: 8 }) ||
+                db.Model.FindEntityType(typeof(TEntity))?.FindProperty("RowVersion") is null)
+                throw new TenantBoundaryException(TenantFailure.InvalidRequest);
+            var key = KeyProperty(typeof(TEntity));
+            var ids = expectedRowVersions.Keys.ToArray();
+            // One tenant-scoped query; ownership/eligibility (404) is decided before any version comparison (412).
+            var rows = await Owned<TEntity>().Where(eligible).Where(e => ids.Contains(EF.Property<Guid>(e, key)))
+                .ToListAsync(cancellationToken);
+            if (rows.Count != ids.Length) throw Missing();
+            foreach (var row in rows)
+            {
+                var entry = db.Entry(row);
+                var original = (byte[])entry.Property("RowVersion").OriginalValue!;
+                if (!original.SequenceEqual(expectedRowVersions[(Guid)entry.Property(key).CurrentValue!]))
+                    throw new TenantBoundaryException(TenantFailure.Concurrency);
+            }
+            return rows;
+        }
+        catch (TenantBoundaryException ex)
+        {
+            db.ChangeTracker.Clear();
+            if (ex.Failure != TenantFailure.Concurrency) await DeniedAsync();
+            throw;
+        }
+    }
     public async Task DeleteAsync<TEntity>(Guid id, CancellationToken cancellationToken = default) where TEntity : class
     {
         var entity = await EditAsync<TEntity>(id, cancellationToken);

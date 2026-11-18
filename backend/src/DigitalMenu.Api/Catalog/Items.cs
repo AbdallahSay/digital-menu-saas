@@ -57,6 +57,7 @@ public static class Items
     public static void MapItems(this WebApplication app)
     {
         var group = app.MapGroup("/api/v1/admin/items").RequireAuthorization("TenantOwner");
+        group.MapReorder<MenuItem>(i => !i.IsDeleted, (i, order) => i.SortOrder = order, i => i.SortOrder);
         group.MapGet("", async (int? page, int? pageSize, Guid? categoryId, string? search, ITenantDataSession session, CancellationToken ct) =>
         {
             var number = page ?? 1;

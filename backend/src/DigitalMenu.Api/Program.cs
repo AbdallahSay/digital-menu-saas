@@ -1,6 +1,7 @@
 using DigitalMenu.Api.Auth;
 using DigitalMenu.Api.Catalog;
 using DigitalMenu.Api.Media;
+using DigitalMenu.Api.Owner;
 using DigitalMenu.Api.Platform;
 using DigitalMenu.Api.Public;
 using DigitalMenu.Application;
@@ -25,6 +26,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
 builder.Services.AddMenuMedia(builder.Environment, builder.Configuration);
 builder.Services.AddPublicMenus();
+builder.Services.AddOwnerUtilities(builder.Configuration);
 builder.Services.AddDevelopmentOnboarding(builder.Environment, builder.Configuration);
 builder.Services.AddSingleton<IRestaurantPublicCodeGenerator, CryptographicPublicCodeGenerator>();
 builder.Services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(options =>
@@ -69,7 +71,8 @@ app.Use(async (context, next) =>
     if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform") || context.Request.Path.StartsWithSegments("/api/v1/admin")) &&
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
         bodySize.MaxRequestBodySize = context.GetEndpoint()?.Metadata.GetMetadata<MediaUploadMetadata>() is not null
-            ? MediaEndpoints.BodyLimit : context.Request.Path.StartsWithSegments("/api/v1/admin/items") ? 32768 : 8192;
+            ? MediaEndpoints.BodyLimit : context.Request.Path.StartsWithSegments("/api/v1/admin/items") ? 32768
+            : context.GetEndpoint()?.Metadata.GetMetadata<ReorderMetadata>() is not null ? ReorderMetadata.BodyLimit : 8192;
     if (context.Request.Path.StartsWithSegments("/api") &&
         !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method))
     {
@@ -98,6 +101,7 @@ app.MapPlatformProvisioning();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
+app.MapOwnerUtilities();
 app.MapPublicMenus();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
