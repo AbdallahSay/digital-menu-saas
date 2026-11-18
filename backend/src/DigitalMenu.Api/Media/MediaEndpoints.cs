@@ -47,7 +47,31 @@ public static class MediaEndpoints
         if (item.IsDeleted) throw new TenantBoundaryException(TenantFailure.NotFound);
         return item;
     }
-    private static async Task Cleanup(IImageStorage storage, string key, ILogger logger)
+    // Shared F08 pipeline: strict single-file multipart, counted body, 5 MiB cap, signature/codec normalization.
+    internal static async Task<NormalizedImage> ReadNormalizedAsync(HttpContext context, ImageNormalizer normalizer, CancellationToken ct)
+    {
+        if (!context.Request.HasFormContentType || !context.Request.ContentType!.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+            throw new MediaException(415);
+        if (context.Request.ContentLength > BodyLimit) throw new MediaException(413);
+        context.Request.Body = new UploadReadStream(context.Request.Body, BodyLimit);
+        IFormCollection form;
+        try { form = await context.Request.ReadFormAsync(ct); }
+        catch (InvalidDataException) { throw new MediaException(400); }
+        if (form.Count != 0 || form.Files.Count != 1 || form.Files[0].Name != "file") throw new MediaException(400);
+        var file = form.Files[0];
+        if (file.Length > ImageNormalizer.MaxBytes) throw new MediaException(413);
+        await using var input = file.OpenReadStream();
+        using var bytes = new MemoryStream();
+        var buffer = new byte[65536];
+        int count;
+        while ((count = await input.ReadAsync(buffer, ct)) > 0)
+        {
+            if (bytes.Length + count > ImageNormalizer.MaxBytes) throw new MediaException(413);
+            await bytes.WriteAsync(buffer.AsMemory(0, count), ct);
+        }
+        return normalizer.Normalize(bytes.ToArray(), file.ContentType);
+    }
+    internal static async Task Cleanup(IImageStorage storage, string key, ILogger logger)
     {
         try { await storage.RemoveAsync(key, CancellationToken.None); }
         catch (Exception) { logger.LogWarning("Private media cleanup pending."); }
@@ -59,26 +83,7 @@ public static class MediaEndpoints
             ImageNormalizer normalizer, IImageStorage storage, ILoggerFactory loggers, CancellationToken ct) =>
         {
             var item = await Item(session, id, ct);
-            if (!context.Request.HasFormContentType || !context.Request.ContentType!.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
-                throw new MediaException(415);
-            if (context.Request.ContentLength > BodyLimit) throw new MediaException(413);
-            context.Request.Body = new UploadReadStream(context.Request.Body, BodyLimit);
-            IFormCollection form;
-            try { form = await context.Request.ReadFormAsync(ct); }
-            catch (InvalidDataException) { throw new MediaException(400); }
-            if (form.Count != 0 || form.Files.Count != 1 || form.Files[0].Name != "file") throw new MediaException(400);
-            var file = form.Files[0];
-            if (file.Length > ImageNormalizer.MaxBytes) throw new MediaException(413);
-            await using var input = file.OpenReadStream();
-            using var bytes = new MemoryStream();
-            var buffer = new byte[65536];
-            int count;
-            while ((count = await input.ReadAsync(buffer, ct)) > 0)
-            {
-                if (bytes.Length + count > ImageNormalizer.MaxBytes) throw new MediaException(413);
-                await bytes.WriteAsync(buffer.AsMemory(0, count), ct);
-            }
-            var normalized = normalizer.Normalize(bytes.ToArray(), file.ContentType);
+            var normalized = await ReadNormalizedAsync(context, normalizer, ct);
             var scope = await tenants.RequireAsync(ct);
             var image = new MenuItemImage
             {

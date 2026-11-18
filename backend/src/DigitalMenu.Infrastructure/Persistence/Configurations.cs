@@ -123,6 +123,7 @@ public sealed class SettingsConfiguration : IEntityTypeConfiguration<RestaurantS
             t.HasCheckConstraint("CK_Settings_Locale", "[DefaultLocale] IN ('ar','en')");
             t.HasCheckConstraint("CK_Settings_Color", "LEN([PrimaryColor]) = 7 AND LEFT([PrimaryColor],1) = '#' AND SUBSTRING([PrimaryColor],2,6) COLLATE Latin1_General_100_BIN2 NOT LIKE '%[^0-9A-Fa-f]%'");
             t.HasCheckConstraint("CK_Settings_Contacts", "[PublishedContactDetailsFlags] BETWEEN 0 AND 3");
+            t.HasCheckConstraint("CK_Settings_Theme", "[ThemeKey] IN ('grill','cafe')");
         });
         b.HasKey(x => x.RestaurantId);
         b.HasOne<Restaurant>().WithOne().HasForeignKey<RestaurantSettings>(x => x.RestaurantId);
@@ -133,6 +134,7 @@ public sealed class SettingsConfiguration : IEntityTypeConfiguration<RestaurantS
         b.Property(x => x.AddressOptional).HasMaxLength(500);
         b.Property(x => x.Description).HasMaxLength(2000);
         b.Property(x => x.DefaultLocale).HasMaxLength(2);
+        b.Property(x => x.ThemeKey).HasMaxLength(16).IsRequired().HasDefaultValue("grill");
         b.Property(x => x.RowVersion).IsRowVersion();
     }
 }

@@ -2,6 +2,7 @@ using DigitalMenu.Api.Auth;
 using DigitalMenu.Api.Catalog;
 using DigitalMenu.Api.Media;
 using DigitalMenu.Api.Platform;
+using DigitalMenu.Api.Profile;
 using DigitalMenu.Api.Public;
 using DigitalMenu.Application;
 using DigitalMenu.Infrastructure.Tenancy;
@@ -69,7 +70,8 @@ app.Use(async (context, next) =>
     if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform") || context.Request.Path.StartsWithSegments("/api/v1/admin")) &&
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
         bodySize.MaxRequestBodySize = context.GetEndpoint()?.Metadata.GetMetadata<MediaUploadMetadata>() is not null
-            ? MediaEndpoints.BodyLimit : context.Request.Path.StartsWithSegments("/api/v1/admin/items") ? 32768 : 8192;
+            ? MediaEndpoints.BodyLimit : context.Request.Path.StartsWithSegments("/api/v1/admin/items") ||
+                context.Request.Path.StartsWithSegments(RestaurantProfile.Route) ? 32768 : 8192;
     if (context.Request.Path.StartsWithSegments("/api") &&
         !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method))
     {
@@ -98,6 +100,7 @@ app.MapPlatformProvisioning();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
+app.MapRestaurantProfile();
 app.MapPublicMenus();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.

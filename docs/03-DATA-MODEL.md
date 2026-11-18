@@ -18,7 +18,7 @@ authorization remain F03/F05. No production migration is authorized.
 
 `MenuItemImage`: Id uniqueidentifier, RestaurantId, MenuItemId, ObjectKey opaque unique, AltAr/AltEn, SortOrder int, Width int, Height int, ContentType approved, CreatedAtUtc; composite `(RestaurantId, MenuItemId)` FK to MenuItem and `(RestaurantId, Id)` alt unique on MenuItem.
 
-`RestaurantSettings`: RestaurantId PK/FK, PrimaryColor constrained hex token, LogoObjectKey, CoverObjectKey, ContactPhoneOptional, AddressOptional, PublishedContactDetailsFlags, default locale, optional description. Never expose internal owner credential info.
+`RestaurantSettings`: RestaurantId PK/FK, PrimaryColor constrained hex token, LogoObjectKey, CoverObjectKey, ContactPhoneOptional, AddressOptional, PublishedContactDetailsFlags (bit 1 phone, bit 2 address), default locale, optional description, ThemeKey (`grill`|`cafe`, default `grill`, CHECK `CK_Settings_Theme`; added additively by L1a migration `AddRestaurantThemeKey`). Never expose internal owner credential info.
 
 `AuditEntry`: Id, ActorUserId nullable, RestaurantId nullable, Action, ResourceType, ResourceId, TimestampUtc, CorrelationId, minimal redacted metadata; no passwords, raw tokens or user-supplied secrets.
 

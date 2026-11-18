@@ -160,7 +160,7 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
                     throw new TenantBoundaryException(TenantFailure.Conflict);
             }
             if (categories.Length > 0 || db.ChangeTracker.Entries<MenuItem>().Any(e => e.State != EntityState.Unchanged) ||
-                db.ChangeTracker.Entries<MenuItemImage>().Any(e => e.State != EntityState.Unchanged))
+                db.ChangeTracker.Entries<MenuItemImage>().Any(e => e.State != EntityState.Unchanged) || PublicProfileChanged())
             {
                 var restaurant = await Owned<Restaurant>().SingleAsync(cancellationToken);
                 restaurant.PublishedMenuVersion = checked(restaurant.PublishedMenuVersion + 1);
@@ -186,6 +186,28 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
         { db.ChangeTracker.Clear(); throw new TenantBoundaryException(TenantFailure.Conflict); }
         catch (Exception ex) when (SqlNumber(ex) is 547 or 515)
         { db.ChangeTracker.Clear(); throw new TenantBoundaryException(TenantFailure.InvalidRequest); }
+    }
+    // Restaurant profile/settings edits invalidate public output only when a public-visible value changes.
+    // Private phone/address edits stay silent while their publish flag is off before and after the write.
+    private bool PublicProfileChanged()
+    {
+        static bool Changed(EntityEntry entry, string name) =>
+            entry.State == EntityState.Added || !Equals(entry.Property(name).OriginalValue, entry.Property(name).CurrentValue);
+        if (db.ChangeTracker.Entries<Restaurant>().Any(e => e.State == EntityState.Modified && Changed(e, nameof(Restaurant.Name))))
+            return true;
+        foreach (var entry in db.ChangeTracker.Entries<RestaurantSettings>().Where(e => e.State is EntityState.Added or EntityState.Modified))
+        {
+            if (new[] { nameof(RestaurantSettings.PrimaryColor), nameof(RestaurantSettings.ThemeKey), nameof(RestaurantSettings.LogoObjectKey),
+                    nameof(RestaurantSettings.CoverObjectKey), nameof(RestaurantSettings.DefaultLocale), nameof(RestaurantSettings.Description),
+                    nameof(RestaurantSettings.PublishedContactDetailsFlags) }.Any(name => Changed(entry, name)))
+                return true;
+            var flags = entry.State == EntityState.Added ? entry.Entity.PublishedContactDetailsFlags
+                : (int)entry.Property(nameof(RestaurantSettings.PublishedContactDetailsFlags)).OriginalValue! | entry.Entity.PublishedContactDetailsFlags;
+            if (((flags & RestaurantSettings.PublishPhone) != 0 && Changed(entry, nameof(RestaurantSettings.ContactPhoneOptional))) ||
+                ((flags & RestaurantSettings.PublishAddress) != 0 && Changed(entry, nameof(RestaurantSettings.AddressOptional))))
+                return true;
+        }
+        return false;
     }
     private static int? SqlNumber(Exception ex) => ex is SqlException sql ? sql.Number : ex.InnerException is not null ? SqlNumber(ex.InnerException) : null;
 
@@ -233,8 +255,10 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
         if (entry.Entity is Restaurant && entry.State != EntityState.Added)
         {
             var original = await Owned<Restaurant>().AsNoTracking().SingleAsync(r => r.Id == id, ct);
-            foreach (var field in new[] { "Status", "Slug", "PublicCode", "CreatedAtUtc" })
+            // Publication is platform-controlled; the public freshness version can never move backwards.
+            foreach (var field in new[] { "Status", "Slug", "PublicCode", "CreatedAtUtc", "IsPublished" })
                 if (!Equals(entry.Property(field).Metadata.PropertyInfo!.GetValue(original), entry.Property(field).CurrentValue)) throw Missing();
+            if ((long)entry.Property(nameof(Restaurant.PublishedMenuVersion)).CurrentValue! < original.PublishedMenuVersion) throw Missing();
             if (entry.State == EntityState.Deleted) throw Missing();
         }
         if (entry.Entity is MenuItem item && !await Owned<Category>().AnyAsync(c => c.Id == item.CategoryId && !c.IsDeleted, ct)) throw Missing();

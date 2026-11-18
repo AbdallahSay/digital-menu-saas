@@ -31,7 +31,7 @@ public sealed class PersistenceTests
         try
         {
             await db.Database.MigrateAsync();
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            Assert.Equal(2, (await db.Database.GetAppliedMigrationsAsync()).Count());
             Assert.False(db.Database.HasPendingModelChanges());
             await db.Database.MigrateAsync(); // repeat migration is idempotent
             var fixture = TwoRestaurantFixture.Create();
@@ -78,8 +78,15 @@ public sealed class PersistenceTests
             staleItem.Price = 60;
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => stale.SaveChangesAsync());
             Assert.Equal(1, await db.Set<MenuItem>().CountAsync());
+            await Reject($"UPDATE RestaurantSettings SET ThemeKey='bistro' WHERE RestaurantId={fixture.A.Id}", 547);
             // Rollback/reapply only inside this run's disposable database.
             var migrator = db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
+            // L1a is additive: an existing settings row survives the upgrade and receives the default theme.
+            await db.Database.ExecuteSqlRawAsync("UPDATE RestaurantSettings SET ThemeKey='cafe'");
+            await migrator.MigrateAsync("20261012030220_InitialTenantModel");
+            await migrator.MigrateAsync();
+            Assert.Equal("grill", await db.Database.SqlQueryRaw<string>("SELECT ThemeKey AS Value FROM RestaurantSettings").SingleAsync());
+            Assert.Equal(1, await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM RestaurantSettings").SingleAsync());
             await migrator.MigrateAsync("0");
             Assert.Empty(await db.Database.GetAppliedMigrationsAsync());
             var script = migrator.GenerateScript(options: Microsoft.EntityFrameworkCore.Migrations.MigrationsSqlGenerationOptions.Idempotent);
@@ -89,7 +96,7 @@ public sealed class PersistenceTests
                     if (!string.IsNullOrWhiteSpace(batch))
                         await db.Database.ExecuteSqlRawAsync(batch);
             }
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            Assert.Equal(2, (await db.Database.GetAppliedMigrationsAsync()).Count());
             Assert.Empty(await db.Set<Restaurant>().AsNoTracking().ToListAsync());
         }
         finally

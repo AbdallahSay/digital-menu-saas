@@ -69,6 +69,8 @@ public sealed class MenuItemImage
 
 public sealed class RestaurantSettings
 {
+    public const int PublishPhone = 1;
+    public const int PublishAddress = 2;
     public Guid RestaurantId { get; set; }
     public string PrimaryColor { get; set; } = "#0F766E";
     public string? LogoObjectKey { get; set; }
@@ -78,6 +80,7 @@ public sealed class RestaurantSettings
     public int PublishedContactDetailsFlags { get; set; }
     public string DefaultLocale { get; set; } = "ar";
     public string? Description { get; set; }
+    public string ThemeKey { get; set; } = "grill";
     public byte[] RowVersion { get; set; } = [];
 }
 

@@ -184,7 +184,8 @@ blob exists or has valid content; F08 must verify storage metadata/ownership and
 both nested route IDs before file operations. Full future HTTP matrix and current
 executed SQL evidence: [F05 verification](../backend/F05-VERIFICATION.md).
 
-- `GET /api/v1/admin/restaurant` / `PATCH /api/v1/admin/restaurant` — details/branding/basic contact.
+- `GET /api/v1/admin/restaurant` / `PATCH /api/v1/admin/restaurant` — details/branding/basic contact (implemented in L1a below).
+- `POST|DELETE /api/v1/admin/restaurant/logo` and `/cover` — branding images (L1a).
 - `GET /api/v1/admin/categories` / `POST /api/v1/admin/categories`.
 - `PUT /api/v1/admin/categories/{id}` / `DELETE /api/v1/admin/categories/{id}` — deletion conflict if linked active items.
 - `GET /api/v1/admin/items?page=&pageSize=&categoryId=&search=` / `POST /api/v1/admin/items`.
@@ -339,6 +340,69 @@ Evidence and local commands: [F07 verification](../backend/F07-VERIFICATION.md).
   transaction or automatic recovery is claimed. Public cache consumers remain F09/S03.
 
 Setup, licensing, SQL evidence and limits: [F08 report](../backend/F08-VERIFICATION.md).
+
+### L1a implemented restaurant settings contract
+
+All `/api/v1/admin/restaurant` routes require `TenantOwner`, the validated Identity
+cookie and HTTPS; unsafe methods require identity-bound `X-XSRF-TOKEN`. Responses are
+no-store. Scope is the server-resolved membership restaurant; no route, query,
+header or body field selects a restaurant. Handlers use only `ITenantDataSession`.
+
+- DTO (GET/PATCH/upload/delete): `{ name, slug, publicCode, isPublished,
+  description, phone, address, publishPhone, publishAddress, defaultLocale,
+  primaryColor, themeKey, hasLogo, hasCover, rowVersion }`. `slug`, `publicCode`
+  and `isPublished` are read-only (QR/preview context; publication stays a
+  PlatformAdmin operation). No restaurant/user IDs, Status, timestamps, object
+  keys or storage paths. Media availability is only `hasLogo`/`hasCover`; no
+  public image URL exists yet. `rowVersion` is the base64 rowversion of the
+  restaurant's settings row and is the single client precondition.
+- GET returns 200. A restaurant without its provisioned settings row returns the
+  generic 404 (F04 provisioning always creates one). Reads never write.
+- PATCH accepts `application/json` or `application/merge-patch+json` (else 415),
+  JSON object max 32 KiB. Merge semantics: absent = unchanged; `null` clears an
+  optional field. `rowVersion` is required. Allowed fields only (case-insensitive,
+  duplicates rejected): `name` (required when present, trimmed 1..150, no
+  control chars), `description` (null/≤2000, CR/LF/tab allowed), `phone`
+  (null/≤32, `^\+?[0-9 ()-]{3,32}$`, ≥3 digits), `address` (null/≤500, CR/LF/tab
+  allowed), `publishPhone`/`publishAddress` (booleans; true requires the value to
+  be present in the resulting state), `defaultLocale` (`ar`|`en`), `primaryColor`
+  (`#RRGGBB`, stored uppercase), `themeKey` (`grill`|`cafe`). Blank optional text
+  becomes null. Any other field (e.g. `restaurantId`, `slug`, `isPublished`,
+  `logoObjectKey`), wrong JSON types, invalid UTF-16 or malformed JSON returns 400.
+  Text is plain text, never HTML. Stale `rowVersion` returns 412. An identical
+  payload performs no write and returns the unchanged DTO/rowVersion. Any real
+  change rewrites the settings row, so even name-only edits rotate `rowVersion`.
+- `POST /logo` and `POST /cover` reuse the F08 pipeline unchanged: mandatory CSRF
+  header before body parsing, multipart with exactly one `file`, JPEG/PNG/WebP
+  signature+codec validation, 5 MiB file / 5 MiB+64 KiB body caps, pixel limits,
+  EXIF orientation, metadata-free WebP main (≤1600) + thumbnail (≤480), shared
+  10/min/account and 2-concurrent upload limits. 200 returns the DTO. Every upload
+  uses a new server-generated immutable key `{serverTenantGuid}/{randomGuidN}.webp`;
+  the previous object is cleaned up only after the metadata commit succeeds.
+  Failed commits delete the new object only when an authorized read proves it
+  is not referenced (ambiguous outcomes keep it for reconciliation, as F08).
+- `DELETE /logo` and `DELETE /cover` take no body; 200 returns the DTO, 404 when
+  no image is set. Metadata commits first, then idempotent blob cleanup.
+- Uploads and deletes rewrite the settings row: a PATCH with an older rowVersion
+  then returns 412. Concurrent uploads of the same slot: one wins, the other 412.
+- `PublishedMenuVersion` increments once, in the same Serializable transaction
+  as the write and F05 audit, when a public-visible value changes: name,
+  description, primaryColor, themeKey, defaultLocale, logo, cover, publish flags,
+  or phone/address while its publish flag is on (before or after). Editing a
+  private (unpublished) phone/address rotates `rowVersion` but not the menu
+  version. The F09 projection currently exposes name and primaryColor only;
+  other public fields are reserved for later public-route work and already
+  invalidate correctly.
+- Data-session hardening: owner writes can no longer change `IsPublished` or
+  decrease `PublishedMenuVersion` (in addition to Status/Slug/PublicCode/CreatedAtUtc).
+- Errors keep the F05/F08 mapping: 401 unauthenticated or revalidated-invalid
+  cookie (including suspended restaurant), 403 ambiguous scope, 400 invalid
+  input/CSRF, 404 missing settings or absent image, 409 SQL contention, 412
+  stale rowVersion, 413/415/429/503 for media. Migration
+  `AddRestaurantThemeKey` is additive: `ThemeKey nvarchar(16) NOT NULL DEFAULT
+  'grill'` + `CK_Settings_Theme`; existing rows receive `grill`.
+
+Verification and reproduction: [L1a report](../backend/L1A-VERIFICATION.md).
 
 ## Public endpoints
 - `GET /api/v1/public/menus/{publicCode}?lang=ar|en` — active + published restaurant only; visible categories and items only; response `200`, `404` when nonexistent or intentionally hidden (exact unavailable strategy clarified before coding); cache only response safe for public reuse. Search in frontend over visible menu.

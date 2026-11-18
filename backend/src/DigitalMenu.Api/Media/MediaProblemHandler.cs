@@ -14,7 +14,7 @@ public sealed class MediaProblemHandler : IExceptionHandler
         context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
         var title = media.Status switch
         {
-            413 => "Image request too large.",
+            413 => "Request too large.",
             415 => "Unsupported image format.",
             429 => "Image processing busy. Retry later.",
             503 => "Media storage unavailable.",
