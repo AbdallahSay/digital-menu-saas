@@ -11,10 +11,12 @@ Depends on: none · Decisions: asks for all `open` decisions (D1–D11) · Size:
 ## Scope
 1. Toolchain check: .NET SDK from `global.json`, Node version used by CI, Docker. Report versions.
 2. Run `/verify` fully on main (including SQL tests in Docker and the SSR harness). Record results.
-   Known red on 2026-11-18: `npm audit --audit-level=high` fails in the foundation job on new advisories
-   for transitive `qs` (GHSA-6pq8-jhm2-2vcw) and `undici` (GHSA-xjj6-f33q-929c). Fix by updating the
-   lockfile to patched versions (`npm audit fix` without `--force`, or a reviewed `overrides` entry),
-   confirm Angular SSR still builds and all gates pass. Never lower the audit level.
+   Known red on 2026-11-18: `npm audit --audit-level=high` fails in the foundation job. `npm audit fix`
+   clears transitive `qs` and `undici`, but high advisories remain in `vite` (via `@angular/build` 22.2.2)
+   and `zod` (via `@angular/cli` 22.2.2); both are fixed in 22.2.7. Bump all pinned `@angular/*` packages
+   together to the same patched 22.2.x, regenerate the lockfile, then run the full build, unit, design,
+   security, HTML, e2e, Lighthouse and SSR-harness gates. Never lower the audit level or use `--force`
+   blindly. This is the only dependency change allowed in P00.
 3. Review PR #45 and PR #46 (`gh pr view`, `gh pr diff`): for each, say keep / merge / close / fold into
    a later phase (P11 for SEO), with blocking issues only. Do not merge or close them.
 4. Ask the owner for every `open` decision in `launch/DECISIONS.md` (one AskUserQuestion per group,
