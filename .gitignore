@@ -10,3 +10,4 @@ frontend/test-results/
 frontend/playwright-report/
 .env
 *.user
+frontend/.vercel/
