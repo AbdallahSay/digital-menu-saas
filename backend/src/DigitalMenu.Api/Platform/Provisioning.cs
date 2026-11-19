@@ -1,13 +1,18 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Globalization;
 using System.Security.Cryptography;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Unicode;
 using System.Text.RegularExpressions;
 using DigitalMenu.Domain;
 using DigitalMenu.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DigitalMenu.Api.Platform;
 
@@ -39,13 +44,23 @@ public sealed class CryptographicPublicCodeGenerator : IRestaurantPublicCodeGene
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ProvisionRestaurantRequest(string? Name, string? Slug, string? OwnerEmail);
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record RestaurantStatusRequest(string? Status, string? RowVersion);
+public sealed record RestaurantStatusRequest(string? Status, string? RowVersion, string? Reason = null);
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record RestaurantPlanRequest(string? PlanName, string? PaidUntilUtc, string? RowVersion);
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RestaurantPublicationRequest(bool? IsPublished, string? RowVersion);
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record CompleteOnboardingRequest(Guid UserId, string? Token, string? Password);
+// Platform-only DTO. PlanName/PaidUntilUtc (D4) must never be copied into owner or public projections.
 public sealed record RestaurantResponse(Guid Id, string Name, string Slug, string PublicCode,
-    string Status, bool IsPublished, long PublishedMenuVersion, string RowVersion);
+    string Status, bool IsPublished, long PublishedMenuVersion, string RowVersion,
+    string? PlanName = null, DateTime? PaidUntilUtc = null);
+
+public sealed class OnboardingResendOptions
+{
+    // Minimum spacing between onboarding links for one restaurant (provisioning counts as a send).
+    public TimeSpan Cooldown { get; set; } = TimeSpan.FromSeconds(60);
+}
 public sealed record RestaurantPageResponse(int Page, int PageSize, int Total, IReadOnlyList<RestaurantResponse> Items);
 
 public static partial class Provisioning
@@ -55,7 +70,13 @@ public static partial class Provisioning
     public static string NewPublicCode() => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(10));
     private static IResult Problem(int status, string title) => Results.Problem(statusCode: status, title: title);
     private static RestaurantResponse Response(Restaurant r) => new(r.Id, r.Name, r.Slug, r.PublicCode,
-        r.Status, r.IsPublished, r.PublishedMenuVersion, Convert.ToBase64String(r.RowVersion));
+        r.Status, r.IsPublished, r.PublishedMenuVersion, Convert.ToBase64String(r.RowVersion),
+        r.PlanName, r.PaidUntilUtc is { } paid ? DateTime.SpecifyKind(paid, DateTimeKind.Utc) : null);
+    public const int MaxReasonLength = 500;
+    private static readonly DateTime MinPaidUntil = new(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime MaxPaidUntil = new(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    // Keeps Arabic text readable in stored JSON while still escaping HTML-sensitive characters.
+    private static readonly JsonSerializerOptions MetadataJson = new() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
 
     public static void MapPlatformProvisioning(this WebApplication app)
     {
@@ -84,12 +105,16 @@ public static partial class Provisioning
         }).Produces<RestaurantResponse>().ProducesProblem(404);
         group.MapPost("", Create).Produces<RestaurantResponse>(201).ProducesProblem(400).ProducesProblem(409).ProducesProblem(503);
         group.MapPatch("/{id:guid}/status", (Guid id, RestaurantStatusRequest request, MenuDbContext db,
-            HttpContext context, CancellationToken ct) => Change(id, request.Status, null, request.RowVersion, db, context, ct))
+            HttpContext context, CancellationToken ct) => Change(id, request.Status, null, request.RowVersion, request.Reason, db, context, ct))
             .Produces<RestaurantResponse>().ProducesProblem(400).ProducesProblem(404).ProducesProblem(412);
+        group.MapPatch("/{id:guid}/plan", ChangePlan)
+            .Produces<RestaurantResponse>().ProducesProblem(400).ProducesProblem(404).ProducesProblem(412);
+        group.MapPost("/{id:guid}/onboarding/resend", ResendOnboarding)
+            .Produces(204).ProducesProblem(404).ProducesProblem(409).ProducesProblem(429).ProducesProblem(503);
         group.MapPatch("/{id:guid}/publication", (Guid id, RestaurantPublicationRequest request, MenuDbContext db,
             HttpContext context, CancellationToken ct) => request.IsPublished is null
                 ? Task.FromResult(Problem(400, "IsPublished is required."))
-                : Change(id, null, request.IsPublished, request.RowVersion, db, context, ct))
+                : Change(id, null, request.IsPublished, request.RowVersion, null, db, context, ct))
             .Produces<RestaurantResponse>().ProducesProblem(400).ProducesProblem(404).ProducesProblem(412);
         app.MapPost("/api/v1/auth/onboarding", CompleteOnboarding).AllowAnonymous().RequireRateLimiting("auth")
             .Produces(204).ProducesProblem(400).ProducesProblem(409).ProducesProblem(429);
@@ -137,11 +162,16 @@ public static partial class Provisioning
         finally { delivery.Abort(stagedOwner); }
     }
 
-    private static async Task<IResult> Change(Guid id, string? status, bool? published, string? version,
+    private static async Task<IResult> Change(Guid id, string? status, bool? published, string? version, string? reason,
         MenuDbContext db, HttpContext context, CancellationToken ct)
     {
         if ((published is null && status is not ("Active" or "Suspended")) || !TryVersion(version, out var expected))
             return Problem(400, "Invalid state or RowVersion.");
+        reason = reason?.Trim();
+        if (status == "Suspended" && string.IsNullOrEmpty(reason))
+            return Problem(400, "A suspension reason is required.");
+        if (!string.IsNullOrEmpty(reason) && (reason.Length < 3 || reason.Length > MaxReasonLength || reason.Any(char.IsControl)))
+            return Problem(400, "Reason must be 3-500 characters without control characters.");
         var restaurant = await db.Set<Restaurant>().SingleOrDefaultAsync(r => r.Id == id, ct);
         if (restaurant is null) return Problem(404, "Restaurant not found.");
         if (!restaurant.RowVersion.SequenceEqual(expected)) return Problem(412, "Restaurant was changed. Reload before retrying.");
@@ -154,10 +184,90 @@ public static partial class Provisioning
         db.Entry(restaurant).Property(r => r.RowVersion).OriginalValue = expected;
         db.Add(Audit(context, id, published is not null
             ? (published.Value ? "RestaurantPublished" : "RestaurantUnpublished")
-            : (status == "Active" ? "RestaurantReactivated" : "RestaurantSuspended")));
+            : (status == "Active" ? "RestaurantReactivated" : "RestaurantSuspended"),
+            string.IsNullOrEmpty(reason) ? null : new() { ["reason"] = reason }));
         try { await db.SaveChangesAsync(ct); }
         catch (DbUpdateConcurrencyException) { return Problem(412, "Restaurant was changed. Reload before retrying."); }
         return Results.Ok(Response(restaurant));
+    }
+
+    // D4: labels only. Plan data does not affect status, publication, public visibility or the menu version.
+    private static async Task<IResult> ChangePlan(Guid id, RestaurantPlanRequest request, MenuDbContext db,
+        HttpContext context, CancellationToken ct)
+    {
+        var plan = string.IsNullOrWhiteSpace(request.PlanName) ? null : request.PlanName.Trim();
+        DateTime? paidUntil = null;
+        if (!string.IsNullOrWhiteSpace(request.PaidUntilUtc))
+        {
+            if (request.PaidUntilUtc.Length > 40 || !DateTimeOffset.TryParse(request.PaidUntilUtc, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed) ||
+                parsed.UtcDateTime < MinPaidUntil || parsed.UtcDateTime >= MaxPaidUntil)
+                return Problem(400, "PaidUntilUtc must be an ISO 8601 date between 2000 and 2099.");
+            paidUntil = parsed.UtcDateTime;
+        }
+        if ((plan is not null && (plan.Length > 50 || plan.Any(char.IsControl))) || !TryVersion(request.RowVersion, out var expected))
+            return Problem(400, "Invalid plan name or RowVersion.");
+        var restaurant = await db.Set<Restaurant>().SingleOrDefaultAsync(r => r.Id == id, ct);
+        if (restaurant is null) return Problem(404, "Restaurant not found.");
+        if (!restaurant.RowVersion.SequenceEqual(expected)) return Problem(412, "Restaurant was changed. Reload before retrying.");
+        if (restaurant.PlanName == plan && restaurant.PaidUntilUtc == paidUntil) return Results.Ok(Response(restaurant));
+        restaurant.PlanName = plan;
+        restaurant.PaidUntilUtc = paidUntil;
+        restaurant.UpdatedAtUtc = DateTime.UtcNow;
+        db.Entry(restaurant).Property(r => r.RowVersion).OriginalValue = expected;
+        db.Add(Audit(context, id, "RestaurantPlanChanged", new()
+        {
+            ["planName"] = plan,
+            ["paidUntilUtc"] = paidUntil?.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture)
+        }));
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { return Problem(412, "Restaurant was changed. Reload before retrying."); }
+        return Results.Ok(Response(restaurant));
+    }
+
+    // Re-issues an onboarding link to the single pending owner. Rotating the security stamp revokes earlier links.
+    // Same local/test delivery boundary as provisioning; production delivery remains a separate reviewed increment.
+    private static async Task<IResult> ResendOnboarding(Guid id, MenuDbContext db, UserManager<ApplicationUser> users,
+        IOwnerOnboardingDelivery delivery, IHostEnvironment environment, IOptions<OnboardingResendOptions> options,
+        HttpContext context, CancellationToken ct)
+    {
+        if (!environment.IsDevelopment() || !delivery.IsAvailable)
+            return Problem(503, "Owner onboarding delivery is not configured for local testing.");
+        var stagedOwner = Guid.Empty;
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+            var restaurant = await db.Set<Restaurant>().AsNoTracking().SingleOrDefaultAsync(r => r.Id == id, ct);
+            if (restaurant is null) return Problem(404, "Restaurant not found.");
+            if (restaurant.Status != "Active") return Problem(409, "Reactivate the restaurant before resending onboarding.");
+            var since = DateTime.UtcNow - options.Value.Cooldown;
+            if (await db.Set<AuditEntry>().AnyAsync(a => a.RestaurantId == id && a.TimestampUtc > since &&
+                    (a.Action == "OwnerOnboardingResent" || a.Action == "RestaurantProvisioned"), ct))
+            {
+                context.Response.Headers.RetryAfter = ((int)Math.Ceiling(options.Value.Cooldown.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+                return Problem(429, "An onboarding link was sent recently. Retry later.");
+            }
+            var owners = await db.Set<RestaurantUser>().Where(m => m.RestaurantId == id && m.IsActive && m.Role == "Owner")
+                .Select(m => m.UserId).Take(2).ToListAsync(ct);
+            var owner = owners.Count == 1 ? await users.FindByIdAsync(owners[0].ToString()) : null;
+            if (owner?.Email is null || await users.HasPasswordAsync(owner) || owner.TwoFactorEnabled ||
+                await users.IsLockedOutAsync(owner) || await users.IsInRoleAsync(owner, "PlatformAdmin"))
+                return Problem(409, "Restaurant has no pending owner onboarding.");
+            if (!(await users.UpdateSecurityStampAsync(owner)).Succeeded)
+                return Problem(409, "Owner account changed concurrently. Retry.");
+            db.Add(Audit(context, id, "OwnerOnboardingResent"));
+            await db.SaveChangesAsync(ct);
+            var token = await users.GeneratePasswordResetTokenAsync(owner);
+            stagedOwner = owner.Id;
+            try { await delivery.StageAsync(owner.Id, owner.Email, token, ct); }
+            catch (Exception ex) when (ex is not OperationCanceledException) { throw new OnboardingDeliveryException(); }
+            await transaction.CommitAsync(ct);
+            delivery.Confirm(owner.Id);
+            return Results.NoContent();
+        }
+        catch (Exception ex) when (IsConflict(ex)) { return Problem(409, "Resend conflicts with another request."); }
+        catch (OnboardingDeliveryException) { return Problem(503, "Owner onboarding delivery failed."); }
+        finally { delivery.Abort(stagedOwner); }
     }
 
     private static async Task<IResult> CompleteOnboarding(CompleteOnboardingRequest request, MenuDbContext db,
@@ -182,8 +292,9 @@ public static partial class Provisioning
         return Results.NoContent();
     }
 
-    private static AuditEntry Audit(HttpContext context, Guid id, string action) => new()
+    private static AuditEntry Audit(HttpContext context, Guid id, string action, Dictionary<string, string?>? metadata = null) => new()
     {
+        MetadataJson = metadata is null ? null : JsonSerializer.Serialize(metadata, MetadataJson),
         ActorUserId = Guid.Parse(context.User.FindFirstValue(ClaimTypes.NameIdentifier)!),
         RestaurantId = id,
         ResourceId = id,

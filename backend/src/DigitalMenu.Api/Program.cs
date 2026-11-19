@@ -95,6 +95,7 @@ app.Use(async (context, next) =>
 });
 app.MapMenuAuthentication();
 app.MapPlatformProvisioning();
+app.MapPlatformAudit();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();

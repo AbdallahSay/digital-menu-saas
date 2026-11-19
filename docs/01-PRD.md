@@ -9,7 +9,7 @@ A platform admin provisions restaurants. A restaurant owner manages a digital me
 - Customer: scan QR, see restaurant identity and available/published products, navigate categories, search visible menu, switch languages; understandable empty/offline/error states.
 
 ## MVP scope
-1. Platform admin (seeded securely via deployment bootstrap): sign in; provision restaurant, owner; list and suspend/reactivate restaurants; audit admin changes.
+1. Platform admin (seeded securely via deployment bootstrap): sign in; provision restaurant, owner; list and suspend/reactivate restaurants (suspension requires a reason); audit admin changes and browse/export the audit log; resend a pending owner's onboarding link; record informational plan labels (D4/ADR-010, no billing logic).
 2. Restaurant owner: sign in/out; edit restaurant brand/logo/contact info, color and cover; CRUD categories with order; CRUD menu items with name/description bilingual fields, price, one primary photo and optional additional photos, sort, availability and publish status; preview menu; download or copy permanent QR.
 3. Public browsing: fixed random public code (not an auth token) resolves an active published restaurant; display logo, restaurant title, sections, only active published items, localized name/description with fallback; search and category navigation; mobile RTL/LTR; informative 404/temporarily unavailable screen.
 4. System: tenant isolation, safe uploads, observability, backups, accessibility, CI and tests.

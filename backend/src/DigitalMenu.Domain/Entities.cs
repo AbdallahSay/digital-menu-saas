@@ -16,6 +16,9 @@ public sealed class Restaurant : VersionedEntity
     public string Status { get; set; } = "Active";
     public bool IsPublished { get; set; }
     public long PublishedMenuVersion { get; set; } = 1;
+    // D4: informational commercial labels for PlatformAdmin only; no billing or enforcement logic.
+    public string? PlanName { get; set; }
+    public DateTime? PaidUntilUtc { get; set; }
 }
 
 public sealed class RestaurantUser
@@ -91,4 +94,6 @@ public sealed class AuditEntry
     public Guid? ResourceId { get; set; }
     public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
     public string? CorrelationId { get; set; }
+    // Bounded, non-secret JSON object of string values (for example a suspension reason).
+    public string? MetadataJson { get; set; }
 }

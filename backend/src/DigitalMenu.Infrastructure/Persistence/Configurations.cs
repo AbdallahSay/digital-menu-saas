@@ -23,12 +23,14 @@ public sealed class RestaurantConfiguration : IEntityTypeConfiguration<Restauran
             t.UseSqlOutputClause(false);
             t.HasCheckConstraint("CK_Restaurant_Status", "[Status] IN ('Active','Suspended')");
             t.HasCheckConstraint("CK_Restaurant_Version", "[PublishedMenuVersion] > 0");
+            t.HasCheckConstraint("CK_Restaurant_PlanName", "[PlanName] IS NULL OR LEN([PlanName]) > 0");
             t.HasCheckConstraint("CK_Restaurant_Slug", "LEN([Slug]) > 0 AND [Slug] COLLATE Latin1_General_100_BIN2 NOT LIKE '%[^a-z0-9-]%'");
         });
         b.Property(x => x.Name).HasMaxLength(150).IsRequired();
         b.Property(x => x.Slug).HasMaxLength(100).IsRequired();
         b.Property(x => x.PublicCode).HasMaxLength(20).IsRequired();
         b.Property(x => x.Status).HasMaxLength(16).IsRequired();
+        b.Property(x => x.PlanName).HasMaxLength(50);
         b.HasIndex(x => x.Slug).IsUnique();
         b.HasIndex(x => x.PublicCode).IsUnique();
         b.Property(x => x.PublicCode).Metadata.SetAfterSaveBehavior(Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Throw);
@@ -141,13 +143,21 @@ public sealed class AuditConfiguration : IEntityTypeConfiguration<AuditEntry>
 {
     public void Configure(EntityTypeBuilder<AuditEntry> b)
     {
-        b.ToTable("AuditEntries", t => t.UseSqlOutputClause(false));
+        b.ToTable("AuditEntries", t =>
+        {
+            t.UseSqlOutputClause(false);
+            t.HasCheckConstraint("CK_AuditEntry_Metadata", "[MetadataJson] IS NULL OR ISJSON([MetadataJson]) = 1");
+        });
         b.HasKey(x => x.Id);
         b.HasOne<Restaurant>().WithMany().HasForeignKey(x => x.RestaurantId);
         b.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ActorUserId);
         b.Property(x => x.Action).HasMaxLength(100);
         b.Property(x => x.ResourceType).HasMaxLength(100);
         b.Property(x => x.CorrelationId).HasMaxLength(100);
+        b.Property(x => x.MetadataJson).HasMaxLength(4000);
         b.HasIndex(x => new { x.RestaurantId, x.TimestampUtc });
+        // Platform-wide audit browsing: newest-first and action-filtered scans.
+        b.HasIndex(x => x.TimestampUtc);
+        b.HasIndex(x => new { x.Action, x.TimestampUtc });
     }
 }

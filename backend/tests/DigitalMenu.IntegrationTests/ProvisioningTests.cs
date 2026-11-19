@@ -14,7 +14,7 @@ namespace DigitalMenu.IntegrationTests;
 public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper output)
 {
     private const string Route = "/api/v1/platform/restaurants";
-    private sealed class TestDelivery : IOwnerOnboardingDelivery
+    internal sealed class TestDelivery : IOwnerOnboardingDelivery
     {
         public bool IsAvailable => true;
         public bool Fail { get; set; }
@@ -30,7 +30,7 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
     {
         public string Generate() => "0123456789abcdef0123";
     }
-    private static async Task<(AuthFixture Fixture, Browser Admin, TestDelivery Delivery)> Setup(Action<IServiceCollection>? configure = null)
+    internal static async Task<(AuthFixture Fixture, Browser Admin, TestDelivery Delivery)> Setup(Action<IServiceCollection>? configure = null)
     {
         var delivery = new TestDelivery();
         var fixture = await AuthFixture.Create(configure: s =>
@@ -51,8 +51,8 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         await browser.Csrf();
         return (fixture, browser, delivery);
     }
-    private static object Request(string slug, string? email = null) => new { name = "مطعم " + slug, slug, ownerEmail = email ?? slug + "@example.test" };
-    private static async Task<RestaurantResponse> Provision(Browser admin, string slug)
+    internal static object Request(string slug, string? email = null) => new { name = "مطعم " + slug, slug, ownerEmail = email ?? slug + "@example.test" };
+    internal static async Task<RestaurantResponse> Provision(Browser admin, string slug)
     {
         var result = await admin.Send(HttpMethod.Post, Route, Request(slug));
         Assert.Equal(HttpStatusCode.Created, result.StatusCode);
@@ -60,7 +60,7 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         Assert.Equal(Route + "/" + restaurant.Id, result.Headers.Location!.OriginalString);
         return restaurant;
     }
-    private static async Task<RestaurantResponse> State(Browser admin, RestaurantResponse restaurant, string path, object payload)
+    internal static async Task<RestaurantResponse> State(Browser admin, RestaurantResponse restaurant, string path, object payload)
     {
         var result = await admin.Send(HttpMethod.Patch, Route + "/" + restaurant.Id + path, payload);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
@@ -123,8 +123,11 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         {
             (HttpMethod.Get, Route, null), (HttpMethod.Post, Route, Request("denied")),
             (HttpMethod.Get, Route + "/" + Guid.NewGuid(), null),
-            (HttpMethod.Patch, Route + "/" + Guid.NewGuid() + "/status", new { status = "Suspended", rowVersion = "AAAAAAAAAAA=" }),
-            (HttpMethod.Patch, Route + "/" + Guid.NewGuid() + "/publication", new { isPublished = true, rowVersion = "AAAAAAAAAAA=" })
+            (HttpMethod.Patch, Route + "/" + Guid.NewGuid() + "/status", new { status = "Suspended", reason = "Unpaid invoice", rowVersion = "AAAAAAAAAAA=" }),
+            (HttpMethod.Patch, Route + "/" + Guid.NewGuid() + "/publication", new { isPublished = true, rowVersion = "AAAAAAAAAAA=" }),
+            (HttpMethod.Patch, Route + "/" + Guid.NewGuid() + "/plan", new { planName = "Pro", paidUntilUtc = (string?)null, rowVersion = "AAAAAAAAAAA=" }),
+            (HttpMethod.Post, Route + "/" + Guid.NewGuid() + "/onboarding/resend", null),
+            (HttpMethod.Get, "/api/v1/platform/audit", null), (HttpMethod.Get, "/api/v1/platform/audit/export", null)
         })
         {
             Assert.Equal(HttpStatusCode.Unauthorized, (await guest.Send(method, path, body)).StatusCode);
@@ -136,7 +139,7 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         {
             admin.Token = invalid;
             Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Post, Route, Request("csrf-fail"))).StatusCode);
-            Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/status", new { status = "Suspended", a.RowVersion })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/status", new { status = "Suspended", reason = "Unpaid invoice", a.RowVersion })).StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/publication", new { isPublished = true, a.RowVersion })).StatusCode);
         }
         admin.Token = token;
@@ -199,9 +202,9 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         var published = await State(admin, a, "/publication", new { isPublished = true, a.RowVersion });
         Assert.True(published.IsPublished);
         Assert.Equal(a.PublishedMenuVersion + 1, published.PublishedMenuVersion);
-        Assert.Equal(HttpStatusCode.PreconditionFailed, (await admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/status", new { status = "Suspended", a.RowVersion })).StatusCode);
-        var suspended = await State(admin, published, "/status", new { status = "Suspended", published.RowVersion });
-        var noOp = await State(admin, suspended, "/status", new { status = "Suspended", suspended.RowVersion });
+        Assert.Equal(HttpStatusCode.PreconditionFailed, (await admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/status", new { status = "Suspended", reason = "Unpaid invoice", a.RowVersion })).StatusCode);
+        var suspended = await State(admin, published, "/status", new { status = "Suspended", reason = "Unpaid invoice", published.RowVersion });
+        var noOp = await State(admin, suspended, "/status", new { status = "Suspended", reason = "Unpaid invoice", suspended.RowVersion });
         Assert.Equal(suspended, noOp);
         var active = await State(admin, suspended, "/status", new { status = "Active", suspended.RowVersion });
         var draft = await State(admin, active, "/publication", new { isPublished = false, active.RowVersion });
@@ -217,7 +220,7 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         var owner = new Browser(fixture.Factory);
         await owner.Csrf();
         Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password)).StatusCode);
-        var stopped = await State(admin, existingDto, "/status", new { status = "Suspended", existingDto.RowVersion });
+        var stopped = await State(admin, existingDto, "/status", new { status = "Suspended", reason = "Unpaid invoice", existingDto.RowVersion });
         Assert.Equal(HttpStatusCode.Unauthorized, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
         await owner.Csrf();
         Assert.Equal(HttpStatusCode.Unauthorized, (await owner.Login(fixture.Password)).StatusCode);
@@ -250,7 +253,7 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/publication", new { isPublished = true, rowVersion = "bad" })).StatusCode);
         var second = new Browser(fixture.Factory) { Token = admin.Token };
         foreach (var cookie in admin.Cookies) second.Cookies[cookie.Key] = cookie.Value;
-        var updates = await Task.WhenAll(admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/status", new { status = "Suspended", a.RowVersion }),
+        var updates = await Task.WhenAll(admin.Send(HttpMethod.Patch, Route + "/" + a.Id + "/status", new { status = "Suspended", reason = "Unpaid invoice", a.RowVersion }),
             second.Send(HttpMethod.Patch, Route + "/" + a.Id + "/publication", new { isPublished = true, a.RowVersion }));
         Assert.Single(updates, r => r.StatusCode == HttpStatusCode.OK);
         Assert.Single(updates, r => r.StatusCode == HttpStatusCode.PreconditionFailed);

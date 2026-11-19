@@ -1,5 +1,24 @@
 # Architecture Decision Records / Assumptions / Risks
 
+## ADR-010 — D4: informational plan labels for PlatformAdmin (accepted 2026-11-19)
+Decision D4 was approved by the project owner in the L1d request and recorded here
+because it touches the "no subscriptions/billing" MVP boundary. `Restaurant.PlanName`
+(nvarchar(50), nullable) and `Restaurant.PaidUntilUtc` (datetime2, nullable) are
+**manually entered labels** for the platform operator's offline bookkeeping.
+
+- Visible and editable only through PlatformAdmin endpoints (`RestaurantResponse`,
+  `PATCH /api/v1/platform/restaurants/{id}/plan`). Never copied into owner
+  (`/auth/me`, `/admin/*`) or anonymous public projections; tests guard this.
+- No billing logic: no payment provider, invoices, price tables, plan catalog,
+  feature gating, reminders, automatic suspension or expiry jobs. An expired
+  `PaidUntilUtc` changes nothing; suspension stays an explicit, audited admin
+  action with a mandatory reason.
+- Changes are audited as `RestaurantPlanChanged` with the new values in metadata.
+- They do not bump `PublishedMenuVersion` (no public cache effect).
+
+Anything beyond these labels (self-service plans, automated enforcement, payment)
+remains out of MVP scope and needs a separate change request per README.
+
 ## ADR-009 — F01 reversible local SSR harness (2026-10-12)
 
 The human F01 request explicitly authorizes development-only SSR and defers

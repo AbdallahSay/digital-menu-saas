@@ -31,7 +31,8 @@ public sealed class PersistenceTests
         try
         {
             await db.Database.MigrateAsync();
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            string[] migrations = ["20261012030220_InitialTenantModel", "20261119060311_PlatformAuditAndPlanLabels"];
+            Assert.Equal(migrations, await db.Database.GetAppliedMigrationsAsync());
             Assert.False(db.Database.HasPendingModelChanges());
             await db.Database.MigrateAsync(); // repeat migration is idempotent
             var fixture = TwoRestaurantFixture.Create();
@@ -70,6 +71,11 @@ public sealed class PersistenceTests
             await Reject($"UPDATE MenuItemImages SET Width=0 WHERE RestaurantId={fixture.A.Id}", 547);
             await Reject($"UPDATE MenuItemImages SET ObjectKey={fixture.A.Id + "/changed.webp"} WHERE RestaurantId={fixture.A.Id}", 51000);
             await Reject($"UPDATE RestaurantUsers SET UserId={Guid.NewGuid()} WHERE RestaurantId={fixture.A.Id}", 547);
+            // L1d: audit metadata must be JSON; D4 plan labels cannot be empty strings; audit tenant stays immutable.
+            await Reject($"UPDATE AuditEntries SET MetadataJson=N'not json' WHERE RestaurantId={fixture.A.Id}", 547);
+            await Reject($"UPDATE Restaurants SET PlanName=N'' WHERE Id={fixture.A.Id}", 547);
+            await Reject($"UPDATE AuditEntries SET RestaurantId={fixture.B.Id} WHERE RestaurantId={fixture.A.Id}", 51000);
+            await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE AuditEntries SET MetadataJson=N'{{\"reason\":\"ok\"}}' WHERE RestaurantId={fixture.A.Id}");
 
             await using var stale = new MenuDbContext(options);
             var staleItem = await stale.Set<MenuItem>().SingleAsync();
@@ -89,7 +95,7 @@ public sealed class PersistenceTests
                     if (!string.IsNullOrWhiteSpace(batch))
                         await db.Database.ExecuteSqlRawAsync(batch);
             }
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            Assert.Equal(migrations, await db.Database.GetAppliedMigrationsAsync());
             Assert.Empty(await db.Set<Restaurant>().AsNoTracking().ToListAsync());
         }
         finally

@@ -6,7 +6,7 @@ are persistence preparation only; authentication and server-resolved tenant
 authorization remain F03/F05. No production migration is authorized.
 
 ## Core entities
-`Restaurant`: Id uniqueidentifier PK; Name nvarchar(150), Slug nvarchar(100) unique, PublicCode nvarchar(20) unique immutable/random, Status enum Active/Suspended, IsPublished bit, CreatedAtUtc/UpdatedAtUtc datetime2, rowversion. Slug isn't used as permanent QR target.
+`Restaurant`: Id uniqueidentifier PK; Name nvarchar(150), Slug nvarchar(100) unique, PublicCode nvarchar(20) unique immutable/random, Status enum Active/Suspended, IsPublished bit, CreatedAtUtc/UpdatedAtUtc datetime2, rowversion. Slug isn't used as permanent QR target. L1d/D4 (ADR-010): PlanName nvarchar(50) nullable (CHECK non-empty when present) and PaidUntilUtc datetime2 nullable — PlatformAdmin-only informational labels, never in owner/public projections, no enforcement.
 
 `ApplicationUser`: ASP.NET Core Identity entity; Email/normalization/password managed by Identity; Never store plaintext credentials.
 
@@ -20,7 +20,7 @@ authorization remain F03/F05. No production migration is authorized.
 
 `RestaurantSettings`: RestaurantId PK/FK, PrimaryColor constrained hex token, LogoObjectKey, CoverObjectKey, ContactPhoneOptional, AddressOptional, PublishedContactDetailsFlags, default locale, optional description. Never expose internal owner credential info.
 
-`AuditEntry`: Id, ActorUserId nullable, RestaurantId nullable, Action, ResourceType, ResourceId, TimestampUtc, CorrelationId, minimal redacted metadata; no passwords, raw tokens or user-supplied secrets.
+`AuditEntry`: Id, ActorUserId nullable, RestaurantId nullable, Action, ResourceType, ResourceId, TimestampUtc, CorrelationId, minimal redacted metadata; no passwords, raw tokens or user-supplied secrets. L1d: metadata is `MetadataJson` nvarchar(4000) nullable with `CHECK (ISJSON(...) = 1)`, a flat object of string values written only by the server (e.g. `{"reason":"..."}` on `RestaurantSuspended`/`RestaurantReactivated`, plan values on `RestaurantPlanChanged`, validated filters + row count on `AuditExported`). Indexes: `(RestaurantId, TimestampUtc)`, `(TimestampUtc)`, `(Action, TimestampUtc)`.
 
 ## Essential indexes
 - Unique `Restaurant(PublicCode)`, `Restaurant(Slug)`.

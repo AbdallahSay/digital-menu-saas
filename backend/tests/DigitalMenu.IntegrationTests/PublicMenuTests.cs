@@ -229,7 +229,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         Assert.Equal(HttpStatusCode.OK, published.StatusCode);
         current = (await published.Content.ReadFromJsonAsync<RestaurantResponse>())!;
         Assert.Equal(current.PublishedMenuVersion, (await Menu(client, Slug(f.A))).PublishedMenuVersion);
-        var suspended = await admin.Send(HttpMethod.Patch, platformRoute + "/status", new RestaurantStatusRequest("Suspended", current.RowVersion));
+        var suspended = await admin.Send(HttpMethod.Patch, platformRoute + "/status", new RestaurantStatusRequest("Suspended", current.RowVersion, "Policy review"));
         Assert.Equal(HttpStatusCode.OK, suspended.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(Slug(f.A))).StatusCode);
     }

@@ -53,6 +53,9 @@ The Angular demo is an immutable fake public fixture, not the F09 projection.
 - `GET /api/v1/platform/restaurants/{id}` — details.
 - `PATCH /api/v1/platform/restaurants/{id}/status` — suspend/reactivate, audit change.
 - `PATCH /api/v1/platform/restaurants/{id}/publication` — publish/unpublish, audit change.
+- `PATCH /api/v1/platform/restaurants/{id}/plan` — D4 informational plan labels (L1d).
+- `POST /api/v1/platform/restaurants/{id}/onboarding/resend` — re-issue a pending owner's onboarding link (L1d).
+- `GET /api/v1/platform/audit` and `GET /api/v1/platform/audit/export` — filtered audit log and CSV export (L1d).
 
 ### F04 implemented contract (local/test only)
 
@@ -133,6 +136,59 @@ reactivation requires a fresh login and still requires active membership and an
 unlocked account. F05 will authorize individual tenant resources; none are added here.
 
 Verification and production dependencies: [F04 report](../backend/F04-VERIFICATION.md).
+
+### L1d platform operations contract (local/test only)
+
+Every endpoint below requires the `PlatformAdmin` policy (owners 403, guests 401),
+HTTPS, `Cache-Control: no-store`; mutations require the F03 CSRF header and reject
+unknown JSON members with 400. Errors are ProblemDetails without internal detail.
+
+- **Restaurant DTO** gains `planName` (string|null) and `paidUntilUtc` (UTC ISO
+  8601|null). These exist only in platform responses (ADR-010 / D4).
+- **Status change (breaking):** `PATCH .../{id}/status` body is now
+  `{ status, rowVersion, reason }`. `reason` is **required** for `Suspended` and
+  optional for `Active`; trimmed, 3–500 characters, no control characters
+  (newlines included), else 400. Validation precedes the RowVersion check. A
+  non-empty reason is stored as `{"reason": "..."}` in the audit metadata of
+  `RestaurantSuspended`/`RestaurantReactivated`. No-op transitions write no audit.
+- **Plan labels:** `PATCH .../{id}/plan` body `{ planName, paidUntilUtc, rowVersion }`.
+  Blank/null clears a field. `planName` trimmed, max 50, no control characters.
+  `paidUntilUtc` ISO 8601 string, max 40 characters, UTC assumed when no offset
+  is given, normalized to UTC, range 2000-01-01 ≤ value < 2100-01-01. 404 unknown,
+  412 stale RowVersion, identical values return 200 without an audit. Changes audit
+  `RestaurantPlanChanged` with `planName`/`paidUntilUtc` metadata. Status,
+  publication and `publishedMenuVersion` are not affected.
+- **Resend onboarding:** `POST .../{id}/onboarding/resend`, no body, 204 on success.
+  Same local/test delivery boundary as provisioning: 503 outside Development or when
+  the delivery adapter is unavailable/fails. 404 unknown restaurant; 409 when the
+  restaurant is Suspended, when it doesn't have exactly one active Owner membership, or
+  the owner already has a password, is locked out, MFA-enabled or PlatformAdmin, or
+  on concurrent conflicts. 429 with `Retry-After` when the restaurant's previous
+  link (provisioning or resend) is newer than the cooldown (default 60 s,
+  `OnboardingResendOptions`). Within one Serializable transaction the owner's
+  security stamp is rotated (**revoking all earlier onboarding links**), an
+  `OwnerOnboardingResent` audit is written, a fresh token is staged and only then
+  committed and confirmed; failed delivery rolls everything back. The response
+  never contains the token, owner id or email.
+- **Audit listing:** `GET /api/v1/platform/audit?action=&restaurantId=&fromUtc=&toUtc=&page=&pageSize=`.
+  `action` is an exact match on `^[A-Za-z]{1,100}$`; `restaurantId` a non-empty Guid;
+  `fromUtc` inclusive / `toUtc` exclusive ISO 8601 (UTC when no offset, max 40
+  characters, `fromUtc < toUtc`); page 1..100000 (default 1), pageSize 1..200
+  (default 50). Ordered newest first (`timestampUtc` desc, then `id` desc). Response
+  `{ page, pageSize, total, items }`, item = `id, timestampUtc, action, resourceType,
+  resourceId, restaurantId, restaurantName, actorUserId, correlationId, metadata`
+  (flat string map or null). No emails, tokens or credentials are stored or returned.
+- **CSV export:** `GET /api/v1/platform/audit/export` with the same filters (no
+  paging). At most 5000 rows, otherwise 400 asking to narrow the filters.
+  `text/csv; charset=utf-8` with UTF-8 BOM, `Content-Disposition: attachment;
+  filename=audit-<yyyyMMddTHHmmssZ>.csv`, CRLF lines, header
+  `timestampUtc,action,resourceType,resourceId,restaurantId,restaurantName,actorUserId,correlationId,reason,metadata`.
+  Every non-empty cell is RFC 4180 quoted; values starting with `= + - @ | %`,
+  tab or CR are prefixed with `'` (formula-injection defense). Each export writes an
+  `AuditExported` audit with the validated filters and row count. Auth cookies
+  are `SameSite=Strict`, so this audited GET can't be triggered cross-site.
+
+Verification: [L1d report](../backend/L1D-VERIFICATION.md).
 
 ## Owner endpoints (server-derived restaurant scope, no arbitrary tenant input)
 
