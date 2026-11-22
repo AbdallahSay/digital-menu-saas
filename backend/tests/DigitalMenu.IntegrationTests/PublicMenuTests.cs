@@ -40,6 +40,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         private Guid restaurantId;
         private int flips;
         private int rowsAffected;
+        public readonly List<string> Seen = new();
         public int Flips => flips;
         public int RowsAffected => rowsAffected;
         public void Bind(string connection, Guid restaurant)
@@ -47,6 +48,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData data,
             InterceptionResult<DbDataReader> result, CancellationToken ct = default)
         {
+            if (connectionString is not null) lock (Seen) Seen.Add("flips=" + flips + " " + command.CommandText.Replace("\n", " ").Substring(0, Math.Min(70, command.CommandText.Length)));
             if (connectionString is not null && flips < maxFlips &&
                 command.CommandText.Contains("FROM [Categories]", StringComparison.Ordinal))
             {
@@ -481,7 +483,8 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         await using var f = await Fixture.Create(flipper);
         using var client = f.Client;
         var response = await client.GetAsync(Code(f.A));
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        string seen; lock (flipper.Seen) seen = string.Join(" || ", flipper.Seen);
+        Assert.True(response.StatusCode == HttpStatusCode.ServiceUnavailable, "DIAG status=" + (int)response.StatusCode + " flips=" + flipper.Flips + " rows=" + flipper.RowsAffected + " seen=" + seen);
         Assert.Equal(2, flipper.Flips);
         Assert.Equal(4, flipper.RowsAffected);
     }
