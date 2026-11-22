@@ -104,6 +104,7 @@ app.MapPlatformProvisioning();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
+app.MapSettings();
 app.MapPublicMenus();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
