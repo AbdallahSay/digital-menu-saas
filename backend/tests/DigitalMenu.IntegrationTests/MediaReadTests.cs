@@ -186,7 +186,13 @@ public sealed class MediaReadTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(new byte[] { 7 }, await response.Content.ReadAsByteArrayAsync());
         // Item image ids are create-new and immutable: content under an id never changes.
-        Assert.Equal("private, max-age=86400, immutable", response.Headers.CacheControl!.ToString());
+        // Compared as a directive set: the client-side header type may reorder the serialization.
+        var itemCache = response.Headers.CacheControl!;
+        Assert.True(itemCache.Private);
+        Assert.False(itemCache.Public);
+        Assert.False(itemCache.NoCache);
+        Assert.Equal(TimeSpan.FromSeconds(86400), itemCache.MaxAge);
+        Assert.Equal("immutable", Assert.Single(itemCache.Extensions).Name);
         Assert.Equal(HttpStatusCode.NotFound, (await Send(f.A, HttpMethod.Get, $"/api/v1/admin/media/items/{f.ImageB.Id}/main")).StatusCode);
     }
 
@@ -219,7 +225,11 @@ public sealed class MediaReadTests
         // The stable admin URL revalidates every read and serves the current object.
         var adminLogo = await Send(f.A, HttpMethod.Get, "/api/v1/admin/settings/logo");
         Assert.Equal(HttpStatusCode.OK, adminLogo.StatusCode);
-        Assert.Equal("private, no-cache", adminLogo.Headers.CacheControl!.ToString());
+        var logoCache = adminLogo.Headers.CacheControl!;
+        Assert.True(logoCache.Private);
+        Assert.True(logoCache.NoCache);
+        Assert.False(logoCache.Public);
+        Assert.Null(logoCache.MaxAge);
         Assert.Equal(storage.Stored(keyA!, "main"), await adminLogo.Content.ReadAsByteArrayAsync());
         var publicLogo = await guest.GetAsync("/api/v1/public/media/logo/" + Code);
         Assert.Equal(HttpStatusCode.OK, publicLogo.StatusCode);
