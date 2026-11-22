@@ -29,7 +29,9 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     }
     // Deterministic mid-read races: flips the version (or visibility) on a
     // separate connection exactly when a fresh load attempt starts its content
-    // queries. The categories query opens the content phase of every attempt.
+    // queries. The standalone categories query (the one that does not also mention
+    // MenuItems; the items query joins Categories and would match too) opens the
+    // content phase of every attempt, so each attempt can be flipped at most once.
     // One instance is shared by every scope of its fixture (Bind once, counter
     // persists across requests), and it connects with the fixture's original
     // connection string: an already-open connection strips credentials when
@@ -48,7 +50,8 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             InterceptionResult<DbDataReader> result, CancellationToken ct = default)
         {
             if (connectionString is not null && flips < maxFlips &&
-                command.CommandText.Contains("FROM [Categories]", StringComparison.Ordinal))
+                command.CommandText.Contains("FROM [Categories]", StringComparison.Ordinal) &&
+                !command.CommandText.Contains("[MenuItems]", StringComparison.Ordinal))
             {
                 flips++;
                 using var connection = new SqlConnection(connectionString);
