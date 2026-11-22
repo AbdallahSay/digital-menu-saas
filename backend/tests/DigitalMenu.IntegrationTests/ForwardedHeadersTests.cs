@@ -1,7 +1,6 @@
 using System.Net;
 using DigitalMenu.Api.Proxy;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -18,26 +17,25 @@ public sealed class ForwardedHeadersTests
     private const string Peer = "192.0.2.1";
     private const string Forwarded = "198.51.100.7";
 
-    private static async Task<string> ObservedRemoteIp(IDictionary<string, string?> settings)
+    private static Task<string> ObservedRemoteIp(IDictionary<string, string?> settings) =>
+        ObservedRemoteIp(settings, IPAddress.Parse(Peer));
+
+    private static async Task<string> ObservedRemoteIp(IDictionary<string, string?> settings, IPAddress peer)
     {
-        var builder = new WebHostBuilder()
-            .ConfigureServices((context, services) =>
-                TrustedProxyConfiguration.Configure(services, context.Configuration))
-            .Configure((context, app) =>
-            {
-                if (TrustedProxyConfiguration.IsEnabled(context.Configuration))
-                    app.UseForwardedHeaders();
-                app.Run(http => http.Response.WriteAsync(http.Connection.RemoteIpAddress?.ToString() ?? "null"));
-            });
-        foreach (var pair in settings)
-            builder.UseSetting(pair.Key, pair.Value);
-        using var server = new TestServer(builder);
-        var httpContext = await server.SendAsync(context =>
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Configuration.AddInMemoryCollection(settings);
+        TrustedProxyConfiguration.Configure(builder.Services, builder.Configuration);
+        await using var app = builder.Build();
+        if (TrustedProxyConfiguration.IsEnabled(builder.Configuration))
+            app.UseForwardedHeaders();
+        app.Run(http => http.Response.WriteAsync(http.Connection.RemoteIpAddress?.ToString() ?? "null"));
+        await app.StartAsync();
+        var httpContext = await app.GetTestServer().SendAsync(context =>
         {
-            context.Connection.RemoteIpAddress = IPAddress.Parse(Peer);
+            context.Connection.RemoteIpAddress = peer;
             context.Request.Headers["X-Forwarded-For"] = Forwarded;
         });
-        httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
         using var reader = new StreamReader(httpContext.Response.Body);
         return await reader.ReadToEndAsync();
     }
@@ -88,23 +86,9 @@ public sealed class ForwardedHeadersTests
         Assert.Single(TrustedProxyConfiguration.Parse(config));
         // A loopback peer with only a non-loopback allowlist entry must not
         // be able to drive the forwarded IP.
-        using var server = new TestServer(new WebHostBuilder()
-            .UseSetting("Proxy:TrustedProxies:0", "192.0.2.9")
-            .ConfigureServices((context, services) =>
-                TrustedProxyConfiguration.Configure(services, context.Configuration))
-            .Configure((context, app) =>
-            {
-                if (TrustedProxyConfiguration.IsEnabled(context.Configuration))
-                    app.UseForwardedHeaders();
-                app.Run(http => http.Response.WriteAsync(http.Connection.RemoteIpAddress?.ToString() ?? "null"));
-            }));
-        var httpContext = await server.SendAsync(context =>
-        {
-            context.Connection.RemoteIpAddress = IPAddress.Loopback;
-            context.Request.Headers["X-Forwarded-For"] = Forwarded;
-        });
-        httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(httpContext.Response.Body);
-        Assert.Equal(IPAddress.Loopback.ToString(), await reader.ReadToEndAsync());
+        var observed = await ObservedRemoteIp(
+            new Dictionary<string, string?> { ["Proxy:TrustedProxies:0"] = "192.0.2.9" },
+            IPAddress.Loopback);
+        Assert.Equal(IPAddress.Loopback.ToString(), observed);
     }
 }

@@ -92,7 +92,7 @@ public sealed class SettingsTests
         Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
         var aAfter = await Public(publicClient, "a");
         var bAfter = await Public(publicClient, "b");
-        Assert.Equal(Color(aBefore).ToLowerInvariant(), "#0f766e");
+        Assert.Equal("#0f766e", Color(aBefore).ToLowerInvariant());
         Assert.Equal("#334155", Color(aAfter));
         Assert.Equal(Version(aBefore) + 1, Version(aAfter));
         Assert.Equal(Color(bBefore), Color(bAfter));
