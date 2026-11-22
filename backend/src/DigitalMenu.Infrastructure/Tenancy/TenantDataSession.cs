@@ -159,15 +159,16 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
                     await Owned<MenuItem>().AnyAsync(i => i.CategoryId == entry.Entity.Id && !i.IsDeleted, cancellationToken))
                     throw new TenantBoundaryException(TenantFailure.Conflict);
             }
-            // The public menu projection includes the brand color, so a real
-            // PrimaryColor change is a publication like any catalog change.
+            // The public menu projection includes the brand color and logo, so
+            // a real change to either is a publication like any catalog change.
             // Assigning the same value leaves the property unmodified and
             // never churns the version.
-            var brandColorChanged = db.ChangeTracker.Entries<RestaurantSettings>()
+            var brandingChanged = db.ChangeTracker.Entries<RestaurantSettings>()
                 .Where(e => e.State == EntityState.Modified)
                 .SelectMany(e => e.Properties)
-                .Any(p => p.Metadata.Name == nameof(RestaurantSettings.PrimaryColor) && p.IsModified);
-            if (categories.Length > 0 || brandColorChanged ||
+                .Any(p => (p.Metadata.Name == nameof(RestaurantSettings.PrimaryColor) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.LogoObjectKey)) && p.IsModified);
+            if (categories.Length > 0 || brandingChanged ||
                 db.ChangeTracker.Entries<MenuItem>().Any(e => e.State != EntityState.Unchanged) ||
                 db.ChangeTracker.Entries<MenuItemImage>().Any(e => e.State != EntityState.Unchanged))
             {

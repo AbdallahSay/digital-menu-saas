@@ -326,7 +326,7 @@ public sealed class AuthenticationTests
         public string Connection { get; private set; } = "";
         public TestClock Clock { get; } = new();
         public string Password { get; } = "F03!" + Guid.NewGuid().ToString("N");
-        public static async Task<AuthFixture> Create(bool empty = false, Action<IServiceCollection>? configure = null, string? onboardingPipe = null, string[]? trustedProxies = null)
+        public static async Task<AuthFixture> Create(bool empty = false, Action<IServiceCollection>? configure = null, string? onboardingPipe = null, string[]? trustedProxies = null, string? publicCodeA = null)
         {
             var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
             if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
@@ -352,7 +352,7 @@ public sealed class AuthenticationTests
             var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var user = new ApplicationUser { Id = Guid.NewGuid(), Email = "owner@example.test", UserName = "owner@example.test" };
             Assert.True((await users.CreateAsync(user, fixture.Password)).Succeeded);
-            var a = new Restaurant { Name = "Restaurant A", Slug = "a", PublicCode = "code-a" };
+            var a = new Restaurant { Name = "Restaurant A", Slug = "a", PublicCode = publicCodeA ?? "code-a" };
             var b = new Restaurant { Name = "Restaurant B", Slug = "b", PublicCode = "code-b" };
             db.AddRange(a, b, new RestaurantUser { RestaurantId = a.Id, UserId = user.Id });
             await db.SaveChangesAsync();

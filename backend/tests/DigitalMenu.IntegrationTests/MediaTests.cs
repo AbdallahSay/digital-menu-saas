@@ -55,6 +55,10 @@ public sealed class MediaTests
             Assert.True(Objects.TryAdd(key, image));
             if (AfterPut is not null) await AfterPut();
         }
+        public Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct) =>
+            Task.FromResult(Objects.TryGetValue(key, out var image)
+                ? (variant == "thumbnail" ? image.Thumbnail : image.Main)
+                : null);
         public Task RemoveAsync(string key, CancellationToken ct)
         {
             Removals++;

@@ -4,11 +4,14 @@ public interface IImageStorage
 {
     Task PutAsync(string key, NormalizedImage image, CancellationToken ct);
     Task RemoveAsync(string key, CancellationToken ct);
+    /// <summary>Reads one immutable variant ("main" or "thumbnail"); null when absent.</summary>
+    Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct);
 }
 public sealed class UnavailableImageStorage : IImageStorage
 {
     public Task PutAsync(string key, NormalizedImage image, CancellationToken ct) => throw new MediaException(503);
     public Task RemoveAsync(string key, CancellationToken ct) => throw new MediaException(503);
+    public Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct) => throw new MediaException(503);
 }
 
 // Private local adapter; no HTTP/static-file serving. Trusted OS user owns this directory.
@@ -67,6 +70,20 @@ public sealed class LocalImageStorage : IImageStorage
         await using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
         await file.WriteAsync(bytes, ct);
         await file.FlushAsync(ct);
+    }
+    public async Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct)
+    {
+        RetryMarkedCleanup();
+        if (variant is not ("main" or "thumbnail")) throw new MediaException(400);
+        var bundle = Bundle(key);
+        // A bundle whose deletion is pending is already gone for readers.
+        if (File.Exists(Path.Combine(bundle, "delete.pending"))) return null;
+        try
+        {
+            return await File.ReadAllBytesAsync(Path.Combine(bundle, variant + ".webp"), ct);
+        }
+        catch (FileNotFoundException) { return null; }
+        catch (DirectoryNotFoundException) { return null; }
     }
     public async Task RemoveAsync(string key, CancellationToken ct)
     {

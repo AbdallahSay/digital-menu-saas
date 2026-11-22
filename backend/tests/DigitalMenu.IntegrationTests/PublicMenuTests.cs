@@ -34,6 +34,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         public Category CategoryA { get; } = new() { NameAr = "طعام", NameEn = "Food", IsPublished = true };
         public Category CategoryB { get; } = new() { NameAr = "قسم B", IsPublished = true };
         public MenuItem ItemA { get; } = new() { NameAr = "قهوة", NameEn = "Coffee", DescriptionAr = "وصف", DescriptionEn = " ", Price = 12.50m, IsPublished = true };
+        public MenuItemImage ImageA { get; } = new() { AltAr = "صورة قهوة", AltEn = "Coffee photo", Width = 20, Height = 10 };
         public Guid Owner { get; private set; }
         public static async Task<Fixture> Create()
         {
@@ -45,13 +46,14 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             var user = new ApplicationUser { Id = Guid.NewGuid(), Email = "public-owner-private@example.test", UserName = "public-owner-private@example.test" };
             Assert.True((await users.CreateAsync(user, f.Auth.Password)).Succeeded);
             f.Owner = user.Id;
-            f.CategoryA.RestaurantId = f.ItemA.RestaurantId = f.A.Id;
+            f.CategoryA.RestaurantId = f.ItemA.RestaurantId = f.ImageA.RestaurantId = f.A.Id;
             f.CategoryB.RestaurantId = f.B.Id;
             f.ItemA.CategoryId = f.CategoryA.Id;
-            db.AddRange(f.A, f.B, f.CategoryA, f.CategoryB, f.ItemA,
+            f.ImageA.MenuItemId = f.ItemA.Id;
+            f.ImageA.ObjectKey = f.A.Id + "/private-image.webp";
+            db.AddRange(f.A, f.B, f.CategoryA, f.CategoryB, f.ItemA, f.ImageA,
                 new RestaurantUser { RestaurantId = f.A.Id, UserId = user.Id },
-                new RestaurantSettings { RestaurantId = f.A.Id, PrimaryColor = "#123456", ContactPhoneOptional = "private-phone", AddressOptional = "private-address", PublishedContactDetailsFlags = 3, LogoObjectKey = f.A.Id + "/private.webp" },
-                new MenuItemImage { RestaurantId = f.A.Id, MenuItemId = f.ItemA.Id, ObjectKey = f.A.Id + "/private-image.webp", Width = 20, Height = 10 });
+                new RestaurantSettings { RestaurantId = f.A.Id, PrimaryColor = "#123456", ContactPhoneOptional = "private-phone", AddressOptional = "private-address", PublishedContactDetailsFlags = 3, LogoObjectKey = f.A.Id + "/private.webp" });
             await db.SaveChangesAsync();
             f.Queries.Reset();
             return f;
@@ -79,23 +81,39 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     }
 
     [SqlServerFact]
-    public async Task Code_and_slug_return_public_allowlists_locale_fallback_and_no_media_or_private_data()
+    public async Task Code_and_slug_return_public_allowlists_with_opaque_media_urls_and_no_private_data()
     {
         await using var f = await Fixture.Create();
         using var client = f.Client;
         var arabic = await Menu(client, Code(f.A));
-        Assert.Equal(3, f.Queries.Count);
+        Assert.Equal(4, f.Queries.Count);
         Assert.Equal("ar", arabic.Language);
         Assert.Equal("#123456", arabic.Restaurant.PrimaryColor);
-        Assert.Equal("قهوة", Assert.Single(Assert.Single(arabic.Categories).Items).Name);
+        // Media projects only through opaque public URLs: the image's own random
+        // id and the already-public code - never the restaurant Guid or object key.
+        Assert.Equal("/api/v1/public/media/logo/" + f.A.PublicCode, arabic.Restaurant.LogoUrl);
+        var item = Assert.Single(Assert.Single(arabic.Categories).Items);
+        Assert.Equal("قهوة", item.Name);
+        Assert.NotNull(item.Image);
+        var image = item.Image!;
+        Assert.Equal("/api/v1/public/media/items/" + f.ImageA.Id + "/main", image.Url);
+        Assert.Equal("/api/v1/public/media/items/" + f.ImageA.Id + "/thumbnail", image.ThumbnailUrl);
+        Assert.Equal("صورة قهوة", image.Alt);
+        Assert.Equal(20, image.Width);
+        Assert.Equal(10, image.Height);
         var english = await Menu(client, Code(f.A, "en"));
         Assert.Equal("Food", Assert.Single(english.Categories).Name);
-        Assert.Equal("Coffee", Assert.Single(Assert.Single(english.Categories).Items).Name);
-        Assert.Equal("وصف", Assert.Single(Assert.Single(english.Categories).Items).Description);
+        var englishItem = Assert.Single(Assert.Single(english.Categories).Items);
+        Assert.Equal("Coffee", englishItem.Name);
+        Assert.Equal("وصف", englishItem.Description);
+        Assert.NotNull(englishItem.Image);
+        Assert.Equal("Coffee photo", englishItem.Image!.Alt);
         var slug = await Menu(client, Slug(f.A));
         Assert.Equal(arabic.Restaurant, slug.Restaurant);
         var body = await (await client.GetAsync(Code(f.A))).Content.ReadAsStringAsync();
-        foreach (var forbidden in new[] { "private", f.A.Id.ToString(), f.B.Id.ToString(), f.Owner.ToString(), "restaurantId", "userId", "objectKey", "rowVersion", "isPublished", "isAvailable", "imageUrl", "logoUrl", "token", "email", "status" })
+        // The seeded object keys literally contain "private" and the restaurant
+        // Guid: any leak of a key or id into the payload fails this.
+        foreach (var forbidden in new[] { "private", f.A.Id.ToString(), f.B.Id.ToString(), f.Owner.ToString(), "restaurantId", "userId", "objectKey", "rowVersion", "isPublished", "isAvailable", "token", "email", "status" })
             Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
         var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(body);
         Assert.Equal(new[] { "categories", "language", "publishedMenuVersion", "restaurant" }, json.EnumerateObject().Select(p => p.Name).Order());
@@ -171,7 +189,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         var response = await owner.Client.SendAsync(request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.False(response.Headers.Contains("Set-Cookie"));
-        Assert.Equal(3, f.Queries.Count); // No Identity/security-stamp/membership queries.
+        Assert.Equal(4, f.Queries.Count); // No Identity/security-stamp/membership queries.
         var menu = (await response.Content.ReadFromJsonAsync<PublicMenu>())!;
         Assert.Equal(f.B.Name, menu.Restaurant.Name);
         Assert.Equal(f.CategoryB.Id, Assert.Single(menu.Categories).Id);
@@ -235,7 +253,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     }
 
     [SqlServerFact]
-    public async Task Large_menu_has_three_queries_and_parallel_A_B_requests_do_not_mix_results()
+    public async Task Large_menu_has_four_queries_and_parallel_A_B_requests_do_not_mix_results()
     {
         await using var f = await Fixture.Create();
         using (var scope = f.Auth.Factory.Services.CreateScope())
@@ -254,7 +272,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         using var client = f.Client;
         f.Queries.Reset();
         Assert.Equal(200, Assert.Single((await Menu(client, Code(f.A))).Categories).Items.Count);
-        Assert.Equal(3, f.Queries.Count);
+        Assert.Equal(4, f.Queries.Count);
         var elapsed = await Task.WhenAll(Enumerable.Range(0, 20).Select(async i =>
         {
             using var browser = f.Client;
@@ -265,8 +283,8 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             return timer.Elapsed.TotalMilliseconds;
         }));
         Array.Sort(elapsed);
-        Assert.Equal(63, f.Queries.Count);
-        output.WriteLine($"Local TestServer + LocalDB, 20 parallel A/B GETs, A=200 items/B=empty, 3 SELECT/request: p50={elapsed[9]:F1}ms p95={elapsed[18]:F1}ms max={elapsed[19]:F1}ms, zero errors. No shared cache; not production evidence.");
+        Assert.Equal(84, f.Queries.Count);
+        output.WriteLine($"Local TestServer + LocalDB, 20 parallel A/B GETs, A=200 items/B=empty, 4 SELECT/request: p50={elapsed[9]:F1}ms p95={elapsed[18]:F1}ms max={elapsed[19]:F1}ms, zero errors. No shared cache; not production evidence.");
     }
 
     [SqlServerFact]

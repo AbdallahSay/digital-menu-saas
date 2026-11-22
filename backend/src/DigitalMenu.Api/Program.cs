@@ -104,6 +104,7 @@ app.MapPlatformProvisioning();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
+app.MapMenuMediaReads();
 app.MapSettings();
 app.MapPublicMenus();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();

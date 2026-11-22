@@ -1,25 +1,27 @@
 using System.Text.Json.Serialization;
 using DigitalMenu.Application;
 using DigitalMenu.Domain;
+using DigitalMenu.Api.Media;
 
 namespace DigitalMenu.Api.Catalog;
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record UpdateSettingsRequest(string? PrimaryColor, string? RowVersion);
 public sealed record SettingsResponse(string Name, string Slug, string PublicCode, string PrimaryColor,
-    bool HasLogo, string RowVersion);
+    bool HasLogo, string? LogoUrl, string RowVersion);
 
 /// <summary>
 /// Owner restaurant settings (Screen 5/6 backing contract): reads the tenant's
-/// identity, permanent public code and brand color; updates the brand color
-/// under the same rowVersion optimistic-concurrency contract as the catalog.
-/// Logo upload/read-back intentionally lands with the media delivery phase;
-/// HasLogo only reports whether one is stored.
+/// identity, permanent public code, brand color and logo; updates the brand
+/// color under the same rowVersion optimistic-concurrency contract as the
+/// catalog. Logo upload/read/delete lands with the media delivery phase.
 /// </summary>
 public static class Settings
 {
     private sealed record RestaurantIdentity(string Name, string Slug, string PublicCode);
     private sealed record SettingsRow(string PrimaryColor, bool HasLogo, string RowVersion);
+    /// <summary>Admin read URL for the stored logo; null when none is stored.</summary>
+    private static string? LogoUrl(bool hasLogo) => hasLogo ? "/api/v1/admin/settings/logo" : null;
 
     private static byte[] Version(string? value)
     {
@@ -55,7 +57,8 @@ public static class Settings
             if (restaurants.Count == 0 || settings.Count == 0)
                 throw new TenantBoundaryException(TenantFailure.NotFound);
             return Results.Ok(new SettingsResponse(restaurants[0].Name, restaurants[0].Slug,
-                restaurants[0].PublicCode, settings[0].PrimaryColor, settings[0].HasLogo, settings[0].RowVersion));
+                restaurants[0].PublicCode, settings[0].PrimaryColor, settings[0].HasLogo,
+                LogoUrl(settings[0].HasLogo), settings[0].RowVersion));
         });
         group.MapPut("", async (UpdateSettingsRequest request, ITenantContext tenants,
             ITenantDataSession session, CancellationToken ct) =>
@@ -72,7 +75,97 @@ public static class Settings
                 r => true, r => new RestaurantIdentity(r.Name, r.Slug, r.PublicCode), 1, ct);
             return Results.Ok(new SettingsResponse(restaurants[0].Name, restaurants[0].Slug,
                 restaurants[0].PublicCode, settings.PrimaryColor, settings.LogoObjectKey != null,
+                LogoUrl(settings.LogoObjectKey != null), Convert.ToBase64String(settings.RowVersion)));
+        });
+
+        // Logo upload/read-back (media delivery phase). Same normalization and
+        // limits as item images; the logo projects into the public menu, so
+        // committing a change bumps the published menu version (CommitAsync).
+        group.MapPost("/logo", async (HttpContext context, ITenantContext tenants,
+            ITenantDataSession session, ImageNormalizer normalizer, IImageStorage storage,
+            ILoggerFactory loggers, CancellationToken ct) =>
+        {
+            var scope = await tenants.RequireAsync(ct);
+            if (!context.Request.HasFormContentType || !context.Request.ContentType!.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+                throw new MediaException(415);
+            if (context.Request.ContentLength > MediaEndpoints.BodyLimit) throw new MediaException(413);
+            context.Request.Body = new UploadReadStream(context.Request.Body, MediaEndpoints.BodyLimit);
+            IFormCollection form;
+            try { form = await context.Request.ReadFormAsync(ct); }
+            catch (InvalidDataException) { throw new MediaException(400); }
+            if (form.Count != 0 || form.Files.Count != 1 || form.Files[0].Name != "file") throw new MediaException(400);
+            var file = form.Files[0];
+            if (file.Length > ImageNormalizer.MaxBytes) throw new MediaException(413);
+            await using var input = file.OpenReadStream();
+            using var bytes = new MemoryStream();
+            var buffer = new byte[65536];
+            int count;
+            while ((count = await input.ReadAsync(buffer, ct)) > 0)
+            {
+                if (bytes.Length + count > ImageNormalizer.MaxBytes) throw new MediaException(413);
+                await bytes.WriteAsync(buffer.AsMemory(0, count), ct);
+            }
+            var normalized = normalizer.Normalize(bytes.ToArray(), file.ContentType);
+            var settings = await session.EditAsync<RestaurantSettings>(scope.RestaurantId, ct);
+            var previous = settings.LogoObjectKey;
+            var key = scope.RestaurantId.ToString("D") + "/" + Guid.NewGuid().ToString("N") + ".webp";
+            var logger = loggers.CreateLogger("RestaurantLogo");
+            try { await storage.PutAsync(key, normalized, ct); }
+            catch (IOException) { throw new MediaException(503); }
+            catch (UnauthorizedAccessException) { throw new MediaException(503); }
+            settings.LogoObjectKey = key;
+            try { await session.CommitAsync(ct); }
+            catch
+            {
+                // Commit outcome may be ambiguous after connection loss. Never
+                // delete a possibly committed object; clean up only when the
+                // stored key definitely does not reference it.
+                try
+                {
+                    var stored = await session.ReadAsync<RestaurantSettings, string?>(s => true, s => s.LogoObjectKey, 1, CancellationToken.None);
+                    if (stored.Count > 0 && stored[0] != key)
+                        await MediaEndpoints.CleanupObject(storage, key, logger);
+                }
+                catch (Exception) { logger.LogWarning("Private media requires metadata reconciliation."); }
+                throw;
+            }
+            if (previous is not null) await MediaEndpoints.CleanupObject(storage, previous, logger);
+            var restaurants = await session.ReadAsync<Restaurant, RestaurantIdentity>(
+                r => true, r => new RestaurantIdentity(r.Name, r.Slug, r.PublicCode), 1, ct);
+            return Results.Ok(new SettingsResponse(restaurants[0].Name, restaurants[0].Slug,
+                restaurants[0].PublicCode, settings.PrimaryColor, true, LogoUrl(true),
                 Convert.ToBase64String(settings.RowVersion)));
+        }).RequireRateLimiting("media-upload").WithMetadata(new MediaUploadMetadata());
+
+        group.MapGet("/logo", async (HttpContext context, ITenantDataSession session,
+            IImageStorage storage, CancellationToken ct) =>
+        {
+            if (context.Request.ContentLength > 0 || context.Request.Headers.ContainsKey("Transfer-Encoding"))
+                throw new MediaException(400);
+            var keys = await session.ReadAsync<RestaurantSettings, string?>(s => true, s => s.LogoObjectKey, 1, ct);
+            if (keys.Count == 0 || keys[0] is null) throw new TenantBoundaryException(TenantFailure.NotFound);
+            var bytes = await storage.GetAsync(keys[0]!, "main", ct);
+            if (bytes is null) throw new MediaException(404);
+            // The admin logo URL is stable across replacement and deletion, so
+            // it must never be cached: every read revalidates against origin.
+            context.Response.Headers.CacheControl = "private, no-cache";
+            context.Response.Headers.XContentTypeOptions = "nosniff";
+            return Results.File(bytes, "image/webp");
+        });
+
+        group.MapDelete("/logo", async (HttpContext context, ITenantContext tenants,
+            ITenantDataSession session, IImageStorage storage, ILoggerFactory loggers, CancellationToken ct) =>
+        {
+            if (context.Request.ContentLength > 0 || context.Request.Headers.ContainsKey("Transfer-Encoding"))
+                throw new MediaException(400);
+            var scope = await tenants.RequireAsync(ct);
+            var settings = await session.EditAsync<RestaurantSettings>(scope.RestaurantId, ct);
+            if (settings.LogoObjectKey is null) throw new TenantBoundaryException(TenantFailure.NotFound);
+            var key = settings.LogoObjectKey;
+            settings.LogoObjectKey = null;
+            await session.CommitAsync(ct);
+            await MediaEndpoints.CleanupObject(storage, key, loggers.CreateLogger("RestaurantLogo"));
+            return Results.NoContent();
         });
     }
 }

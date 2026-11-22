@@ -52,11 +52,12 @@ public sealed class SettingsTests
         Assert.Equal("no-store", response.Headers.CacheControl!.ToString());
         var body = await response.Content.ReadAsStringAsync();
         var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(body);
-        Assert.Equal(new[] { "hasLogo", "name", "primaryColor", "publicCode", "rowVersion", "slug" },
+        Assert.Equal(new[] { "hasLogo", "logoUrl", "name", "primaryColor", "publicCode", "rowVersion", "slug" },
             json.EnumerateObject().Select(p => p.Name).Order());
         Assert.Equal("a", json.GetProperty("slug").GetString());
         Assert.Equal("#0F766E", json.GetProperty("primaryColor").GetString());
         Assert.False(json.GetProperty("hasLogo").GetBoolean());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, json.GetProperty("logoUrl").ValueKind);
         Assert.False(string.IsNullOrWhiteSpace(json.GetProperty("publicCode").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(json.GetProperty("rowVersion").GetString()));
     }
