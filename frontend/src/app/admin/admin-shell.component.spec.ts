@@ -23,7 +23,10 @@ describe('AdminShellComponent', () => {
     expect(root.textContent).toContain('مطعم التجربة');
     expect(root.querySelectorAll('nav[aria-label="التنقل الرئيسي"]').length).toBe(2);
     expect(root.textContent).toContain('الأقسام');
-    expect(root.textContent).toContain('قريباً');
+    expect(root.textContent).toContain('الهوية');
+    expect(root.textContent).toContain('رمز QR');
+    // All five owner screens ship in U02; no "coming soon" placeholders remain.
+    expect(root.textContent).not.toContain('قريباً');
   });
 
   it('signs out and returns to /login after a confirmed logout', async () => {

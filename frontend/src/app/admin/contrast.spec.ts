@@ -19,19 +19,29 @@ describe('contrast (WCAG 2.1/2.2)', () => {
   it('computes ratios per the design stated formula (its example figures are inaccurate)', () => {
     // The design contract SPECIFIES the standard formula but quotes 3.23 for
     // #d97706 and 9.61 for #334155; the formula itself yields 3.19 and 10.35.
-    // The contract's compliance conclusions (AA-large-only / AAA) still hold.
+    // Compliance consequence: #d97706 fails normal text; #334155 is AAA.
     expect(ratioAgainstWhite('#d97706')).toBeCloseTo(3.19, 2);
     expect(ratioAgainstWhite('#334155')).toBeCloseTo(10.35, 2);
     expect(ratioAgainstWhite('#ffffff')).toBeCloseTo(1.0, 2);
     expect(ratioAgainstWhite('#000000')).toBeCloseTo(21.0, 1);
   });
 
-  it('classifies Amber Gold as AA for large text only', () => {
+  it('fails Amber Gold for normal text while large text and graphics pass', () => {
+    // #d97706 is ~3.19:1: below the 4.5 normal-text AA threshold there is no
+    // pass, so the preset must show a red normal-text badge.
     const report = evaluateContrast('#d97706');
     expect(report).not.toBeNull();
-    expect(report!.normalText).toBe('AA-large');
+    expect(report!.normalText).toBe('fail');
     expect(report!.largeText).toBe('AA');
     expect(report!.graphics).toBe('AA');
+  });
+
+  it('applies the 4.5 and 7.0 normal-text boundaries', () => {
+    // #767676 is ~4.54:1 (just over AA); #595959 is ~7.0:1 (AAA).
+    expect(evaluateContrast('#767676')!.normalText).toBe('AA');
+    expect(evaluateContrast('#767676')!.largeText).toBe('AAA');
+    expect(evaluateContrast('#595959')!.normalText).toBe('AAA');
+    expect(evaluateContrast('#787878')!.normalText).toBe('fail'); // ~4.37:1, under AA
   });
 
   it('classifies Charcoal as AAA for normal text', () => {

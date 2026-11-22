@@ -34,6 +34,15 @@ export const routes: Routes = [
         path: 'items',
         loadComponent: () => import('./admin/item-list.component').then((m) => m.ItemListComponent),
       },
+      {
+        path: 'branding',
+        loadComponent: () =>
+          import('./admin/branding-studio.component').then((m) => m.BrandingStudioComponent),
+      },
+      {
+        path: 'qr',
+        loadComponent: () => import('./admin/qr-studio.component').then((m) => m.QrStudioComponent),
+      },
     ],
   },
   {

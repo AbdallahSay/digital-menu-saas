@@ -63,9 +63,19 @@ export function evaluateContrast(hex: string): ContrastReport | null {
   if (ratio === null) return null;
   return {
     ratio,
-    // Normal text: AA 4.5, AAA 7.0; large text: AA 3.0, AAA 4.5.
-    normalText: textLevel(ratio, 4.5, 7.0, 3.0),
+    // Normal text: AA >= 4.5, AAA >= 7.0; anything below 4.5 fails, there is
+    // no "large only" pass for normal-sized text.
+    normalText: ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'fail',
+    // Large text: AA >= 3.0, AAA >= 4.5.
     largeText: textLevel(ratio, 3.0, 4.5, 3.0),
     graphics: ratio >= 3.0 ? 'AA' : 'fail',
   };
+}
+
+/** Normalizes an accepted #rgb/#rrggbb (any casing) to lowercase #rrggbb; null otherwise. */
+export function normalizeHexColor(input: string): string | null {
+  const color = parseHexColor(input);
+  if (!color) return null;
+  const hex = (value: number) => value.toString(16).padStart(2, '0');
+  return `#${hex(color.r)}${hex(color.g)}${hex(color.b)}`;
 }
