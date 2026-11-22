@@ -10,7 +10,7 @@ namespace DigitalMenu.Api.Proxy;
 /// registered, so the socket peer is always used and a direct caller cannot
 /// rotate the header to evade per-IP rate limiting. Malformed entries fail
 /// startup loudly instead of silently degrading trust, and there is no
-/// implicit loopback trust. Note: clearing the middleware's KnownNetworks
+/// implicit loopback trust. Note: clearing the middleware's KnownIPNetworks
 /// and KnownProxies lists is NOT a fail-closed state — ASP.NET treats empty
 /// lists as "trust every proxy" — which is why the middleware is only
 /// registered behind a validated nonempty allowlist.
@@ -25,7 +25,7 @@ public static class TrustedProxyConfiguration
     /// platform's TLS-terminating front end, which stamps X-Forwarded-For and
     /// X-Forwarded-Proto. Sound ONLY where ingress can arrive exclusively
     /// through that front end (e.g. Azure App Service: no direct socket path
-    /// to the app exists). KnownNetworks/KnownProxies stay cleared, which
+    /// to the app exists). KnownIPNetworks/KnownProxies stay cleared, which
     /// ASP.NET treats as trust-every-proxy - acceptable there because the
     /// front end is the only possible peer; ForwardLimit=1 keeps the
     /// rightmost (front-end-stamped) client IP so a client-supplied
@@ -68,7 +68,7 @@ public static class TrustedProxyConfiguration
             {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.ForwardLimit = 1;
-                options.KnownNetworks.Clear();
+                options.KnownIPNetworks.Clear();
                 options.KnownProxies.Clear();
             });
             return;
@@ -79,7 +79,7 @@ public static class TrustedProxyConfiguration
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
             options.ForwardLimit = 1;
-            options.KnownNetworks.Clear();
+            options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
             foreach (var proxy in proxies) options.KnownProxies.Add(proxy);
         });
