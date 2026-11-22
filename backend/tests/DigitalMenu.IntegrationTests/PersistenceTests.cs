@@ -31,9 +31,14 @@ public sealed class PersistenceTests
         try
         {
             await db.Database.MigrateAsync();
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            var expectedMigrations = new[] { "20261012030220_InitialTenantModel", "20261122000000_ReadCommittedSnapshot" };
+            Assert.Equal(expectedMigrations.Order(), (await db.Database.GetAppliedMigrationsAsync()).Order());
             Assert.False(db.Database.HasPendingModelChanges());
+            // The RCSI migration is raw SQL outside the model snapshot: verify the
+            // database setting itself, not just the migrations history row.
+            Assert.True(await ReadCommittedSnapshotOn(db));
             await db.Database.MigrateAsync(); // repeat migration is idempotent
+            Assert.True(await ReadCommittedSnapshotOn(db));
             var fixture = TwoRestaurantFixture.Create();
             db.AddRange(fixture.A, fixture.B, fixture.CategoryA, fixture.CategoryB, fixture.ItemA);
             await db.SaveChangesAsync();
@@ -82,6 +87,10 @@ public sealed class PersistenceTests
             var migrator = db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
             await migrator.MigrateAsync("0");
             Assert.Empty(await db.Database.GetAppliedMigrationsAsync());
+            // Down() is one-way by design (Azure SQL defaults RCSI ON, so the
+            // pre-migration state is unknowable): the setting stays ON after a
+            // full rollback. Reverting OFF is an operational maintenance step.
+            Assert.True(await ReadCommittedSnapshotOn(db));
             var script = migrator.GenerateScript(options: Microsoft.EntityFrameworkCore.Migrations.MigrationsSqlGenerationOptions.Idempotent);
             for (var run = 0; run < 2; run++)
             {
@@ -89,12 +98,96 @@ public sealed class PersistenceTests
                     if (!string.IsNullOrWhiteSpace(batch))
                         await db.Database.ExecuteSqlRawAsync(batch);
             }
-            Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+            Assert.Equal(expectedMigrations.Order(), (await db.Database.GetAppliedMigrationsAsync()).Order());
+            Assert.True(await ReadCommittedSnapshotOn(db)); // Idempotent reapply restores it.
             Assert.Empty(await db.Set<Restaurant>().AsNoTracking().ToListAsync());
         }
         finally
         {
             // Only the randomly named database created by this run is removed.
+            await db.Database.EnsureDeletedAsync();
+        }
+    }
+
+    private static async Task<bool> ReadCommittedSnapshotOn(MenuDbContext db) =>
+        await db.Database
+            .SqlQuery<bool>($"SELECT CAST(is_read_committed_snapshot_on AS bit) AS [Value] FROM sys.databases WHERE name = DB_NAME()")
+            .SingleAsync();
+
+    [SqlServerFact]
+    public async Task Rcsi_migration_skips_a_preexisting_on_setting_even_with_open_connections()
+    {
+        var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
+        if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
+            throw new InvalidOperationException("Only dedicated F02 LocalDB or localhost disposable CI SQL Server is allowed.");
+        connection.InitialCatalog = "DigitalMenu_F02_Test_" + Guid.NewGuid().ToString("N");
+        SqlTestStorage.Configure(connection);
+        var options = new DbContextOptionsBuilder<MenuDbContext>().UseSqlServer(connection.ConnectionString).Options;
+        await using var db = new MenuDbContext(options);
+        try
+        {
+            await db.Database.MigrateAsync();
+            // Reproduce Azure SQL's preexisting-ON state: roll back only the RCSI
+            // migration; its one-way Down leaves the database setting ON.
+            var migrator = db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
+            await migrator.MigrateAsync("20261012030220_InitialTenantModel");
+            Assert.Equal(new[] { "20261012030220_InitialTenantModel" }, await db.Database.GetAppliedMigrationsAsync());
+            Assert.True(await ReadCommittedSnapshotOn(db));
+            // An unrelated open connection (an old app instance) must not stall the
+            // skip path; a bounded enable path would fail fast rather than wait.
+            await using var other = new SqlConnection(connection.ConnectionString);
+            await other.OpenAsync();
+            await db.Database.MigrateAsync();
+            Assert.Equal(new[] { "20261012030220_InitialTenantModel", "20261122000000_ReadCommittedSnapshot" }.Order(),
+                (await db.Database.GetAppliedMigrationsAsync()).Order());
+            Assert.True(await ReadCommittedSnapshotOn(db));
+        }
+        finally
+        {
+            await db.Database.EnsureDeletedAsync();
+        }
+    }
+
+    [SqlServerFact]
+    public async Task Rcsi_migration_fails_fast_with_an_actionable_error_while_the_database_is_in_use()
+    {
+        var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
+        if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
+            throw new InvalidOperationException("Only dedicated F02 LocalDB or localhost disposable CI SQL Server is allowed.");
+        connection.InitialCatalog = "DigitalMenu_F02_Test_" + Guid.NewGuid().ToString("N");
+        SqlTestStorage.Configure(connection);
+        var options = new DbContextOptionsBuilder<MenuDbContext>().UseSqlServer(connection.ConnectionString).Options;
+        await using var db = new MenuDbContext(options);
+        try
+        {
+            await db.Database.MigrateAsync();
+            // Roll back only the RCSI migration record, then restore the
+            // preexisting-OFF state of a fresh non-Azure server.
+            var migrator = db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
+            await migrator.MigrateAsync("20261012030220_InitialTenantModel");
+            // Idle pooled sessions stay attached to the database and would block
+            // the ALTER; drop them so only the executing session remains.
+            SqlConnection.ClearAllPools();
+            await db.Database.ExecuteSqlRawAsync("ALTER DATABASE CURRENT SET READ_COMMITTED_SNAPSHOT OFF");
+            Assert.False(await ReadCommittedSnapshotOn(db));
+            // Another connection (old app instance) holds the database: the NO_WAIT
+            // enable fails immediately with the actionable quiesce error, and the
+            // migration is not recorded as applied.
+            await using (var other = new SqlConnection(connection.ConnectionString))
+            {
+                await other.OpenAsync();
+                var error = await Assert.ThrowsAsync<SqlException>(() => db.Database.MigrateAsync());
+                Assert.Equal(51002, error.Number);
+                Assert.Contains("drain or stop old app instances", error.Message);
+            }
+            Assert.Equal(new[] { "20261012030220_InitialTenantModel" }, await db.Database.GetAppliedMigrationsAsync());
+            // Once drained, the same migration succeeds.
+            SqlConnection.ClearAllPools(); // the released probe connection must not linger attached
+            await db.Database.MigrateAsync();
+            Assert.True(await ReadCommittedSnapshotOn(db));
+        }
+        finally
+        {
             await db.Database.EnsureDeletedAsync();
         }
     }

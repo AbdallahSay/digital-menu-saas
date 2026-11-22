@@ -400,9 +400,16 @@ No `RestaurantId`, `UserId`, status internals, private drafts, e-mail, storage b
   never derive them from Host/forwarded headers. Bare HTTPS origins required,
   except explicit HTTP loopback for local tests. Defaults remain local-only.
   Never forward cookies, authorization, tenant or role headers to public F09.
-- Responses remain no-store. One F09 fetch per SSR render; request-scoped sanitized
+- Public menu GETs return `Cache-Control: no-cache` with a strong ETag derived
+  from (PublishedMenuVersion, locale), so stored copies revalidate against live
+  state and a stale copy can never match (304 saves the body); 400/404/503
+  remain no-store. One F09 fetch per SSR render; request-scoped sanitized
   transfer state avoids a duplicate initial hydration fetch. It is not a shared
-  cache. Body reads have a 5-second deadline and 16 MiB limit, with F09's existing
+  cache. Scope: the Node apiProxy strips conditional request headers and does
+  not forward ETag/Cache-Control, and publicPage does not revalidate a stored
+  body, so the ETag/304 contract currently serves direct API consumers only;
+  SSR traffic benefits from the backend projection cache but always re-fetches.
+  Body reads have a 5-second deadline and 16 MiB limit, with F09's existing
   100-category/1000-item bounds; invalid data fails closed without truncation.
 - Actual pages have title, description, one H1, validated canonical (without query
   parameters), correct lang/dir and robots. English is a query variant of the same
