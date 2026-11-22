@@ -3,7 +3,13 @@ import { createServer } from 'node:http';
 import { connect } from 'node:net';
 import { test } from 'node:test';
 import express from 'express';
-import { apiProxy, canonicalApiPathname, isIdentityApiPath } from '../src/api-proxy.ts';
+import {
+  apiProxy,
+  canonicalApiPathname,
+  isIdentityApiPath,
+  normalizeClientEntry,
+  upstreamTimeoutMs,
+} from '../src/api-proxy.ts';
 
 /**
  * Contract tests for the same-origin /api router (docs/09-DEVOPS):
@@ -28,6 +34,9 @@ function startUpstream() {
         contentType: req.headers['content-type'] ?? null,
         authorization: req.headers.authorization ?? null,
         forwardedFor: req.headers['x-forwarded-for'] ?? null,
+        forwardedProto: req.headers['x-forwarded-proto'] ?? null,
+        proxyToken: req.headers['x-menu-proxy-token'] ?? null,
+        clientIp: req.headers['x-menu-client-ip'] ?? null,
         body,
       });
       res.setHeader('Content-Type', 'application/json');
@@ -44,9 +53,9 @@ function startUpstream() {
   });
 }
 
-async function startRouter(origin) {
+async function startRouter(origin, options) {
   const app = express();
-  app.use('/api', apiProxy(origin));
+  app.use('/api', apiProxy(origin, options));
   const server = createServer(app);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   return { server, base: `http://127.0.0.1:${server.address().port}` };
@@ -288,6 +297,199 @@ test('a client-supplied X-Forwarded-For is overwritten with the socket peer', as
     router.server.close();
     upstream.server.close();
   }
+});
+
+test('platform mode forwards only the edge-stamped last XFF entry and proto', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin, { trustPlatformForwarding: true });
+  try {
+    for (const path of ['/api/v1/public/menus/abc', '/api/v1/auth/csrf']) {
+      const response = await fetch(router.base + path, {
+        headers: {
+          // The edge appends the real client IP last; the earlier entries
+          // are client-supplied and must never reach the upstream.
+          'X-Forwarded-For': '203.0.113.9, 198.51.100.7',
+          'X-Forwarded-Proto': 'https',
+        },
+      });
+      assert.equal(response.status, 200);
+    }
+    assert.equal(upstream.seen.length, 2);
+    for (const forwarded of upstream.seen) {
+      assert.equal(forwarded.forwardedFor, '198.51.100.7');
+      assert.equal(forwarded.forwardedProto, 'https');
+    }
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('platform mode falls back to the socket peer and never trusts a bogus proto', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin, { trustPlatformForwarding: true });
+  try {
+    const response = await fetch(router.base + '/api/v1/public/menus/abc', {
+      headers: { 'X-Forwarded-Proto': 'gopher' },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstream.seen.length, 1);
+    assert.equal(upstream.seen[0].forwardedFor, '127.0.0.1');
+    assert.equal(upstream.seen[0].forwardedProto, 'http');
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('default mode never forwards a proto', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin);
+  try {
+    const response = await fetch(router.base + '/api/v1/public/menus/abc', {
+      headers: { 'X-Forwarded-Proto': 'https' },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstream.seen.length, 1);
+    assert.equal(upstream.seen[0].forwardedProto, null);
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('platform mode with a shared secret authenticates the hop and overwrites forgeries', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin, {
+    trustPlatformForwarding: true,
+    sharedSecret: 's3cret-boundary-token',
+  });
+  try {
+    const response = await fetch(router.base + '/api/v1/public/menus/abc', {
+      headers: {
+        'X-Forwarded-For': '203.0.113.9, 198.51.100.7',
+        // Client-supplied boundary headers must never survive the allowlist.
+        'X-Menu-Proxy-Token': 'forged',
+        'X-Menu-Client-Ip': '203.0.113.9',
+      },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstream.seen.length, 1);
+    assert.equal(upstream.seen[0].forwardedFor, '198.51.100.7');
+    assert.equal(upstream.seen[0].clientIp, '198.51.100.7');
+    assert.equal(upstream.seen[0].proxyToken, 's3cret-boundary-token');
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('platform mode without a secret sends no boundary headers', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin, { trustPlatformForwarding: true });
+  try {
+    const response = await fetch(router.base + '/api/v1/public/menus/abc', {
+      headers: { 'X-Forwarded-For': '198.51.100.7' },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstream.seen.length, 1);
+    assert.equal(upstream.seen[0].clientIp, null);
+    assert.equal(upstream.seen[0].proxyToken, null);
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('normalizeClientEntry strips a parsed port and rejects malformed input', () => {
+  assert.equal(normalizeClientEntry('198.51.100.7'), '198.51.100.7');
+  assert.equal(normalizeClientEntry('198.51.100.7:63546'), '198.51.100.7'); // Azure XFF shape
+  assert.equal(normalizeClientEntry('[2001:db8::7]:443'), '2001:db8::7');
+  assert.equal(normalizeClientEntry('[2001:db8::7]'), '2001:db8::7');
+  assert.equal(normalizeClientEntry('2001:db8::7'), '2001:db8::7');
+  // IPv4-mapped IPv6, bare and as a bracketed endpoint (node:net isIP = 6).
+  assert.equal(normalizeClientEntry('::ffff:192.0.2.7'), '::ffff:192.0.2.7');
+  assert.equal(normalizeClientEntry('[::ffff:192.0.2.7]:443'), '::ffff:192.0.2.7');
+  for (const bad of [
+    '198.51.100.7:99999',
+    '198.51.100.7:',
+    '198.51.100.7:abc',
+    '999.1.2.3:80',
+    'not-an-ip',
+    ':::', // colon-only: not an address
+    '1:2:3:4:5:6:7:8:9', // nine groups: not IPv6
+    '[1:2:3:4:5:6:7:8:9]:443',
+    '',
+  ]) {
+    assert.equal(normalizeClientEntry(bad), undefined, bad);
+  }
+});
+
+test('platform+secret mode normalizes an IPv4:port XFF entry into the client-ip header', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin, {
+    trustPlatformForwarding: true,
+    sharedSecret: 's3cret-boundary-token',
+  });
+  try {
+    const response = await fetch(router.base + '/api/v1/public/menus/abc', {
+      headers: { 'X-Forwarded-For': '198.51.100.7:63546' },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstream.seen.length, 1);
+    assert.equal(upstream.seen[0].forwardedFor, '198.51.100.7:63546');
+    assert.equal(upstream.seen[0].clientIp, '198.51.100.7');
+    assert.equal(upstream.seen[0].proxyToken, 's3cret-boundary-token');
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('platform+secret mode sends no client-ip header for a malformed entry', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin, {
+    trustPlatformForwarding: true,
+    sharedSecret: 's3cret-boundary-token',
+  });
+  try {
+    const response = await fetch(router.base + '/api/v1/public/menus/abc', {
+      headers: { 'X-Forwarded-For': 'not-an-ip' },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstream.seen.length, 1);
+    assert.equal(upstream.seen[0].forwardedFor, 'not-an-ip');
+    assert.equal(upstream.seen[0].clientIp, null);
+    assert.equal(upstream.seen[0].proxyToken, null);
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('platform+secret mode forwards a bare IPv4-mapped IPv6 entry unchanged', async () => {
+  const upstream = await startUpstream();
+  const router = await startRouter(upstream.origin, {
+    trustPlatformForwarding: true,
+    sharedSecret: 's3cret-boundary-token',
+  });
+  try {
+    const response = await fetch(router.base + '/api/v1/public/menus/abc', {
+      headers: { 'X-Forwarded-For': '::ffff:192.0.2.7' },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstream.seen.length, 1);
+    assert.equal(upstream.seen[0].clientIp, '::ffff:192.0.2.7');
+    assert.equal(upstream.seen[0].proxyToken, 's3cret-boundary-token');
+  } finally {
+    router.server.close();
+    upstream.server.close();
+  }
+});
+
+test('identity paths get a longer bounded upstream timeout than public paths', () => {
+  assert.equal(upstreamTimeoutMs(false), 5000);
+  assert.equal(upstreamTimeoutMs(true), 90000);
 });
 
 test('upstream failure surfaces a 502 problem', async () => {

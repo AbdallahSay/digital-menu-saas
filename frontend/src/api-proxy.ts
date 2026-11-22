@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
+import { isIP } from 'node:net';
 
 /**
  * Same-origin /api router (docs/09-DEVOPS).
@@ -81,7 +82,58 @@ const IDENTITY_REQUEST_HEADERS = [
 ];
 const PUBLIC_REQUEST_HEADERS = ['accept'];
 
-export function apiProxy(upstreamOrigin: string) {
+export interface ApiProxyOptions {
+  // Platform-terminated ingress (compose Caddy edge / Azure App Service):
+  // the edge stamps X-Forwarded-For (appending the real client IP last) and
+  // overwrites X-Forwarded-Proto, so this proxy forwards the LAST XFF entry
+  // (never the client-supplied chain) and the edge-stamped proto. Default
+  // off: only the direct socket peer is forwarded and the proto never is.
+  trustPlatformForwarding?: boolean;
+  // Source-authenticated forwarding boundary: when the API sits behind its
+  // OWN public platform edge (Azure), the rightmost XFF entry it sees is
+  // this app's outbound IP, so the client IP travels in a dedicated header
+  // authenticated by this shared secret. The API adopts it only on a
+  // fixed-time secret match; a direct caller cannot forge it. Never logged
+  // or copied from client headers (the allowlist above excludes them).
+  sharedSecret?: string;
+}
+
+// Public traffic fails fast into the honest bounded unavailable page;
+// identity paths (auth/admin) get longer so a paused free-tier database
+// resume (typically under a minute) does not turn the first owner sign-in
+// into a 502. Still bounded: the worst case fails closed with 502.
+export function upstreamTimeoutMs(identityPath: boolean) {
+  return identityPath ? 90000 : 5000;
+}
+
+// Azure front ends may append a :port to XFF entries. Normalize an entry to
+// a bare IP: strip only a parsed port (IPv4:port or [IPv6]:port), keep bare
+// IPv4/IPv6 (including IPv4-mapped forms), and reject anything malformed so
+// a garbage entry never reaches the authenticated boundary as if it were an
+// address. Address validation is node:net isIP, the same complete parser
+// family the API's IPAddress/IPEndPoint.TryParse applies - never a regex.
+export function normalizeClientEntry(entry: string): string | undefined {
+  const portOk = (port: string) => /^\d{1,5}$/.test(port) && Number(port) <= 65535;
+  if (isIP(entry)) return entry;
+  const v4 = /^(\d{1,3}(?:\.\d{1,3}){3}):(\d{1,5})$/.exec(entry);
+  if (v4 && isIP(v4[1]) === 4 && portOk(v4[2])) return v4[1];
+  const v6 = /^\[([^\]]+)\](?::(\d{1,5}))?$/.exec(entry);
+  if (v6 && isIP(v6[1]) === 6 && (v6[2] === undefined || portOk(v6[2]))) return v6[1];
+  return undefined;
+}
+
+// The edge-stamped client IP in platform mode (last XFF entry, never the
+// client-supplied chain), else the direct socket peer.
+export function stampedClientIp(req: Request, trustPlatform: boolean): string | undefined {
+  if (trustPlatform) {
+    const chain = req.headers['x-forwarded-for'];
+    const last = typeof chain === 'string' ? chain.split(',').pop()!.trim() : '';
+    return last || req.socket.remoteAddress || undefined;
+  }
+  return req.socket.remoteAddress || undefined;
+}
+
+export function apiProxy(upstreamOrigin: string, options: ApiProxyOptions = {}) {
   return (req: Request, res: Response): void => {
     const pathname = canonicalApiPathname(req.originalUrl);
     if (pathname === null || !pathname.toLowerCase().startsWith('/api')) {
@@ -99,7 +151,27 @@ export function apiProxy(upstreamOrigin: string) {
       if (typeof value === 'string') headers[name] = value;
     }
     // Overwrite, never copy: only the direct socket peer is trustworthy.
-    if (req.socket.remoteAddress) headers['x-forwarded-for'] = req.socket.remoteAddress;
+    // In platform mode the edge stamps the chain, so the LAST entry is the
+    // real client; forward only that entry and the edge-stamped proto. With
+    // a shared secret the client IP also travels in the authenticated
+    // header pair the API's proxy boundary consumes.
+    if (options.trustPlatformForwarding) {
+      const client = stampedClientIp(req, true);
+      if (client) {
+        headers['x-forwarded-for'] = client;
+        // The authenticated header carries only a normalized bare IP; a
+        // malformed entry sends no client-IP header at all, so the API
+        // falls back to the stamped rightmost XFF instead of a shared
+        // bucket or a parser rejection.
+        const normalized = normalizeClientEntry(client);
+        if (normalized && options.sharedSecret) {
+          headers['x-menu-client-ip'] = normalized;
+          headers['x-menu-proxy-token'] = options.sharedSecret;
+        }
+      }
+      headers['x-forwarded-proto'] =
+        req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    } else if (req.socket.remoteAddress) headers['x-forwarded-for'] = req.socket.remoteAddress;
     const search = req.originalUrl.slice(pathname.length);
     const upstreamUrl = new URL(pathname + search, upstreamOrigin);
     const upstream = (upstreamUrl.protocol === 'https:' ? httpsRequest : httpRequest)(
@@ -115,7 +187,7 @@ export function apiProxy(upstreamOrigin: string) {
         response.pipe(res);
       },
     );
-    upstream.setTimeout(5000, () => upstream.destroy());
+    upstream.setTimeout(upstreamTimeoutMs(identity), () => upstream.destroy());
     upstream.on('error', () => {
       if (!res.headersSent)
         res

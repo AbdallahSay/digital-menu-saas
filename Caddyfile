@@ -1,0 +1,10 @@
+# TLS edge for the compose production-shape run (docs/20-DEPLOY-AZURE.md).
+# DOMAIN defaults to localhost: Caddy serves it with its local internal CA
+# (self-signed, trust once per the runbook). For a real DNS name, set
+# PUBLIC_DOMAIN and Caddy obtains a public certificate automatically.
+# reverse_proxy stamps X-Forwarded-For (appending the real client IP last)
+# and overwrites X-Forwarded-Proto; the api only trusts these headers because
+# the edge is the sole published ingress in this network.
+{$DOMAIN:localhost} {
+	reverse_proxy web:8080
+}

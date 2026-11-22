@@ -4,7 +4,9 @@ using DigitalMenu.Api.Media;
 using DigitalMenu.Api.Platform;
 using DigitalMenu.Api.Public;
 using DigitalMenu.Application;
+using DigitalMenu.Infrastructure.Persistence;
 using DigitalMenu.Infrastructure.Tenancy;
+using Microsoft.EntityFrameworkCore;
 using DigitalMenu.Api.Proxy;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
@@ -47,8 +49,20 @@ if (args.Contains("--bootstrap-admin=true", StringComparer.Ordinal))
     await DevelopmentBootstrap.RunAsync(app.Services, app.Environment, app.Configuration);
     return;
 }
+// Explicit operator opt-ins for managed deployments (docs/20-DEPLOY-AZURE):
+// MigrateOnStart applies pending migrations before serving; DemoSeed creates
+// the demo tenant once. Both are off by default and idempotent.
+if (app.Configuration.GetValue<bool>("MigrateOnStart"))
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<MenuDbContext>().Database.MigrateAsync();
+}
+await DemoSeed.RunAsync(app.Services, app.Configuration);
 if (TrustedProxyConfiguration.IsEnabled(app.Configuration))
     app.UseForwardedHeaders();
+// Source-authenticated web-to-API boundary: no-op unless platform trust and
+// Proxy:SharedSecret are both configured.
+app.UsePlatformProxyAuthentication(app.Configuration);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.Use(async (context, next) =>

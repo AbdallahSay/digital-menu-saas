@@ -18,6 +18,23 @@ namespace DigitalMenu.Api.Proxy;
 public static class TrustedProxyConfiguration
 {
     public const string SectionName = "Proxy:TrustedProxies";
+    public const string PlatformTrustName = "Proxy:TrustPlatform";
+
+    /// <summary>
+    /// Platform-managed ingress mode (Proxy:TrustPlatform): trust the hosting
+    /// platform's TLS-terminating front end, which stamps X-Forwarded-For and
+    /// X-Forwarded-Proto. Sound ONLY where ingress can arrive exclusively
+    /// through that front end (e.g. Azure App Service: no direct socket path
+    /// to the app exists). KnownNetworks/KnownProxies stay cleared, which
+    /// ASP.NET treats as trust-every-proxy - acceptable there because the
+    /// front end is the only possible peer; ForwardLimit=1 keeps the
+    /// rightmost (front-end-stamped) client IP so a client-supplied
+    /// X-Forwarded-For chain cannot rotate rate-limit partitioning. Never
+    /// enable on a directly reachable host. When both modes are configured,
+    /// platform trust wins.
+    /// </summary>
+    public static bool IsPlatformTrusted(IConfiguration configuration) =>
+        configuration.GetValue<bool>(PlatformTrustName);
 
     /// <summary>
     /// Reads and strictly validates the configured trusted proxies. Throws
@@ -45,6 +62,17 @@ public static class TrustedProxyConfiguration
     /// </summary>
     public static void Configure(IServiceCollection services, IConfiguration configuration)
     {
+        if (IsPlatformTrusted(configuration))
+        {
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.ForwardLimit = 1;
+                options.KnownNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+            return;
+        }
         var proxies = Parse(configuration);
         if (proxies.Length == 0) return;
         services.Configure<ForwardedHeadersOptions>(options =>
@@ -61,5 +89,6 @@ public static class TrustedProxyConfiguration
     /// Whether forwarded-header processing is active; Program.cs registers
     /// the middleware only when this is true.
     /// </summary>
-    public static bool IsEnabled(IConfiguration configuration) => Parse(configuration).Length > 0;
+    public static bool IsEnabled(IConfiguration configuration) =>
+        IsPlatformTrusted(configuration) || Parse(configuration).Length > 0;
 }

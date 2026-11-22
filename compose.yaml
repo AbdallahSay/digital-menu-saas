@@ -1,0 +1,75 @@
+# Local production-shape run + future single-VPS path (docs/20-DEPLOY-AZURE.md).
+# One HTTPS origin: the edge (Caddy) terminates TLS and proxies to web, which
+# proxies /api to the api service. Only the edge publishes a port; api and db
+# are reachable only inside the compose network.
+# Usage: SA_PASSWORD='<16+ chars>' DEMO_OWNER_PASSWORD='<12+ chars>' PROXY_SHARED_SECRET='<32+ chars>' docker compose up --build
+# Then open https://localhost (Caddy issues a local internal CA certificate;
+# trust it once per docs/20-DEPLOY-AZURE.md). Demo menu: /r/demo-restaurant
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SA_PASSWORD:?set SA_PASSWORD}
+    volumes:
+      - dbdata:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$SA_PASSWORD" -C -Q "SELECT 1"
+      interval: 10s
+      retries: 12
+      start_period: 30s
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__MenuDatabase: Server=db,1433;Initial Catalog=DigitalMenu;User Id=sa;Password=${SA_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connect Timeout=60
+      MigrateOnStart: "true"
+      Media__LocalRoot: /data/media
+      DemoSeed__Enabled: "true"
+      DemoSeed__OwnerEmail: ${DEMO_OWNER_EMAIL:-owner@example.test}
+      DemoSeed__OwnerPassword: ${DEMO_OWNER_PASSWORD:?set DEMO_OWNER_PASSWORD}
+      DemoSeed__Slug: ${DEMO_SLUG:-demo-restaurant}
+      DemoSeed__RestaurantName: ${DEMO_RESTAURANT_NAME:-مطعم تجريبي}
+      # Explicit opt-in: every inbound request reaches api only through the
+      # platform edge inside this network (no published port), so the
+      # platform-stamped forwarding headers are trustworthy here.
+      Proxy__TrustPlatform: "true"
+      # Shared secret authenticating the web hop (source-authenticated
+      # forwarding boundary; see docs/20-DEPLOY-AZURE.md).
+      Proxy__SharedSecret: ${PROXY_SHARED_SECRET:?set PROXY_SHARED_SECRET}
+    volumes:
+      - media:/data/media
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    depends_on:
+      - api
+    environment:
+      PORT: "8080"
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost}
+      # Plain HTTP to the api container is confined to this private network;
+      # requires the explicit opt-in below.
+      PUBLIC_API_ORIGIN: http://api:5080
+      PUBLIC_API_ALLOW_INSECURE_ORIGIN: "true"
+      PROXY_TRUST_PLATFORM: "true"
+      PROXY_SHARED_SECRET: ${PROXY_SHARED_SECRET:?set PROXY_SHARED_SECRET}
+  edge:
+    image: caddy:2-alpine
+    depends_on:
+      - web
+    environment:
+      DOMAIN: ${PUBLIC_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    ports:
+      - "443:443"
+volumes:
+  dbdata:
+  media:
+  caddydata:
