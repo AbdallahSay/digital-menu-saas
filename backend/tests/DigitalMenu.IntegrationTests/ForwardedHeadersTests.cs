@@ -20,7 +20,12 @@ public sealed class ForwardedHeadersTests
     private static Task<string> ObservedRemoteIp(IDictionary<string, string?> settings) =>
         ObservedRemoteIp(settings, IPAddress.Parse(Peer));
 
-    private static async Task<string> ObservedRemoteIp(IDictionary<string, string?> settings, IPAddress peer)
+    private static async Task<string> Send(
+        IDictionary<string, string?> settings,
+        IDictionary<string, string> headers,
+        IPAddress peer,
+        Action<WebApplication>? configure,
+        RequestDelegate respond)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -29,16 +34,26 @@ public sealed class ForwardedHeadersTests
         await using var app = builder.Build();
         if (TrustedProxyConfiguration.IsEnabled(builder.Configuration))
             app.UseForwardedHeaders();
-        app.Run(http => http.Response.WriteAsync(http.Connection.RemoteIpAddress?.ToString() ?? "null"));
+        configure?.Invoke(app);
+        app.Run(respond);
         await app.StartAsync();
         var httpContext = await app.GetTestServer().SendAsync(context =>
         {
             context.Connection.RemoteIpAddress = peer;
-            context.Request.Headers["X-Forwarded-For"] = Forwarded;
+            foreach (var pair in headers)
+                context.Request.Headers[pair.Key] = pair.Value;
         });
         using var reader = new StreamReader(httpContext.Response.Body);
         return await reader.ReadToEndAsync();
     }
+
+    private static Task<string> ObservedRemoteIp(IDictionary<string, string?> settings, IPAddress peer) =>
+        Send(
+            settings,
+            new Dictionary<string, string> { ["X-Forwarded-For"] = Forwarded },
+            peer,
+            null,
+            http => http.Response.WriteAsync(http.Connection.RemoteIpAddress?.ToString() ?? "null"));
 
     private static IConfiguration Config(IDictionary<string, string?> settings) =>
         new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
@@ -92,36 +107,19 @@ public sealed class ForwardedHeadersTests
         Assert.Equal(IPAddress.Loopback.ToString(), observed);
     }
 
-    private static async Task<string> ObservedSchemeAndIp(
+    private static Task<string> ObservedSchemeAndIp(
         IDictionary<string, string?> settings,
-        IDictionary<string, string> headers)
-    {
-        var builder = new WebHostBuilder()
-            .ConfigureServices((context, services) =>
-                TrustedProxyConfiguration.Configure(services, context.Configuration))
-            .Configure((context, app) =>
+        IDictionary<string, string> headers) =>
+        Send(
+            settings,
+            headers,
+            IPAddress.Parse(Peer),
+            null,
+            http =>
             {
-                if (TrustedProxyConfiguration.IsEnabled(context.Configuration))
-                    app.UseForwardedHeaders();
-                app.Run(http =>
-                {
-                    var remote = http.Connection.RemoteIpAddress?.ToString() ?? "null";
-                    return http.Response.WriteAsync($"{http.Request.Scheme}|{remote}");
-                });
+                var remote = http.Connection.RemoteIpAddress?.ToString() ?? "null";
+                return http.Response.WriteAsync($"{http.Request.Scheme}|{remote}");
             });
-        foreach (var pair in settings)
-            builder.UseSetting(pair.Key, pair.Value);
-        using var server = new TestServer(builder);
-        var httpContext = await server.SendAsync(context =>
-        {
-            context.Connection.RemoteIpAddress = IPAddress.Parse(Peer);
-            foreach (var pair in headers)
-                context.Request.Headers[pair.Key] = pair.Value;
-        });
-        httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(httpContext.Response.Body);
-        return await reader.ReadToEndAsync();
-    }
 
     private static Dictionary<string, string?> PlatformTrust() =>
         new() { ["Proxy:TrustPlatform"] = "true" };
@@ -213,39 +211,21 @@ public sealed class ForwardedHeadersTests
     private const string Visitor = "203.0.113.50";
     private const string Node = "10.0.0.8";
 
-    private static async Task<string> ObservedBoundary(
+    private static Task<string> ObservedBoundary(
         IDictionary<string, string?> settings,
-        IDictionary<string, string> headers)
-    {
-        var builder = new WebHostBuilder()
-            .ConfigureServices((context, services) =>
-                TrustedProxyConfiguration.Configure(services, context.Configuration))
-            .Configure((context, app) =>
+        IDictionary<string, string> headers) =>
+        Send(
+            settings,
+            headers,
+            IPAddress.Parse(Peer),
+            app => app.UsePlatformProxyAuthentication(app.Configuration),
+            http =>
             {
-                if (TrustedProxyConfiguration.IsEnabled(context.Configuration))
-                    app.UseForwardedHeaders();
-                app.UsePlatformProxyAuthentication(context.Configuration);
-                app.Run(http =>
-                {
-                    var remote = http.Connection.RemoteIpAddress?.ToString() ?? "null";
-                    var tokenSeen = http.Request.Headers.ContainsKey(PlatformProxyAuthentication.TokenHeader);
-                    var ipSeen = http.Request.Headers.ContainsKey(PlatformProxyAuthentication.ClientIpHeader);
-                    return http.Response.WriteAsync($"{remote}|{tokenSeen}|{ipSeen}");
-                });
+                var remote = http.Connection.RemoteIpAddress?.ToString() ?? "null";
+                var tokenSeen = http.Request.Headers.ContainsKey(PlatformProxyAuthentication.TokenHeader);
+                var ipSeen = http.Request.Headers.ContainsKey(PlatformProxyAuthentication.ClientIpHeader);
+                return http.Response.WriteAsync($"{remote}|{tokenSeen}|{ipSeen}");
             });
-        foreach (var pair in settings)
-            builder.UseSetting(pair.Key, pair.Value);
-        using var server = new TestServer(builder);
-        var httpContext = await server.SendAsync(context =>
-        {
-            context.Connection.RemoteIpAddress = IPAddress.Parse(Peer);
-            foreach (var pair in headers)
-                context.Request.Headers[pair.Key] = pair.Value;
-        });
-        httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(httpContext.Response.Body);
-        return await reader.ReadToEndAsync();
-    }
 
     private static Dictionary<string, string?> PlatformWithSecret() =>
         new()

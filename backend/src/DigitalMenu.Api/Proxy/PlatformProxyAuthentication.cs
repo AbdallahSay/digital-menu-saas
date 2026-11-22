@@ -57,8 +57,9 @@ public static class PlatformProxyAuthentication
     /// </summary>
     private static bool TryParseClientAddress(string value, out IPAddress address)
     {
-        if (IPAddress.TryParse(value, out address!))
-            return true;
+        // IPEndPoint.TryParse covers a bare IP, IPv4:port and [IPv6]:port and
+        // validates the port. IPAddress.TryParse is not tried first: on the
+        // current runtime it accepts "[IPv6]:99999" and drops the invalid port.
         if (IPEndPoint.TryParse(value, out var endpoint) && endpoint is not null)
         {
             address = endpoint.Address;
