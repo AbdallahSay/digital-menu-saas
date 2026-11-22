@@ -11,6 +11,7 @@ function settings(partial: Partial<OwnerSettings> = {}): OwnerSettings {
     publicCode: '0123456789abcdef0123',
     primaryColor: '#0f766e',
     hasLogo: false,
+    logoUrl: null,
     rowVersion: 'AAAAAAAAAAA=',
     ...partial,
   };
@@ -21,11 +22,14 @@ function storeStub(overrides: Record<string, unknown> = {}) {
     settings: signal<OwnerSettings | null>(null),
     isLoading: signal(false),
     error: signal<string | null>(null),
+    mutationBusy: signal(false),
     load: async () => undefined,
     saveColor: async (
       _color: string,
       _rowVersion: string,
     ): Promise<'ok' | 'invalid' | 'stale' | 'error'> => 'ok',
+    uploadLogo: async (_file: File): Promise<'ok' | 'too-large' | 'unsupported' | 'error'> => 'ok',
+    deleteLogo: async (): Promise<'ok' | 'error'> => 'ok',
     ...overrides,
   };
 }
@@ -214,5 +218,121 @@ describe('BrandingStudioComponent', () => {
     expect(text).not.toMatch(/سلة|دفع|اطلب|أضف إلى/);
     const details = fixture.nativeElement.querySelector('.details-btn') as HTMLButtonElement;
     expect(details.disabled).toBe(true);
+  });
+
+  it('offers an upload with a placeholder when no logo is stored', async () => {
+    const stub = storeStub();
+    stub.settings.set(settings());
+    const fixture = await create(stub);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('لوجو المطعم');
+    expect(text).toContain('رفع لوجو');
+    expect(fixture.nativeElement.querySelector('.logo-preview')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.logo-placeholder')).not.toBeNull();
+  });
+
+  it('shows the stored logo in the controls and the preview card with a cache-busted URL', async () => {
+    const stub = storeStub();
+    stub.settings.set(settings({ hasLogo: true, logoUrl: '/api/v1/admin/settings/logo' }));
+    const fixture = await create(stub);
+    const preview = fixture.nativeElement.querySelector('.logo-preview') as HTMLImageElement;
+    expect(preview.src).toContain('/api/v1/admin/settings/logo?v=0');
+    expect(fixture.nativeElement.querySelector('.menu-card-logo-img')).not.toBeNull();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('تغيير اللوجو');
+    expect(text).toContain('حذف اللوجو');
+  });
+
+  it('uploads a staged logo and bumps the cache-buster on success', async () => {
+    let uploaded: File | null = null;
+    const stub = storeStub({
+      uploadLogo: async (file: File) => {
+        uploaded = file;
+        stub.settings.set(settings({ hasLogo: true, logoUrl: '/api/v1/admin/settings/logo' }));
+        return 'ok';
+      },
+    });
+    stub.settings.set(settings());
+    const fixture = await create(stub);
+    const component = fixture.componentInstance;
+    const input = { files: [new File(['x'], 'logo.png')], value: 'x' } as unknown as Event;
+    await component.stageLogo({ target: input } as unknown as Event);
+    fixture.detectChanges();
+    expect(uploaded).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('تم حفظ اللوجو.');
+    const preview = fixture.nativeElement.querySelector('.logo-preview') as HTMLImageElement;
+    expect(preview.src).toContain('?v=1');
+  });
+
+  it('surfaces the too-large and generic upload failures without changing the logo', async () => {
+    const stub = storeStub({ uploadLogo: async () => 'too-large' });
+    stub.settings.set(settings());
+    const fixture = await create(stub);
+    const component = fixture.componentInstance;
+    const input = { files: [new File(['x'], 'logo.png')], value: 'x' } as unknown as Event;
+    await component.stageLogo({ target: input } as unknown as Event);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('الصورة أكبر من 5 ميجابايت.');
+    expect(fixture.nativeElement.querySelector('.logo-preview')).toBeNull();
+  });
+
+  it('disables every settings mutation control while a mutation is in flight', async () => {
+    const stub = storeStub();
+    stub.settings.set(settings({ hasLogo: true, logoUrl: '/api/v1/admin/settings/logo' }));
+    stub.mutationBusy.set(true);
+    const fixture = await create(stub);
+    const component = fixture.componentInstance;
+    component.pick('#059669');
+    fixture.detectChanges();
+    const saveButton = fixture.nativeElement.querySelector('button.save-btn') as HTMLButtonElement;
+    const fileInput = fixture.nativeElement.querySelector('#brand-logo') as HTMLInputElement;
+    const deleteButton = Array.from(
+      fixture.nativeElement.querySelectorAll('.logo-actions button'),
+    ).find((b) => (b as HTMLButtonElement).textContent?.includes('حذف')) as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(true);
+    expect(fileInput.disabled).toBe(true);
+    expect(deleteButton.disabled).toBe(true);
+    // Guards also block direct calls while a mutation is in flight.
+    let uploads = 0;
+    let saves = 0;
+    stub.uploadLogo = async () => {
+      uploads++;
+      return 'ok' as const;
+    };
+    stub.saveColor = async () => {
+      saves++;
+      return 'ok' as const;
+    };
+    await component.stageLogo({
+      target: { files: [new File(['x'], 'logo.png')], value: '' },
+    } as unknown as Event);
+    await component.save();
+    await component.removeLogo();
+    expect(uploads).toBe(0);
+    expect(saves).toBe(0);
+    // Once the queue drains, the controls are usable again.
+    stub.mutationBusy.set(false);
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement.querySelector('button.save-btn') as HTMLButtonElement).disabled,
+    ).toBe(false);
+    expect((fixture.nativeElement.querySelector('#brand-logo') as HTMLInputElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it('deletes the stored logo and reports failures honestly', async () => {
+    const stub = storeStub({
+      deleteLogo: async () => {
+        stub.settings.set(settings({ hasLogo: false, logoUrl: null }));
+        return 'ok';
+      },
+    });
+    stub.settings.set(settings({ hasLogo: true, logoUrl: '/api/v1/admin/settings/logo' }));
+    const fixture = await create(stub);
+    await fixture.componentInstance.removeLogo();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('تم حذف اللوجو.');
+    expect(fixture.nativeElement.querySelector('.logo-preview')).toBeNull();
   });
 });

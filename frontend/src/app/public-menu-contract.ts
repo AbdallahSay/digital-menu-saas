@@ -1,9 +1,17 @@
 // F09 wire DTOs. Prices are JSON numbers backed by SQL decimal(18,2).
+export interface PublicItemImage {
+  url: string;
+  thumbnailUrl: string;
+  alt: string;
+  width: number;
+  height: number;
+}
 export interface PublicItem {
   id: string;
   name: string;
   description: string;
   price: number;
+  image: PublicItemImage | null;
 }
 export interface PublicCategory {
   id: string;
@@ -11,7 +19,13 @@ export interface PublicCategory {
   items: PublicItem[];
 }
 export interface PublicMenu {
-  restaurant: { name: string; slug: string; primaryColor: string; currency: string };
+  restaurant: {
+    name: string;
+    slug: string;
+    primaryColor: string;
+    currency: string;
+    logoUrl: string | null;
+  };
   language: 'ar' | 'en';
   publishedMenuVersion: number;
   categories: PublicCategory[];
@@ -89,6 +103,49 @@ export function decodeMenu(
       throw Error('Invalid public menu');
     return result;
   };
+  // Media URLs are server-built relative paths under the opaque public media
+  // origin only - anything else (absolute URLs, other paths) is rejected so a
+  // compromised or buggy upstream can never turn the menu into an image
+  // request to an arbitrary host.
+  const logoUrl = (value: unknown): string | null => {
+    if (value === null) return null;
+    const result = string(value, 60);
+    if (!/^\/api\/v1\/public\/media\/logo\/[a-f0-9]{20}$/.test(result))
+      throw Error('Invalid public menu');
+    return result;
+  };
+  const image = (value: unknown): PublicItemImage | null => {
+    if (value === null) return null;
+    const candidate = value as PublicItemImage;
+    const pattern =
+      /^\/api\/v1\/public\/media\/items\/([a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})\/(main|thumbnail)$/;
+    const url = typeof candidate?.url === 'string' ? pattern.exec(candidate.url) : null;
+    const thumbnail =
+      typeof candidate?.thumbnailUrl === 'string' ? pattern.exec(candidate.thumbnailUrl) : null;
+    if (
+      !url ||
+      url[2] !== 'main' ||
+      !thumbnail ||
+      thumbnail[2] !== 'thumbnail' ||
+      url[1] !== thumbnail[1] ||
+      typeof candidate.alt !== 'string' ||
+      candidate.alt.length > 300 ||
+      !Number.isSafeInteger(candidate.width) ||
+      candidate.width < 1 ||
+      candidate.width > 4096 ||
+      !Number.isSafeInteger(candidate.height) ||
+      candidate.height < 1 ||
+      candidate.height > 4096
+    )
+      throw Error('Invalid public menu');
+    return {
+      url: candidate.url,
+      thumbnailUrl: candidate.thumbnailUrl,
+      alt: candidate.alt,
+      width: candidate.width,
+      height: candidate.height,
+    };
+  };
   if (
     !raw ||
     raw.language !== language ||
@@ -131,6 +188,7 @@ export function decodeMenu(
           description: string(item.description, 2000, true),
           price: item.price,
           priceText: whole + '.' + fraction.padEnd(2, '0'),
+          image: image(item.image),
         };
       }),
     };
@@ -141,6 +199,7 @@ export function decodeMenu(
       slug,
       primaryColor: raw.restaurant.primaryColor,
       currency: 'EGP',
+      logoUrl: logoUrl(raw.restaurant.logoUrl),
     },
     language,
     publishedMenuVersion: raw.publishedMenuVersion,

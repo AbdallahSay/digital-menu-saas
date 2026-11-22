@@ -21,8 +21,8 @@ const PRESETS: { hex: string; label: string }[] = [
  * frontend/design/admin-specs.md): preset/custom brand color with a live
  * WCAG 2.1/2.2 contrast evaluation against the white menu background, and a
  * strictly display-only menu card preview (no ordering/cart/payment
- * language). The logo uploader is deferred to the media delivery phase —
- * the backend has no logo read-back endpoint yet.
+ * language). The logo uploader posts to the media delivery backend and the
+ * stored logo shows in the preview card.
  */
 @Component({
   selector: 'app-branding-studio',
@@ -118,18 +118,66 @@ const PRESETS: { hex: string; label: string }[] = [
             <button
               type="button"
               class="btn btn-primary save-btn"
-              [disabled]="saving() || draftInvalid() || normalizedDraft() === savedColor()"
+              [disabled]="
+                saving() ||
+                store.mutationBusy() ||
+                draftInvalid() ||
+                normalizedDraft() === savedColor()
+              "
               (click)="save()"
             >
               {{ saving() ? 'جاري الحفظ…' : 'حفظ اللون' }}
             </button>
+
+            <h2 class="logo-title">لوجو المطعم</h2>
+            <div class="logo-row">
+              @if (settings.hasLogo) {
+                <img
+                  class="logo-preview"
+                  [src]="logoSrc()"
+                  alt="اللوجو الحالي"
+                  width="96"
+                  height="96"
+                />
+              } @else {
+                <span class="logo-placeholder" aria-hidden="true">🍽️</span>
+              }
+              <div class="logo-actions">
+                <label class="btn btn-secondary" for="brand-logo">
+                  {{ settings.hasLogo ? 'تغيير اللوجو' : 'رفع لوجو' }}
+                </label>
+                <input
+                  id="brand-logo"
+                  class="visually-hidden"
+                  type="file"
+                  accept="image/*"
+                  [disabled]="logoBusy() || store.mutationBusy()"
+                  (change)="stageLogo($event)"
+                />
+                @if (settings.hasLogo) {
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    [disabled]="logoBusy() || store.mutationBusy()"
+                    (click)="removeLogo()"
+                  >
+                    حذف اللوجو
+                  </button>
+                }
+              </div>
+            </div>
+            <p class="hint">حد أقصى 5 ميجابايت؛ بتتحول لـ webp على السيرفر.</p>
           </section>
 
           <section class="preview" aria-labelledby="preview-title">
             <h2 id="preview-title">معاينة كارت المنيو (عرض فقط)</h2>
             <div class="menu-card">
               <div class="menu-card-header" [style.background-color]="previewColor()">
-                <span class="menu-card-logo" aria-hidden="true">🍽️</span>
+                @if (settings.hasLogo) {
+                  <img class="menu-card-logo-img" [src]="logoSrc()" alt="" width="40" height="40" />
+                } @else {
+                  <span class="menu-card-logo" aria-hidden="true">🍽️</span>
+                }
                 <span class="menu-card-name">{{ settings.name }}</span>
               </div>
               <div class="menu-card-body">
@@ -151,9 +199,6 @@ const PRESETS: { hex: string; label: string }[] = [
                 </button>
               </div>
             </div>
-            @if (settings.hasLogo) {
-              <p class="hint">اللوجو المحفوظ هيظهر هنا مع مرحلة تسليم الميديا.</p>
-            }
           </section>
         </div>
       }
@@ -261,6 +306,39 @@ const PRESETS: { hex: string; label: string }[] = [
         margin-top: var(--space-4);
         min-height: 44px;
       }
+      .logo-title {
+        margin-top: var(--space-6);
+      }
+      .logo-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+      }
+      .logo-preview {
+        width: 96px;
+        height: 96px;
+        object-fit: cover;
+        border-radius: var(--radius-md, 10px);
+        border: 1px solid var(--color-border, #e2e8f0);
+        background: #fff;
+      }
+      .logo-placeholder {
+        font-size: 2.5rem;
+        line-height: 1;
+      }
+      .logo-actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        align-items: flex-start;
+      }
+      .menu-card-logo-img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: var(--radius-sm, 6px);
+        background: #fff;
+      }
       .menu-card {
         border: 1px solid var(--color-border, #e2e8f0);
         border-radius: var(--radius-md, 10px);
@@ -321,7 +399,14 @@ export class BrandingStudioComponent implements OnInit {
   readonly presets = PRESETS;
   readonly draft = signal('');
   readonly saving = signal(false);
+  readonly logoBusy = signal(false);
   readonly feedback = signal<Feedback>(null);
+  /** Cache-buster: the admin logo URL is stable, so bump after every change. */
+  private readonly logoVersion = signal(0);
+  readonly logoSrc = computed(() => {
+    const url = this.store.settings()?.logoUrl;
+    return url ? `${url}?v=${this.logoVersion()}` : null;
+  });
 
   /** The accepted draft normalized once to #rrggbb; null while empty/invalid. */
   readonly normalizedDraft = computed(() => normalizeHexColor(this.draft()));
@@ -384,9 +469,51 @@ export class BrandingStudioComponent implements OnInit {
     }
   }
 
+  /** Uploads the chosen logo, then bumps the cache-buster so the stable URL revalidates. */
+  async stageLogo(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.logoBusy() || this.store.mutationBusy()) return;
+    this.logoBusy.set(true);
+    this.feedback.set(null);
+    try {
+      const outcome = await this.store.uploadLogo(file);
+      if (outcome === 'ok') {
+        this.logoVersion.update((v) => v + 1);
+        this.feedback.set({ kind: 'success', text: 'تم حفظ اللوجو.' });
+      } else if (outcome === 'too-large') {
+        this.feedback.set({ kind: 'error', text: 'الصورة أكبر من 5 ميجابايت. اختار صورة أصغر.' });
+      } else if (outcome === 'unsupported') {
+        this.feedback.set({ kind: 'error', text: 'صيغة الصورة غير مدعومة.' });
+      } else {
+        this.feedback.set({ kind: 'error', text: 'حصل خطأ أثناء رفع اللوجو. جرّب تاني.' });
+      }
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+
+  async removeLogo(): Promise<void> {
+    if (this.logoBusy() || this.store.mutationBusy()) return;
+    this.logoBusy.set(true);
+    this.feedback.set(null);
+    try {
+      const outcome = await this.store.deleteLogo();
+      if (outcome === 'ok') {
+        this.logoVersion.update((v) => v + 1);
+        this.feedback.set({ kind: 'success', text: 'تم حذف اللوجو.' });
+      } else {
+        this.feedback.set({ kind: 'error', text: 'حصل خطأ أثناء حذف اللوجو. جرّب تاني.' });
+      }
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+
   async save(): Promise<void> {
     const settings = this.store.settings();
-    if (!settings || this.draftInvalid() || this.saving()) return; // draftInvalid covers empty.
+    if (!settings || this.draftInvalid() || this.saving() || this.store.mutationBusy()) return; // draftInvalid covers empty.
     this.saving.set(true);
     this.feedback.set(null);
     const color = this.normalizedDraft();

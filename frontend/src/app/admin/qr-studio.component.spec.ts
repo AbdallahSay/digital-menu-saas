@@ -11,6 +11,7 @@ function settings(partial: Partial<OwnerSettings> = {}): OwnerSettings {
     publicCode: '0123456789abcdef0123',
     primaryColor: '#0f766e',
     hasLogo: false,
+    logoUrl: null,
     rowVersion: 'AAAAAAAAAAA=',
     ...partial,
   };

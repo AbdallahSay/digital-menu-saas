@@ -11,6 +11,15 @@ import type { PublicPage } from './public-menu-contract';
     <main class="public-menu">
       @if (page.menu; as menu) {
         <header>
+          @if (menu.restaurant.logoUrl; as logoUrl) {
+            <img
+              class="restaurant-logo"
+              [src]="logoUrl"
+              [alt]="menu.restaurant.name"
+              width="96"
+              height="96"
+            />
+          }
           <h1>{{ menu.restaurant.name }}</h1>
           <nav aria-label="Language">
             <a [href]="'/r/' + menu.restaurant.slug + '?lang=ar'" lang="ar">العربية</a>
@@ -31,6 +40,17 @@ import type { PublicPage } from './public-menu-contract';
             }
             @for (item of category.items; track item.id) {
               <article>
+                @if (item.image; as image) {
+                  <img
+                    class="item-thumbnail"
+                    [src]="image.thumbnailUrl"
+                    [alt]="image.alt"
+                    [width]="image.width"
+                    [height]="image.height"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                }
                 <h3>{{ item.name }}</h3>
                 <p class="description">{{ item.description }}</p>
                 <p class="price">
@@ -102,6 +122,20 @@ import type { PublicPage } from './public-menu-contract';
         margin-block: var(--space-4);
         box-shadow: var(--shadow-sm);
       }
+      .restaurant-logo {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+        border-radius: var(--radius-xl);
+        margin-bottom: var(--space-3);
+      }
+      .item-thumbnail {
+        width: 100%;
+        height: auto;
+        border-radius: var(--radius-lg, var(--radius-xl));
+        margin-bottom: var(--space-3);
+        background: var(--color-border-subtle);
+      }
       .description {
         white-space: pre-wrap;
       }
@@ -152,6 +186,9 @@ export class PublicMenuComponent {
           : this.errorTitle,
       });
       meta.updateTag({ name: 'robots', content: menu ? 'index,follow' : 'noindex,nofollow' });
+      // Reset the managed og:image on every page change so route reuse or an
+      // error state cannot leave a previous menu's logo in document.head.
+      meta.removeTag('property="og:image"');
       document
         .querySelectorAll('link[rel="canonical"], script[type="application/ld+json"]')
         .forEach((element) => element.remove());
@@ -160,6 +197,12 @@ export class PublicMenuComponent {
         canonical.rel = 'canonical';
         canonical.href = this.page.publicOrigin + '/r/' + menu.restaurant.slug;
         document.head.appendChild(canonical);
+        if (menu.restaurant.logoUrl) {
+          meta.updateTag({
+            property: 'og:image',
+            content: this.page.publicOrigin + menu.restaurant.logoUrl,
+          });
+        }
       }
     });
   }
