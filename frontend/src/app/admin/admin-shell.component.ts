@@ -233,7 +233,7 @@ export class AdminShellComponent {
 
   readonly navItems: NavItem[] = [
     { path: '/admin', exact: true, icon: '📊', label: 'الرئيسية', enabled: true },
-    { path: '/admin/categories', exact: false, icon: '📁', label: 'الأقسام', enabled: false },
+    { path: '/admin/categories', exact: false, icon: '📁', label: 'الأقسام', enabled: true },
     { path: '/admin/items', exact: false, icon: '🍽️', label: 'الأطباق', enabled: false },
     { path: '/admin/branding', exact: false, icon: '🎨', label: 'الهوية', enabled: false },
     { path: '/admin/qr', exact: false, icon: '📱', label: 'رمز QR', enabled: false },

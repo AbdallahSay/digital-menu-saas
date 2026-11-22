@@ -25,6 +25,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./admin/dashboard.component').then((m) => m.DashboardComponent),
       },
+      {
+        path: 'categories',
+        loadComponent: () =>
+          import('./admin/category-list.component').then((m) => m.CategoryListComponent),
+      },
     ],
   },
   {
