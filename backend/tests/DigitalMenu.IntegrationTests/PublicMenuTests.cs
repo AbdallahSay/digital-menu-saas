@@ -39,11 +39,15 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         private string? connectionString;
         private Guid restaurantId;
         private int flips;
+        public readonly List<string> Seen = new();
+        public int Flips => flips;
+        public bool Bound => connectionString is not null;
         public void Bind(string connection, Guid restaurant)
         { connectionString = connection; restaurantId = restaurant; }
         public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData data,
             InterceptionResult<DbDataReader> result, CancellationToken ct = default)
         {
+            lock (Seen) Seen.Add(command.CommandText.Replace("\n", " ").Substring(0, Math.Min(160, command.CommandText.Length)));
             if (connectionString is not null && flips < maxFlips &&
                 command.CommandText.Contains("FROM [Categories]", StringComparison.Ordinal))
             {
@@ -453,6 +457,17 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         var after = await Menu(client, Code(f.A));
         Assert.Equal(before.PublishedMenuVersion + 1, after.PublishedMenuVersion);
         Assert.Equal("Renamed", after.Restaurant.Name);
+    }
+
+    [SqlServerFact]
+    public async Task DIAG_flipper_probe()
+    {
+        var flipper = new MidReadFlipper(maxFlips: 1, unpublish: false);
+        await using var f = await Fixture.Create(flipper);
+        using var client = f.Client;
+        var response = await client.GetAsync(Code(f.A));
+        string seen; lock (flipper.Seen) seen = string.Join(" || ", flipper.Seen);
+        throw new Xunit.Sdk.XunitException("DIAG status=" + (int)response.StatusCode + " bound=" + flipper.Bound + " flips=" + flipper.Flips + " seen=" + seen);
     }
 
     [SqlServerFact]
