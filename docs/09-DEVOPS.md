@@ -12,6 +12,7 @@ Use an **SSR-capable Node runtime for Angular public routes** and .NET API under
 
 ## Security / configuration
 - `.env.example` or documented placeholder config; app secrets via managed secrets/environment; explicit Production env. Strict trusted proxy headers, HSTS, cookies, CSP and no wildcard credentialed CORS.
+- Trusted proxies: the API processes `X-Forwarded-For` only when `Proxy:TrustedProxies` (array config, e.g. `Proxy__TrustedProxies__0=127.0.0.1` or `::1` for a same-host Node SSR router) lists at least one valid IP; with an empty list the forwarded-headers middleware is never registered and rate limiting partitions on the direct connection IP, so a direct caller cannot rotate the header to evade the auth limiter. Malformed entries fail startup loudly; there is no implicit loopback trust. The Node `/api` router always overwrites `X-Forwarded-For` with its socket peer and never copies a client-supplied value — so another proxy in front of Node collapses per-client buckets again unless that hop is given its own trusted-hop design. The API processes XFF only (not proto/host), so .NET still needs real HTTPS on its upstream hop.
 - Platform admin bootstrap must use secret provided out-of-band and force rotation. Avoid seeded fixed password in repository.
 - Service account least privilege. No public database connection strings.
 
