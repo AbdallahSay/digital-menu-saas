@@ -52,6 +52,8 @@ public static class MediaEndpoints
         try { await storage.RemoveAsync(key, CancellationToken.None); }
         catch (Exception) { logger.LogWarning("Private media cleanup pending."); }
     }
+    /// <summary>Best-effort object cleanup shared with the logo endpoints.</summary>
+    public static Task CleanupObject(IImageStorage storage, string key, ILogger logger) => Cleanup(storage, key, logger);
     public static void MapMenuMedia(this WebApplication app)
     {
         var group = app.MapGroup("/api/v1/admin/items/{id:guid}/images").RequireAuthorization("TenantOwner");

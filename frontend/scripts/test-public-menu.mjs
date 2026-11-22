@@ -11,6 +11,14 @@ assert.ok(origin, 'Run through PublicSsrTests with real SQL fixtures.');
 const privateIds = process.env.S01_PRIVATE_IDS.split(',');
 const a = 'مطعم ألف <script>globalThis.s01Canary=true</script>';
 const b = 'مطعم باء';
+// Restaurant A has a logo; the public page renders it through the opaque public-code URL
+// (never the object key or restaurant id).
+const logoPath = '/api/v1/public/media/logo/' + 'a'.repeat(20);
+const logoUrl = origin + logoPath;
+const tinyPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
 function raw(path, encoding = 'gzip', method = 'GET') {
   return new Promise((resolve, reject) => {
     const request = http.request(
@@ -80,7 +88,10 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
         .querySelector('main')
         .textContent.includes('</script><script>globalThis.s01Canary=true</script>'),
     );
-    assert.equal(doc.querySelectorAll('img').length, 0);
+    const images = [...doc.querySelectorAll('img')];
+    assert.equal(images.length, 1);
+    assert.equal(images[0].className, 'restaurant-logo');
+    assert.equal(images[0].getAttribute('src'), logoPath);
     const executable = [...doc.querySelectorAll('script:not([src])')].filter(
       (node) => node.type !== 'application/json',
     );
@@ -98,7 +109,8 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
       'restaurantId',
       'userId',
       'objectKey',
-      'logoUrl',
+      'logoObjectKey',
+      'S01_SECRET_KEY',
       'imageUrl',
       b,
     ])
@@ -190,20 +202,34 @@ test('JavaScript-disabled content, hydration without duplicate API fetch, RTL/LT
         });
         const page = await context.newPage();
         const errors = [];
+        const pageErrors = [];
         const api = [];
-        page.on('pageerror', (error) => errors.push(error.message));
+        const failed = [];
+        // The seeded logo object is not in storage, so serve exactly that URL a tiny valid PNG.
+        // Everything else stays real: no console error, page error or failed request is allowed.
+        await page.route(logoUrl, (route) =>
+          route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }),
+        );
+        page.on('pageerror', (error) => pageErrors.push(error.message));
         page.on('console', (message) => {
           if (message.type() === 'error') errors.push(message.text());
         });
         page.on('request', (request) => {
-          if (request.url().includes('/api/v1/public/')) api.push(request.url());
+          if (request.url().includes('/api/v1/public/') && request.url() !== logoUrl)
+            api.push(request.url());
+        });
+        page.on('requestfailed', (request) => failed.push(request.url()));
+        page.on('response', (response) => {
+          if (response.status() >= 400) failed.push(response.url());
         });
         await page.goto(origin + '/r/s01-a?lang=' + language, { waitUntil: 'networkidle' });
         assert.equal(await page.locator('h1').textContent(), a);
         assert.ok((await page.locator('main').textContent()).includes('9999999999999999.99'));
         if (javaScriptEnabled) {
           assert.equal(await page.evaluate(() => globalThis.s01Canary), undefined);
+          assert.deepEqual(pageErrors, []);
           assert.deepEqual(errors, []);
+          assert.deepEqual(failed, []);
           assert.deepEqual(api, []);
         }
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

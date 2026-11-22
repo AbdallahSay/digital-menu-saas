@@ -6,9 +6,8 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
-import { request } from 'node:http';
-import { request as secureRequest } from 'node:https';
 import { gzipSync } from 'node:zlib';
+import { apiProxy } from './api-proxy';
 import { secureAssets } from './secure-assets';
 import { publicPage, publicOrigin, publicApiOrigin } from './public-menu-server';
 
@@ -22,33 +21,9 @@ app.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
-app.use('/api', (req, res) => {
-  // Configured trusted upstream; never derive an origin from Host or forward credentials.
-  const upstreamUrl = new URL(publicApiOrigin + req.originalUrl);
-  const upstream = (upstreamUrl.protocol === 'https:' ? secureRequest : request)(
-    upstreamUrl,
-    {
-      method: req.method,
-      headers: { accept: req.headers.accept ?? '*/*' },
-    },
-    (response) => {
-      res.status(response.statusCode ?? 502);
-      if (response.headers['content-type'])
-        res.setHeader('Content-Type', response.headers['content-type']);
-      response.pipe(res);
-    },
-  );
-  upstream.setTimeout(5000, () => upstream.destroy());
-  upstream.on('error', () => {
-    if (!res.headersSent)
-      res
-        .status(502)
-        .type('application/problem+json')
-        .send({ title: 'API unavailable', status: 502 });
-    else res.destroy();
-  });
-  req.pipe(upstream);
-});
+// Same-origin /api router: identity paths (auth/admin/platform) preserve
+// cookie/CSRF protections end to end; public paths stay identity-free.
+app.use('/api', apiProxy(publicApiOrigin));
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.get('/m/demo-code', (_req, res) => res.redirect(302, '/r/demo'));
 app.get('/robots.txt', (_req, res) =>
