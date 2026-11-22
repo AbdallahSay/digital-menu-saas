@@ -3,6 +3,9 @@ import { test } from 'node:test';
 import { JSDOM } from 'jsdom';
 import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
+import { spawn } from 'node:child_process';
+import { request } from 'node:http';
+import { createServer } from 'node:net';
 
 const origin = 'http://localhost:4000';
 test('raw source contains the public fixture and truthful SEO metadata without executing JS', async () => {
@@ -106,4 +109,77 @@ test('all browser JavaScript together stays within the provisional 180 KiB gzip 
     .reduce((total, file) => total + gzipSync(readFileSync(folder + '/' + file)).length, 0);
   console.log('All browser JS gzip bytes:', bytes);
   assert.ok(bytes <= 180 * 1024);
+});
+
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+// node:http, not fetch: fetch silently drops a caller-supplied Host header.
+function rawGet(port, path, host) {
+  return new Promise((resolve, reject) => {
+    const req = request(
+      { host: '127.0.0.1', port, path, headers: { host }, timeout: 5000 },
+      (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => (body += chunk));
+        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+      },
+    );
+    req.on('timeout', () => req.destroy(new Error('request timed out')));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+test('robots and sitemap use the configured PUBLIC_ORIGIN, never localhost or the Host header', async () => {
+  const configured = 'https://menu.example.test';
+  const port = await freePort();
+  const child = spawn(process.execPath, ['dist/digital-menu/server/server.mjs'], {
+    env: { ...process.env, F01_LOCAL_ONLY: '1', PORT: String(port), PUBLIC_ORIGIN: configured },
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+  const exited = new Promise((resolve) => child.once('exit', resolve));
+  try {
+    // Ready only when this child says so, so another listener cannot satisfy the wait.
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('second server did not start')), 15000);
+      child.once('exit', (code) => {
+        clearTimeout(timer);
+        reject(new Error('second server exited early with code ' + code));
+      });
+      child.stdout.on('data', (chunk) => {
+        if (String(chunk).includes('Local SSR listening')) {
+          clearTimeout(timer);
+          resolve();
+        }
+      });
+    });
+    const forged = 'evil.example';
+    const robots = await rawGet(port, '/robots.txt', forged);
+    assert.equal(robots.status, 200);
+    assert.match(robots.headers['content-type'], /^text\/plain/);
+    assert.match(robots.body, /^Sitemap: https:\/\/menu\.example\.test\/sitemap\.xml$/m);
+    assert.doesNotMatch(robots.body, /localhost|127\.0\.0\.1|evil\.example/);
+    const sitemap = await rawGet(port, '/sitemap.xml', forged);
+    assert.equal(sitemap.status, 200);
+    assert.match(sitemap.headers['content-type'], /xml/);
+    assert.doesNotMatch(sitemap.body, /localhost|127\.0\.0\.1|evil\.example/);
+    const doc = new JSDOM(sitemap.body, { contentType: 'text/xml' }).window.document;
+    assert.deepEqual(
+      [...doc.querySelectorAll('loc')].map((n) => n.textContent),
+      [configured + '/r/demo'],
+    );
+  } finally {
+    child.kill();
+    await exited;
+  }
 });
