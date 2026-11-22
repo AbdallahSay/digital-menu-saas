@@ -1,0 +1,9 @@
+# Build-context exclusions for Dockerfile.api / Dockerfile.web.
+**/node_modules
+**/dist
+**/bin
+**/obj
+**/.git
+**/TestResults
+**/*.user
+downloads

@@ -40,6 +40,7 @@ jobs:
           npm audit --audit-level=high
           npm run lint
           npm test -- --watch=false
+          npm run test:router
           npm run build
           npx playwright install --with-deps chromium
       - name: Raw HTTP, browser and Lighthouse gates against local production build

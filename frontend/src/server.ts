@@ -6,13 +6,14 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
-import { request } from 'node:http';
-import { request as secureRequest } from 'node:https';
 import { gzipSync } from 'node:zlib';
+import { apiProxy, stampedClientIp } from './api-proxy';
 import { secureAssets } from './secure-assets';
 import { publicPage, publicOrigin, publicApiOrigin } from './public-menu-server';
 
-// F01 only: this is a reversible local router, never a production hosting decision.
+// The /api router + public pages run locally (F01_LOCAL_ONLY=1, loopback)
+// and in the deployed container (docs/20-DEPLOY-AZURE), where the platform
+// TLS terminator / Caddy edge is the only ingress.
 const app = express();
 app.disable('x-powered-by');
 const angularApp = new AngularNodeAppEngine();
@@ -22,47 +23,30 @@ app.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
-app.use('/api', (req, res) => {
-  // Configured trusted upstream; never derive an origin from Host or forward credentials.
-  const upstreamUrl = new URL(publicApiOrigin + req.originalUrl);
-  const upstream = (upstreamUrl.protocol === 'https:' ? secureRequest : request)(
-    upstreamUrl,
-    {
-      method: req.method,
-      headers: { accept: req.headers.accept ?? '*/*' },
-    },
-    (response) => {
-      res.status(response.statusCode ?? 502);
-      if (response.headers['content-type'])
-        res.setHeader('Content-Type', response.headers['content-type']);
-      response.pipe(res);
-    },
-  );
-  upstream.setTimeout(5000, () => upstream.destroy());
-  upstream.on('error', () => {
-    if (!res.headersSent)
-      res
-        .status(502)
-        .type('application/problem+json')
-        .send({ title: 'API unavailable', status: 502 });
-    else res.destroy();
-  });
-  req.pipe(upstream);
-});
+// Same-origin /api router: identity paths (auth/admin/platform) preserve
+// cookie/CSRF protections end to end; public paths stay identity-free.
+const trustPlatform = process.env['PROXY_TRUST_PLATFORM'] === 'true';
+app.use(
+  '/api',
+  apiProxy(publicApiOrigin, {
+    trustPlatformForwarding: trustPlatform,
+    sharedSecret: process.env['PROXY_SHARED_SECRET'] || undefined,
+  }),
+);
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.get('/m/demo-code', (_req, res) => res.redirect(302, '/r/demo'));
 app.get('/robots.txt', (_req, res) =>
   res
     .type('text/plain')
     .send(
-      'User-agent: *\nDisallow: /admin\nDisallow: /api/\nSitemap: http://localhost:4000/sitemap.xml\n',
+      `User-agent: *\nDisallow: /admin\nDisallow: /api/\nSitemap: ${publicOrigin}/sitemap.xml\n`,
     ),
 );
 app.get('/sitemap.xml', (_req, res) =>
   res
     .type('application/xml')
     .send(
-      '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://localhost:4000/r/demo</loc></url></urlset>',
+      `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${publicOrigin}/r/demo</loc></url></urlset>`,
     ),
 );
 
@@ -94,6 +78,7 @@ app.get('/m/:publicCode', async (req, res) => {
     req.params['publicCode'],
     true,
     req.originalUrl.split('?')[1] ?? '',
+    stampedClientIp(req, trustPlatform),
   );
   if (page.status === 200 && page.menu) {
     // Human-approved reserved demo route: never redirect a real restaurant to fake data.
@@ -117,7 +102,12 @@ app.get('/r/:slug', async (req, res, next) => {
     next();
     return;
   }
-  const page = await publicPage(req.params['slug'], false, req.originalUrl.split('?')[1] ?? '');
+  const page = await publicPage(
+    req.params['slug'],
+    false,
+    req.originalUrl.split('?')[1] ?? '',
+    stampedClientIp(req, trustPlatform),
+  );
   if (page.status !== 200) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   try {
     // Fresh request/context per render; never pass cookies, Authorization or Host.
@@ -172,12 +162,13 @@ app.use((_req, res) => {
     );
 });
 if (isMainModule(import.meta.url)) {
-  if (process.env['F01_LOCAL_ONLY'] !== '1')
-    throw new Error(
-      'F01 local router requires F01_LOCAL_ONLY=1; production hosting is unresolved.',
-    );
+  const localOnly = process.env['F01_LOCAL_ONLY'] === '1';
   const port = Number(process.env['PORT'] ?? 4000);
-  if (!Number.isInteger(port) || port < 1024 || port > 65535) throw Error('Invalid local SSR port');
-  app.listen(port, '127.0.0.1', () => console.log('Local SSR listening'));
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) throw Error('Invalid SSR port');
+  // Local development binds loopback only; the deployed container binds all
+  // interfaces behind the platform/edge terminator, which is the sole ingress.
+  app.listen(port, localOnly ? '127.0.0.1' : '0.0.0.0', () =>
+    console.log(localOnly ? 'Local SSR listening' : 'SSR listening'),
+  );
 }
 export const reqHandler = createNodeRequestHandler(app);

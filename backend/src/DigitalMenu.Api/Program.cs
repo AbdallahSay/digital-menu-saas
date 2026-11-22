@@ -4,12 +4,18 @@ using DigitalMenu.Api.Media;
 using DigitalMenu.Api.Platform;
 using DigitalMenu.Api.Public;
 using DigitalMenu.Application;
+using DigitalMenu.Infrastructure.Persistence;
 using DigitalMenu.Infrastructure.Tenancy;
+using Microsoft.EntityFrameworkCore;
+using DigitalMenu.Api.Proxy;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
+// X-Forwarded-For is processed only with a validated nonempty trusted-proxy
+// allowlist; see TrustedProxyConfiguration and docs/09-DEVOPS.
+TrustedProxyConfiguration.Configure(builder.Services, builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TenantProblemHandler>();
 builder.Services.AddExceptionHandler<MediaProblemHandler>();
@@ -43,6 +49,20 @@ if (args.Contains("--bootstrap-admin=true", StringComparer.Ordinal))
     await DevelopmentBootstrap.RunAsync(app.Services, app.Environment, app.Configuration);
     return;
 }
+// Explicit operator opt-ins for managed deployments (docs/20-DEPLOY-AZURE):
+// MigrateOnStart applies pending migrations before serving; DemoSeed creates
+// the demo tenant once. Both are off by default and idempotent.
+if (app.Configuration.GetValue<bool>("MigrateOnStart"))
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<MenuDbContext>().Database.MigrateAsync();
+}
+await DemoSeed.RunAsync(app.Services, app.Configuration);
+if (TrustedProxyConfiguration.IsEnabled(app.Configuration))
+    app.UseForwardedHeaders();
+// Source-authenticated web-to-API boundary: no-op unless platform trust and
+// Proxy:SharedSecret are both configured.
+app.UsePlatformProxyAuthentication(app.Configuration);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.Use(async (context, next) =>
@@ -98,6 +118,7 @@ app.MapPlatformProvisioning();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
+app.MapSettings();
 app.MapPublicMenus();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.

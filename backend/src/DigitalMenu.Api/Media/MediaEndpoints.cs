@@ -15,7 +15,11 @@ public static class MediaEndpoints
         services.AddSingleton<ImageNormalizer>();
         services.AddSingleton<IImageStorage>(s =>
         {
-            if (!environment.IsDevelopment() || configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();
+            // Any environment activates the private local adapter when a root
+            // is configured (production deployments point it at persistent
+            // disk, e.g. /home/media on App Service); without a root, media
+            // stays fail-closed unavailable.
+            if (configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();
             var full = Path.GetFullPath(root);
             foreach (var protectedRoot in new[] { environment.ContentRootPath, AppContext.BaseDirectory })
                 if (full.StartsWith(Path.GetFullPath(protectedRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||

@@ -1,0 +1,16 @@
+# API image (docs/20-DEPLOY-AZURE.md). Also used by compose.yaml for a
+# local production-shape run and any future single-VPS move.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+# Preserve the backend directory hierarchy so Directory.Build.props sits in
+# the real project ancestry and MSBuild imports it exactly as a local build.
+COPY backend ./backend
+RUN dotnet publish backend/src/DigitalMenu.Api/DigitalMenu.Api.csproj -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app .
+ENV ASPNETCORE_URLS=http://+:5080 \
+    ASPNETCORE_ENVIRONMENT=Production
+EXPOSE 5080
+ENTRYPOINT ["dotnet", "DigitalMenu.Api.dll"]
