@@ -39,6 +39,9 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         private string? connectionString;
         private Guid restaurantId;
         private int flips;
+        private int rowsAffected;
+        public int Flips => flips;
+        public int RowsAffected => rowsAffected;
         public void Bind(string connection, Guid restaurant)
         { connectionString = connection; restaurantId = restaurant; }
         public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData data,
@@ -56,7 +59,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
                     : "UPDATE Restaurants SET PublishedMenuVersion = PublishedMenuVersion + 1 WHERE Id = @id; " +
                         "UPDATE MenuItems SET NameAr = N'flipped-" + flips + "' WHERE RestaurantId = @id";
                 flip.Parameters.Add(new SqlParameter("@id", restaurantId));
-                flip.ExecuteNonQuery();
+                rowsAffected += flip.ExecuteNonQuery();
             }
             return ValueTask.FromResult(result);
         }
@@ -80,7 +83,6 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
                 o.AddInterceptors(f.Queries);
                 if (flipper is not null) o.AddInterceptors(flipper); // same instance in every scope
             }));
-            flipper?.Bind(f.Auth.Connection, f.A.Id);
             using var scope = f.Auth.Factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
             var users = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
@@ -96,6 +98,9 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
                 new RestaurantUser { RestaurantId = f.A.Id, UserId = user.Id },
                 new RestaurantSettings { RestaurantId = f.A.Id, PrimaryColor = "#123456", ContactPhoneOptional = "private-phone", AddressOptional = "private-address", PublishedContactDetailsFlags = 3, LogoObjectKey = f.A.Id + "/private.webp" });
             await db.SaveChangesAsync();
+            // Arm the race hook only now: the seed's own insert batches can contain
+            // SELECT ... FROM [Categories] and would otherwise consume the flip before any row exists.
+            flipper?.Bind(f.Auth.Connection, f.A.Id);
             f.Queries.Reset();
             return f;
         }
@@ -458,9 +463,13 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     [SqlServerFact]
     public async Task A_version_flip_during_a_cold_load_retries_and_serves_the_new_consistent_projection()
     {
-        await using var f = await Fixture.Create(new MidReadFlipper(maxFlips: 1, unpublish: false));
+        var flipper = new MidReadFlipper(maxFlips: 1, unpublish: false);
+        await using var f = await Fixture.Create(flipper);
         using var client = f.Client;
         var menu = await Menu(client, Code(f.A));
+        // The hook must really have changed rows (2 statements: restaurant + item), or the test proves nothing.
+        Assert.Equal(1, flipper.Flips);
+        Assert.Equal(2, flipper.RowsAffected);
         Assert.Equal(2, menu.PublishedMenuVersion);
         Assert.Equal("flipped-1", Assert.Single(Assert.Single(menu.Categories).Items).Name);
     }
@@ -468,18 +477,24 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     [SqlServerFact]
     public async Task Two_version_flips_during_a_cold_load_fail_closed_with_503()
     {
-        await using var f = await Fixture.Create(new MidReadFlipper(maxFlips: 2, unpublish: false));
+        var flipper = new MidReadFlipper(maxFlips: 2, unpublish: false);
+        await using var f = await Fixture.Create(flipper);
         using var client = f.Client;
         var response = await client.GetAsync(Code(f.A));
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(2, flipper.Flips);
+        Assert.Equal(4, flipper.RowsAffected);
     }
 
     [SqlServerFact]
     public async Task Unpublish_during_a_cold_load_returns_404_and_caches_nothing()
     {
-        await using var f = await Fixture.Create(new MidReadFlipper(maxFlips: 1, unpublish: true));
+        var flipper = new MidReadFlipper(maxFlips: 1, unpublish: true);
+        await using var f = await Fixture.Create(flipper);
         using var client = f.Client;
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(Code(f.A))).StatusCode);
+        Assert.Equal(1, flipper.Flips);
+        Assert.Equal(1, flipper.RowsAffected);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(Code(f.A))).StatusCode);
         // While unpublished, change item data directly WITHOUT bumping the version
         // (test-only bypass), then republish out of band. The live probe must serve
