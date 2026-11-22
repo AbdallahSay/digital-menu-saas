@@ -47,7 +47,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData data,
             InterceptionResult<DbDataReader> result, CancellationToken ct = default)
         {
-            lock (Seen) Seen.Add(command.CommandText.Replace("\n", " ").Substring(0, Math.Min(160, command.CommandText.Length)));
+            lock (Seen) Seen.Add((command.CommandText.StartsWith("SELECT TOP(2) [r]") || command.CommandText.Contains("FROM [Categories]") ? "[tx=" + (command.Transaction?.IsolationLevel.ToString() ?? "none") + ",conn=" + command.Connection?.State + "] " : "") + command.CommandText.Replace("\n", " ").Substring(0, Math.Min(90, command.CommandText.Length)));
             if (connectionString is not null && flips < maxFlips &&
                 command.CommandText.Contains("FROM [Categories]", StringComparison.Ordinal))
             {
@@ -467,7 +467,19 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         using var client = f.Client;
         var response = await client.GetAsync(Code(f.A));
         string seen; lock (flipper.Seen) seen = string.Join(" || ", flipper.Seen);
-        throw new Xunit.Sdk.XunitException("DIAG status=" + (int)response.StatusCode + " bound=" + flipper.Bound + " flips=" + flipper.Flips + " seen=" + seen);
+        var body = await response.Content.ReadAsStringAsync();
+        long dbVersion; string dbName;
+        await using (var direct = new SqlConnection(f.Auth.Connection))
+        {
+            await direct.OpenAsync();
+            await using var q = direct.CreateCommand();
+            q.CommandText = "SELECT PublishedMenuVersion FROM Restaurants WHERE Id = @id";
+            q.Parameters.Add(new SqlParameter("@id", f.A.Id));
+            dbVersion = Convert.ToInt64(await q.ExecuteScalarAsync());
+            q.CommandText = "SELECT NameAr FROM MenuItems WHERE RestaurantId = @id";
+            dbName = Convert.ToString(await q.ExecuteScalarAsync()) ?? "";
+        }
+        throw new Xunit.Sdk.XunitException("DIAG dbVersion=" + dbVersion + " dbItem=" + dbName + " body=" + body.Substring(0, Math.Min(400, body.Length)) + " status=" + (int)response.StatusCode + " bound=" + flipper.Bound + " flips=" + flipper.Flips + " seen=" + seen);
     }
 
     [SqlServerFact]
