@@ -60,7 +60,8 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
                     : "UPDATE Restaurants SET PublishedMenuVersion = PublishedMenuVersion + 1 WHERE Id = @id; " +
                         "UPDATE MenuItems SET NameAr = N'flipped-" + flips + "' WHERE RestaurantId = @id";
                 flip.Parameters.Add(new SqlParameter("@id", restaurantId));
-                flip.ExecuteNonQuery();
+                var affected = flip.ExecuteNonQuery();
+                lock (Seen) Seen.Add("[FLIP affected=" + affected + " db=" + connection.Database + " id=" + restaurantId + " tx=" + (System.Transactions.Transaction.Current is null ? "noscope" : "AMBIENT") + "]");
             }
             return ValueTask.FromResult(result);
         }
@@ -477,7 +478,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             q.Parameters.Add(new SqlParameter("@id", f.A.Id));
             dbVersion = Convert.ToInt64(await q.ExecuteScalarAsync());
             q.CommandText = "SELECT NameAr FROM MenuItems WHERE RestaurantId = @id";
-            dbName = Convert.ToString(await q.ExecuteScalarAsync()) ?? "";
+            dbName = Convert.ToString(await q.ExecuteScalarAsync()) ?? ""; dbName += " diagdb=" + direct.Database;
         }
         throw new Xunit.Sdk.XunitException("DIAG dbVersion=" + dbVersion + " dbItem=" + dbName + " body=" + body.Substring(0, Math.Min(400, body.Length)) + " status=" + (int)response.StatusCode + " bound=" + flipper.Bound + " flips=" + flipper.Flips + " seen=" + seen);
     }
