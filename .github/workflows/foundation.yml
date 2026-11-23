@@ -42,6 +42,9 @@ jobs:
           npm test -- --watch=false
           npm run test:router
           npm run build
+          node ../scripts/build-vercel.mjs
+          npm run test:vercel:wiring
+          npm run test:vercel
           npx playwright install --with-deps chromium
       - name: Raw HTTP, browser and Lighthouse gates against local production build
         shell: bash

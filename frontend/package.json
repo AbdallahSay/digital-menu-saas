@@ -15,7 +15,8 @@
     "test:lighthouse": "node scripts/lighthouse-ci.mjs",
     "test:security": "node --test scripts/test-security.mjs scripts/test-static-assets.mjs",
     "test:router": "node --test scripts/test-api-router.mjs",
-    "test:vercel": "node --test scripts/test-vercel-output.mjs"
+    "test:vercel": "node --test scripts/test-vercel-output.mjs",
+    "test:vercel:wiring": "node --test scripts/test-vercel-wiring.mjs"
   },
   "private": true,
   "packageManager": "npm@11.17.0",
