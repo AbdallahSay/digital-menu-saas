@@ -119,7 +119,7 @@ test('all browser JavaScript together stays within the reviewed aggregate gzip b
   assert.ok(bytes <= AGGREGATE_BASE_BYTES + LEAD_FEATURE_ALLOWANCE_BYTES);
 });
 
-test('initial public first-load JavaScript (entry plus static imports) stays within 180 KiB gzip', () => {
+test('bootstrap-static JavaScript (entry script plus static imports only; NOT public first-load, see route-js-gate.mjs) stays within 180 KiB gzip', () => {
   const folder = 'dist/digital-menu/browser';
   const html = readFileSync(folder + '/index.csr.html', 'utf8');
   const entry = /<script[^>]+src="([^"]+\.js)"/.exec(html)?.[1];
