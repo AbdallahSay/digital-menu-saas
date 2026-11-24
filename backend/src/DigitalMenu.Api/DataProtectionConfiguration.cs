@@ -19,6 +19,10 @@ public static class DataProtectionConfiguration
     public const string ApplicationNameKey = "DataProtection:ApplicationName";
 
     public static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
+        => Configure(services, environment, configuration, OperatingSystem.IsWindows());
+
+    // The platform is a parameter so the Windows policy can be exercised on any OS (contract tests). Behaviour is unchanged.
+    public static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration, bool isWindows)
     {
         var name = configuration[ApplicationNameKey];
         if (string.IsNullOrWhiteSpace(name))
@@ -34,7 +38,7 @@ public static class DataProtectionConfiguration
             if (environment.IsDevelopment()) return;
             throw new InvalidOperationException("DataProtection:KeysPath is required outside Development.");
         }
-        if (OperatingSystem.IsWindows() && !environment.IsDevelopment())
+        if (isWindows && !environment.IsDevelopment())
             throw new InvalidOperationException("Windows key-directory ACLs are not validated by this build; durable key storage on Windows is not supported yet.");
         var dir = PrepareDirectory(path, environment, configuration);
         builder.PersistKeysToFileSystem(new DirectoryInfo(dir));

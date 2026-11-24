@@ -106,6 +106,57 @@ public sealed class DataProtectionTests
         finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
     }
 
+    // Contract (platform-neutral, runs on any OS): outside Development, a configured key path on Windows is refused
+    // until an ACL or protected-store policy exists. This documents the CURRENT limit; it is not a Windows strategy.
+    [Fact]
+    public void Windows_production_with_a_key_path_is_refused_and_the_message_says_why()
+    {
+        var content = Tmp("content");
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            DataProtectionConfiguration.Configure(new ServiceCollection(), new FakeEnv(content),
+                new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [DataProtectionConfiguration.ApplicationNameKey] = "t-prod", [DataProtectionConfiguration.KeysPathKey] = Path.Combine(Path.GetTempPath(), "abs-keys") }).Build(), isWindows: true));
+        Assert.Contains("Windows", ex.Message);
+        Assert.Contains("not supported", ex.Message);
+    }
+
+    [Fact]
+    public void Windows_development_does_not_require_or_use_a_key_path_and_production_without_path_still_fails_first()
+    {
+        var content = Tmp("content");
+        var cfg = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>()).Build();
+        DataProtectionConfiguration.Configure(new ServiceCollection(), new FakeEnv(content) { EnvironmentName = "Development" }, cfg, isWindows: true);
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            DataProtectionConfiguration.Configure(new ServiceCollection(), new FakeEnv(content),
+                new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" }).Build(), isWindows: true));
+        Assert.Contains("KeysPath", ex.Message);
+    }
+
+    [Fact]
+    public void Blank_or_whitespace_application_name_is_rejected_outside_Development()
+    {
+        var content = Tmp("content");
+        foreach (var name in new[] { null, "", "   " })
+            Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.Configure(new ServiceCollection(), new FakeEnv(content),
+                new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [DataProtectionConfiguration.ApplicationNameKey] = name, [DataProtectionConfiguration.KeysPathKey] = Path.Combine(Path.GetTempPath(), "x") }).Build(), isWindows: false));
+    }
+
+    // Observation test: records the mode of the generated key file on Unix. Plaintext keys are protected by
+    // filesystem permissions only, so the directory (0700) is the control; this asserts the directory stays private.
+    [Fact]
+    public void Generated_key_files_live_inside_a_private_directory_on_Unix()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var content = Tmp("content"); var keys = Tmp("keys");
+        try
+        {
+            using (var sp = Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" }))
+                sp.GetRequiredService<IDataProtectionProvider>().CreateProtector("t").Protect("x");
+            Assert.NotEmpty(Directory.GetFiles(keys, "*.xml"));
+            Assert.Equal(0, (int)File.GetUnixFileMode(keys) & 0x3F); // no group/other access to the directory
+        }
+        finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
+    }
+
     sealed class FakeEnv(string content) : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = "Production";
