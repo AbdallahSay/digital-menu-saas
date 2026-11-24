@@ -113,12 +113,14 @@ export async function sitemapResponse(
   const fail: SitemapResult = { status: 503, type: 'text/plain', body: 'Sitemap unavailable', headers: NO_STORE };
   const controller = new AbortController();
   const open: { cancel(): Promise<void> }[] = [];
+  let expired = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   // One deadline for the WHOLE operation (fetch, body read, cancellation). The deadline race does not depend on
   // the fetch adapter, the stream or cancel() honouring the signal: whichever settles first wins, and any work
   // that never settles is abandoned (its rejection is swallowed), not awaited.
   const deadline = new Promise<SitemapResult>((resolve) => {
     timer = setTimeout(() => {
+      expired = true;
       controller.abort();
       for (const r of open) bestEffortCancel(r); // abandon, never await
       resolve(fail);
@@ -132,11 +134,12 @@ export async function sitemapResponse(
         redirect: 'error',
         signal: controller.signal,
       });
-      if (!response.ok) {
+      if (expired || !response.ok) {
+        // Late arrival after the deadline (adapter ignored the signal) or a non-OK body: release it, read nothing.
         bestEffortCancel(response.body);
         return fail;
       }
-      const text = await readBounded(response, MAX_BODY_BYTES, open);
+      const text = await readBounded(response, MAX_BODY_BYTES, open, () => expired);
       if (text === null) return fail;
       const xml = renderSitemap(config, JSON.parse(text));
       return xml === null ? fail : { status: 200, type: 'application/xml', body: xml, headers: NO_STORE };
@@ -165,13 +168,26 @@ function bestEffortCancel(target: { cancel(): Promise<void> } | null | undefined
 
 // Reads the actual bytes incrementally and stops as soon as the cap is crossed. Deadline handling lives in the
 // caller's race; a read that never settles is abandoned there.
-async function readBounded(response: Response, max: number, open: { cancel(): Promise<void> }[]): Promise<string | null> {
+async function readBounded(
+  response: Response,
+  max: number,
+  open: { cancel(): Promise<void> }[],
+  isExpired: () => boolean,
+): Promise<string | null> {
   const reader = response.body?.getReader();
   if (!reader) return null;
   open.push(reader);
+  if (isExpired()) {
+    bestEffortCancel(reader);
+    return null;
+  }
   const chunks: Uint8Array[] = [];
   let total = 0;
   for (;;) {
+    if (isExpired()) {
+      bestEffortCancel(reader);
+      return null;
+    }
     const { done, value } = await reader.read();
     if (done) break;
     total += value.byteLength;

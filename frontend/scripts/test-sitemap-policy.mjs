@@ -170,7 +170,7 @@ test('a body whose read ignores abort and never settles is bounded by the deadli
   assert.equal(r.status, 503);
 });
 
-test('fetch resolving after the deadline cannot revive the result; no unhandled rejections', async () => {
+test('fetch REJECTING after the deadline: no unhandled rejections', async () => {
   const r = await sitemapResponse(readSitemapConfig(on), url, () => new Promise((res, rej) => setTimeout(() => rej(new Error('late')), 300)), 100);
   assert.equal(r.status, 503);
   await new Promise((r2) => setTimeout(r2, 400));
@@ -183,4 +183,25 @@ test('output is real XML: parsed with a strict parser, loc/lastmod round-trip', 
   const doc = new JSDOM(xml, { contentType: 'text/xml' }).window.document;
   assert.equal(doc.querySelector('parsererror'), null);
   assert.deepEqual([...doc.querySelectorAll('loc')].map((n) => n.textContent), ['https://menu.example/r/cafe-1']);
+});
+
+test('fetch RESOLVING after the deadline (adapter ignored the signal): body is cancelled and never read', async () => {
+  let reads = 0, cancelled = false;
+  const body = new ReadableStream({ pull() { reads++; return never(); }, cancel() { cancelled = true; return never(); } }, { highWaterMark: 0 }); // pull runs only on an actual read
+  const late = () => new Promise((res) => setTimeout(() => res(new Response(body, { status: 200 })), 300));
+  const r = await sitemapResponse(readSitemapConfig(on), url, late, 100);
+  assert.equal(r.status, 503);
+  await new Promise((r2) => setTimeout(r2, 500));
+  assert.equal(cancelled, true, 'late body must be cancelled');
+  assert.equal(reads, 0, 'no read may start after expiry');
+  assert.deepEqual(unhandled, []);
+});
+
+test('late non-OK response after the deadline is also cancelled', async () => {
+  let cancelled = false;
+  const body = new ReadableStream({ pull() { return never(); }, cancel() { cancelled = true; } });
+  const late = () => new Promise((res) => setTimeout(() => res(new Response(body, { status: 503 })), 250));
+  await sitemapResponse(readSitemapConfig(on), url, late, 80);
+  await new Promise((r2) => setTimeout(r2, 400));
+  assert.equal(cancelled, true);
 });
