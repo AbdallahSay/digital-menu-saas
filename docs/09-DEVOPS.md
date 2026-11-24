@@ -39,4 +39,13 @@ CI job URL or local commands with captured exit codes; before/after DB migration
 
 ## Data Protection keys (operational requirement)
 
-Set `DataProtection__KeysPath` to a directory that is private to the service account, outside the application, web root and media root, on storage that is backed up and shared by every API instance. The keys sign auth cookies, antiforgery tokens and one-time identity tokens (owner setup links). Without it, key storage falls back to a host default; in containers that is ephemeral, so each restart or redeploy signs out all owners and invalidates unused setup links. The API logs a warning at startup outside Development when the path is unset. Treat the key files as secrets: do not commit, log, or include them in support bundles. Rotation is automatic (90 days); keep old keys. TLS termination, log redaction and key-directory backup remain deployment acceptance items, not covered by this code.
+Outside Development the API refuses to start unless `DataProtection__KeysPath` names an explicit, absolute, dedicated directory. The keys sign auth cookies, antiforgery tokens and one-time identity tokens (owner setup links), so losing them signs out every owner and voids unused links.
+
+Enforced in code (Linux/macOS): the path must not be a filesystem root, its parent must already exist, it must not be a symlink, and after symlink resolution it must not contain or sit inside the application, content or media directories. A missing directory is created atomically with mode 0700. An existing directory must already be mode 0700 and is never chmod'ed.
+
+Not enforced, so these are open acceptance items, not done:
+- Directory ownership (must be the service account), shared or multi-instance readability, durable volume and backup of the key directory.
+- Windows: ACLs are not validated, so Windows is refused outside Development until a verified ACL or protected-store policy exists on the real target host.
+- Keys are plaintext XML at rest. No key encryption is configured; confidentiality relies on filesystem permissions and host isolation. Decide on a protected key store or encryption before real use.
+- Race-prone writable ancestors of the key directory are not checked.
+- Rotation is automatic (90 days); keep old keys. TLS termination and request/response log redaction are still open.

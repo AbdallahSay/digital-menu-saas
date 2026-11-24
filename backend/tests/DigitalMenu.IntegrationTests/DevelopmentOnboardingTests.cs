@@ -34,7 +34,7 @@ public sealed class DevelopmentOnboardingTests
     [InlineData("Development", false)]
     public async Task Local_delivery_is_unavailable_without_both_explicit_activation_and_Development(string environment, bool enabled)
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment(environment)
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment(environment).UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys())
             .UseSetting("DevelopmentOnboarding:Enabled", enabled.ToString()));
         Assert.IsType<UnconfiguredOwnerOnboardingDelivery>(factory.Services.GetRequiredService<IOwnerOnboardingDelivery>());
         Assert.False(factory.Services.GetRequiredService<IOwnerOnboardingDelivery>().IsAvailable);

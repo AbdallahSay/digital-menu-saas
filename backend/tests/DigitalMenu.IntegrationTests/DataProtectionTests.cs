@@ -9,6 +9,24 @@ namespace DigitalMenu.IntegrationTests;
 
 public sealed class DataProtectionTests
 {
+    public static string TempKeys() => Path.Combine(Path.GetTempPath(), "dm-keys-test-" + Guid.NewGuid().ToString("N"));
+
+    [Fact]
+    public void Production_without_a_key_path_fails_closed_and_Development_does_not()
+    {
+        var content = Path.Combine(Path.GetTempPath(), "dm-content-" + Guid.NewGuid().ToString("N"));
+        Assert.Throws<InvalidOperationException>(() => Build(content, new()));
+        using var dev = BuildEnv(content, new(), "Development");
+        Assert.NotNull(dev.GetService<IDataProtectionProvider>());
+    }
+
+    static ServiceProvider BuildEnv(string content, Dictionary<string, string?> cfg, string envName)
+    {
+        var services = new ServiceCollection();
+        DataProtectionConfiguration.Configure(services, new FakeEnv(content) { EnvironmentName = envName }, new ConfigurationBuilder().AddInMemoryCollection(cfg).Build());
+        return services.BuildServiceProvider();
+    }
+
     static ServiceProvider Build(string content, Dictionary<string, string?> cfg)
     {
         var services = new ServiceCollection();
@@ -34,13 +52,42 @@ public sealed class DataProtectionTests
         finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
     }
 
+    static string Tmp(string n) => Path.Combine(Path.GetTempPath(), "dm-" + n + "-" + Guid.NewGuid().ToString("N"));
+
     [Fact]
-    public void Key_directory_inside_content_root_or_media_root_is_rejected()
+    public void Unsafe_key_directories_are_rejected_without_touching_permissions()
     {
-        var content = Path.Combine(Path.GetTempPath(), "dm-content-" + Guid.NewGuid().ToString("N"));
-        Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = Path.Combine(content, "keys") }));
-        var media = Path.Combine(Path.GetTempPath(), "dm-media-" + Guid.NewGuid().ToString("N"));
-        Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = Path.Combine(media, "keys"), ["Media:LocalRoot"] = media }));
+        if (OperatingSystem.IsWindows()) return;
+        var content = Tmp("content"); var media = Tmp("media"); Directory.CreateDirectory(content); Directory.CreateDirectory(media);
+        var shared = Tmp("shared"); Directory.CreateDirectory(shared);
+        File.SetUnixFileMode(shared, (UnixFileMode)Convert.ToInt32("755", 8));
+        void Rejects(string path) => Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = path, ["Media:LocalRoot"] = media }));
+        Rejects("relative/keys");
+        Rejects("/");
+        Rejects(Path.Combine(content, "keys"));
+        Rejects(Path.Combine(media, "keys"));
+        Rejects(Path.GetTempPath().TrimEnd('/'));          // ancestor of content/media
+        Rejects(shared);                                    // existing shared 0755 dir
+        Assert.Equal(Convert.ToInt32("755", 8), (int)File.GetUnixFileMode(shared) & 0x1FF);
+        Rejects(Path.Combine(Tmp("missing-parent"), "keys"));
+        var link = Tmp("link"); Directory.CreateSymbolicLink(link, content);
+        Rejects(Path.Combine(link, "keys"));                // resolves into content root
+        var direct = Tmp("direct"); Directory.CreateSymbolicLink(direct, Tmp("elsewhere"));
+        Rejects(direct);
+    }
+
+    [Fact]
+    public void New_key_directory_is_created_private_and_existing_private_one_is_reused()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var content = Tmp("content"); var keys = Tmp("keys");
+        try
+        {
+            using (Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys })) { }
+            Assert.Equal(Convert.ToInt32("700", 8), (int)File.GetUnixFileMode(keys) & 0x1FF);
+            using var again = Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys });
+        }
+        finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
     }
 
     sealed class FakeEnv(string content) : IHostEnvironment

@@ -43,8 +43,6 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
-if (!app.Environment.IsDevelopment() && !DigitalMenu.Api.DataProtectionConfiguration.IsPersistent(app.Configuration))
-    app.Logger.LogWarning("DataProtection:KeysPath is not set. Key storage falls back to a host default that is ephemeral in containers and not shared across instances; a lost key signs out owners and invalidates onboarding links. Set it for any real deployment.");
 if (args.Contains("--bootstrap-admin=true", StringComparer.Ordinal))
 {
     await DevelopmentBootstrap.RunAsync(app.Services, app.Environment, app.Configuration);
