@@ -1,5 +1,7 @@
 // Run immediately after the build that produced dist/digital-menu/browser:
 //   node scripts/write-build-manifest.mjs "<exact build command>"
+// SCOPE: covers the flat browser .js/.css/.html files only. It does NOT cover the SSR server
+// bundle or the packaged Vercel function, so it is not whole deployed-artifact identity.
 // Writes dist/digital-menu/build-manifest.json (git SHA, dirty flag, build command, Node version,
 // sha256 of every emitted browser file). Measurement scripts refuse to run when the folder does
 // not match it, so a stale or rebuilt dist cannot be attributed to the wrong build.
@@ -32,7 +34,10 @@ writeFileSync(
   JSON.stringify(
     {
       gitSha: git('git rev-parse HEAD'),
-      gitTreeDirty: git('git status --porcelain -- . ":!dist" ":!.lighthouseci"') !== '',
+      gitTreeDirty:
+        git(
+          'git status --porcelain -- .. ":!frontend/dist" ":!frontend/.lighthouseci" ":!frontend/.vercel" ":!.vercel"',
+        ) !== '',
       buildCommand: process.argv[2] ?? 'unrecorded',
       node: process.version,
       builtAt: new Date().toISOString(),
