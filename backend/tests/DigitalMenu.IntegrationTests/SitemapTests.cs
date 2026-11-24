@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using static DigitalMenu.IntegrationTests.AuthenticationTests;
 using DigitalMenu.Infrastructure.Persistence;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace DigitalMenu.IntegrationTests;
@@ -140,5 +141,33 @@ public sealed class SitemapTests
         var down = await client.GetAsync("/api/v1/public/sitemap");
         Assert.Equal(HttpStatusCode.ServiceUnavailable, down.StatusCode);
         Assert.DoesNotContain("simulated", await down.Content.ReadAsStringAsync());
+    }
+
+    [SqlServerFact]
+    public async Task Upgrading_an_existing_database_leaves_every_existing_restaurant_unlisted()
+    {
+        var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
+        if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
+            throw new InvalidOperationException("Only dedicated F02 LocalDB or localhost disposable CI SQL Server is allowed.");
+        connection.InitialCatalog = "DigitalMenu_F02_Test_" + Guid.NewGuid().ToString("N");
+        SqlTestStorage.Configure(connection);
+        var options = new DbContextOptionsBuilder<MenuDbContext>().UseSqlServer(connection.ConnectionString).Options;
+        await using var db = new MenuDbContext(options);
+        try
+        {
+            // Bring the database to the state before this feature, with published restaurants in it.
+            await db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>().MigrateAsync("20261124155314_AddLeadNoticeFingerprint");
+            Assert.DoesNotContain("20261124185237_AddRestaurantIsIndexable", await db.Database.GetAppliedMigrationsAsync());
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO Restaurants (Id,Name,Slug,PublicCode,Status,IsPublished,PublishedMenuVersion,CreatedAtUtc,UpdatedAtUtc) VALUES (NEWID(),N'old-a','old-a','00000000000000000011','Active',1,1,SYSUTCDATETIME(),SYSUTCDATETIME()),(NEWID(),N'old-b','old-b','00000000000000000012','Active',1,1,SYSUTCDATETIME(),SYSUTCDATETIME())");
+            await db.Database.MigrateAsync();
+            Assert.Contains("20261124185237_AddRestaurantIsIndexable", await db.Database.GetAppliedMigrationsAsync());
+            Assert.Equal(2, await db.Set<Restaurant>().CountAsync(r => !r.IsIndexable));
+            Assert.Empty((await new SitemapReader(db).ReadAsync(1, CancellationToken.None)).Entries);
+        }
+        finally
+        {
+            await db.Database.EnsureDeletedAsync();
+        }
     }
 }
