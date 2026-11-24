@@ -44,6 +44,7 @@ jobs:
           npm run test:sitemap
           npm run build
           node ../scripts/build-vercel.mjs # also writes dist/digital-menu/build-manifest.json
+          npm run test:sitemap:server
           npm run test:vercel:wiring
           npm run test:vercel
           npx playwright install --with-deps chromium
