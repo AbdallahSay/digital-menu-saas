@@ -29,6 +29,23 @@ export function enforceBudget(label, measurement, budget = ROUTE_BUDGET_BYTES) {
     throw new Error(`${label}: ${measurement.bytes} B gzip exceeds ${budget} B`);
 }
 
+// Shared by every cold-load probe: HTTP >= 400 is a problem, and every executable response (resource
+// type script, or a .js path) must be same-origin, a flat built artifact that exists in `folder`, and
+// served with a JavaScript MIME type. Only then is it added to the measured script set.
+export function classifyResponse(r, expectedOrigin, folder, scripts, problems) {
+  const u = new URL(r.url());
+  if (r.status() >= 400) problems.push(`http ${r.status()}: ${u.pathname}`);
+  const executable = r.request().resourceType() === 'script' || u.pathname.endsWith('.js');
+  if (!executable) return;
+  if (u.origin !== expectedOrigin) return problems.push('foreign script origin: ' + u.origin);
+  const file = u.pathname.slice(1);
+  if (!/^[\w.-]+\.js$/.test(file) || !existsSync(join(folder, file)))
+    return problems.push('script not a built artifact: ' + u.pathname);
+  if (!/javascript/.test(r.headers()['content-type'] ?? ''))
+    problems.push('bad js mime: ' + u.pathname);
+  scripts.add(file);
+}
+
 // Cold navigation in a fresh context. Fails closed: any page error, console error, failed
 // request, HTTP >= 400, or non-JavaScript script response throws. `readySelector` plus
 // `expectText` must be visible, so an error or not-found screen cannot satisfy readiness.
@@ -52,20 +69,7 @@ export async function coldScripts(
     page.on('pageerror', (e) => problems.push('pageerror: ' + e.message));
     page.on('console', (m) => m.type() === 'error' && problems.push('console: ' + m.text()));
     page.on('requestfailed', (r) => problems.push('failed: ' + r.url()));
-    page.on('response', (r) => {
-      const u = new URL(r.url());
-      if (r.status() >= 400) problems.push(`http ${r.status()}: ${u.pathname}`);
-      const executable = r.request().resourceType() === 'script' || u.pathname.endsWith('.js');
-      if (!executable) return;
-      // Every executable must be same-origin and map to a built artifact, or the run fails.
-      if (u.origin !== expectedOrigin) return problems.push('foreign script origin: ' + u.origin);
-      const file = u.pathname.slice(1);
-      if (!/^[\w.-]+\.js$/.test(file) || !existsSync(join(folder, file)))
-        return problems.push('script not a built artifact: ' + u.pathname);
-      if (!/javascript/.test(r.headers()['content-type'] ?? ''))
-        problems.push('bad js mime: ' + u.pathname);
-      scripts.add(file);
-    });
+    page.on('response', (r) => classifyResponse(r, expectedOrigin, folder, scripts, problems));
     await page.goto(url, { waitUntil: 'networkidle', timeout });
     // BOOTSTRAP oracle, not a proof that the routed component finished hydrating: expected text is
     // present (SSR HTML already has it for SSR routes), AND Angular's client
@@ -187,6 +191,7 @@ export function writeRouteEvidence(name, folder, measurements, browserVersion = 
 export async function hydrationProbe(
   browser,
   url,
+  folder,
   {
     prepare,
     timeout = 15000,
@@ -217,11 +222,8 @@ export async function hydrationProbe(
     page.on('requestfailed', (r) => {
       if (!(neverRelease && /\/main-[^/]*\.js/.test(r.url()))) problems.push('failed: ' + r.url());
     });
-    page.on('response', (r) => {
-      const u = new URL(r.url());
-      if (r.status() >= 400) problems.push(`http ${r.status()}: ${u.pathname}`);
-      if (/\.m?js$/.test(u.pathname)) scripts.add(u.pathname.replace(/^\//, ''));
-    });
+    const expectedOrigin = new URL(url).origin;
+    page.on('response', (r) => classifyResponse(r, expectedOrigin, folder, scripts, problems));
     let release;
     const gate = new Promise((r) => (release = r));
     let held = 0;

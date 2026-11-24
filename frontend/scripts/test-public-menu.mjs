@@ -288,6 +288,9 @@ test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch 
 });
 test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM in the same load that is budgeted', async () => {
   const folder = 'dist/digital-menu/browser';
+  verifyBuildManifest(folder);
+  for (const m of ADMIN_MARKERS)
+    assert.ok(chunksContaining(folder, [m]).length > 0, `marker ${m} matches no chunk`);
   const browser = await chromium.launch();
   const evidence = {};
   const prepare = (page) =>
@@ -303,7 +306,7 @@ test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM in the same l
         lang: language,
         dir: language === 'ar' ? 'rtl' : 'ltr',
       };
-      const r = await hydrationProbe(browser, url, { prepare, ...expected });
+      const r = await hydrationProbe(browser, url, folder, { prepare, ...expected });
       evidence[language] = {
         url: new URL(url).pathname + new URL(url).search,
         heldBefore: r.heldBefore,
@@ -322,19 +325,54 @@ test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM in the same l
       for (const f of adminChunks(folder))
         assert.ok(!r.files.includes(f), 'admin chunk fetched: ' + f);
       // Controls: client never boots; and the SSR heading is replaced before the client boots.
-      const never = await hydrationProbe(browser, url, {
+      const never = await hydrationProbe(browser, url, folder, {
         prepare,
         ...expected,
         neverRelease: true,
         timeout: 8000,
       });
       assert.throws(() => assertHydrated(never, url), /hydration markers left/);
-      const swapped = await hydrationProbe(browser, url, {
+      const swapped = await hydrationProbe(browser, url, folder, {
         prepare,
         ...expected,
         replaceSsrNode: true,
       });
       assert.throws(() => assertHydrated(swapped, url), /not hydrated/);
+      // Gate-contract controls on this same path: a foreign-origin script and an extensionless script
+      // injected after load must be reported as problems, never charged to the budget.
+      for (const [name, src, pattern] of [
+        ['foreign', 'http://foreign.invalid/injected.js', /foreign script origin/],
+        ['extensionless', origin + '/injected-script', /not a built artifact/],
+      ]) {
+        const injected = await hydrationProbe(browser, url, folder, {
+          prepare: async (page) => {
+            await prepare(page);
+            await page.route(src, (route) =>
+              route.fulfill({
+                status: 200,
+                contentType: 'text/javascript',
+                body: '/* injected */',
+              }),
+            );
+            await page.addInitScript((s) => {
+              addEventListener('load', () =>
+                setTimeout(() => {
+                  const el = document.createElement('script');
+                  el.src = s;
+                  document.head.append(el);
+                }, 300),
+              );
+            }, src);
+          },
+          ...expected,
+        });
+        assert.ok(
+          injected.problems.some((p) => pattern.test(p)),
+          `${name} injected script not reported: ${injected.problems.join('|')}`,
+        );
+        assert.throws(() => assertHydrated(injected, url), /not hydrated/);
+        assert.ok(!injected.files.some((f) => /injected/.test(f)), name + ' counted as measured');
+      }
       evidence[language].controls = {
         neverRelease: { markersLeft: never.after.hydrationMarkers, rejected: true },
         replaceSsrNode: {
