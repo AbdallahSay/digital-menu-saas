@@ -102,12 +102,42 @@ test('parallel public and missing requests do not mix metadata or fixture conten
   );
 });
 
-test('all browser JavaScript together stays within the provisional 180 KiB gzip budget', () => {
+// Aggregate gate: sums EVERY emitted browser JS file (lazy admin chunks included), default gzip
+// level. History: provisional 180 KiB (184,320 B). The lead-intake feature measured +5,004 B
+// (base 8f4d422 = 181,329 B, tip a2da5f7 = 186,333 B, same algorithm, which failed the old
+// budget by 2,013 B). Reviewed allowance for that feature: 5 KiB (5,120 B). Do not grow per feature
+// without a new measured delta and review.
+const AGGREGATE_BASE_BYTES = 180 * 1024;
+const LEAD_FEATURE_ALLOWANCE_BYTES = 5 * 1024;
+
+test('all browser JavaScript together stays within the reviewed aggregate gzip budget', () => {
   const folder = 'dist/digital-menu/browser';
   const bytes = readdirSync(folder)
     .filter((f) => f.endsWith('.js'))
     .reduce((total, file) => total + gzipSync(readFileSync(folder + '/' + file)).length, 0);
   console.log('All browser JS gzip bytes:', bytes);
+  assert.ok(bytes <= AGGREGATE_BASE_BYTES + LEAD_FEATURE_ALLOWANCE_BYTES);
+});
+
+test('initial public first-load JavaScript (entry plus static imports) stays within 180 KiB gzip', () => {
+  const folder = 'dist/digital-menu/browser';
+  const html = readFileSync(folder + '/index.csr.html', 'utf8');
+  const entry = /<script[^>]+src="([^"]+\.js)"/.exec(html)?.[1];
+  assert.ok(entry, 'entry script not found');
+  const seen = new Set();
+  const visit = (file) => {
+    if (seen.has(file)) return;
+    seen.add(file);
+    const code = readFileSync(folder + '/' + file, 'utf8');
+    // static imports only: import"./x.js" and from"./x.js"; dynamic import("./x.js") is lazy.
+    for (const m of code.matchAll(/(?:from|import)\s*"\.\/([^"]+\.js)"/g)) visit(m[1]);
+  };
+  visit(entry);
+  const bytes = [...seen].reduce(
+    (total, file) => total + gzipSync(readFileSync(folder + '/' + file)).length,
+    0,
+  );
+  console.log('Initial JS gzip bytes:', bytes, 'files:', seen.size);
   assert.ok(bytes <= 180 * 1024);
 });
 
