@@ -273,8 +273,11 @@ describe('PlatformConsoleComponent rendered owner-link confirm', () => {
     const fixture = TestBed.createComponent(PlatformConsoleComponent);
     fixture.detectChanges();
     http
-      .expectOne((r) => r.method === 'GET')
+      .expectOne((r) => r.method === 'GET' && !r.url.includes('/leads'))
       .flush({ page: 1, pageSize: PAGE_SIZE, total: 1, items: [row(1)] });
+    http
+      .expectOne((r) => r.method === 'GET' && r.url.includes('/platform/leads'))
+      .flush({ page: 1, pageSize: 20, total: 0, items: [] });
     await fixture.whenStable();
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;

@@ -13,7 +13,7 @@ namespace DigitalMenu.IntegrationTests;
 
 public sealed class LeadTests
 {
-    private const string Route = "/api/v1/leads";
+    private const string Route = "/api/v1/auth/leads";
     private const string Admin = "/api/v1/platform/leads";
     private static readonly LeadOptions Open = new("notice-test-1", 30, "Test Seller", "wa:+200000000000");
 

@@ -621,7 +621,12 @@ interface ServiceRequestForm {
               </div>
             }
 
-            <form class="service-form" (ngSubmit)="onFormSubmit()" #form="ngForm" [hidden]="leadState() === 'done'">
+            <form
+              class="service-form"
+              (ngSubmit)="onFormSubmit()"
+              #form="ngForm"
+              [hidden]="leadState() === 'done'"
+            >
               <div class="form-group">
                 <label for="contactName" class="form-label"
                   >اسم المسؤول <span class="required">*</span></label

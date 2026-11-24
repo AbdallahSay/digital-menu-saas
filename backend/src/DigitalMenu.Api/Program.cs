@@ -74,13 +74,13 @@ app.Use(async (context, next) =>
         await Results.Problem(statusCode: 400, title: "HTTPS is required.").ExecuteAsync(context);
         return;
     }
-    if (context.Request.Path.StartsWithSegments("/api/v1/leads") &&
-        context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } leadBody)
-        leadBody.MaxRequestBodySize = LeadEndpoints.BodyLimit;
     if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform") || context.Request.Path.StartsWithSegments("/api/v1/admin")) &&
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
         bodySize.MaxRequestBodySize = context.GetEndpoint()?.Metadata.GetMetadata<MediaUploadMetadata>() is not null
             ? MediaEndpoints.BodyLimit : context.Request.Path.StartsWithSegments("/api/v1/admin/items") ? 32768 : 8192;
+    if (context.Request.Path.StartsWithSegments("/api/v1/auth/leads") &&
+        context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } leadBody)
+        leadBody.MaxRequestBodySize = LeadEndpoints.BodyLimit;
     if (context.Request.Path.StartsWithSegments("/api") &&
         !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method))
     {

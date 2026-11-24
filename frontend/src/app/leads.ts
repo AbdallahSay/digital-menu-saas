@@ -42,7 +42,13 @@ export class LeadIntakeService {
         s.contactChannel
       )
         return s;
-      return { open: false, noticeVersion: null, retentionDays: null, controllerName: null, contactChannel: null };
+      return {
+        open: false,
+        noticeVersion: null,
+        retentionDays: null,
+        controllerName: null,
+        contactChannel: null,
+      };
     } catch {
       return null;
     }
@@ -52,7 +58,7 @@ export class LeadIntakeService {
     try {
       await firstValueFrom(this.http.get('/api/v1/auth/csrf'));
       const response = await firstValueFrom(
-        this.http.post('/api/v1/leads', payload, { observe: 'response' }),
+        this.http.post('/api/v1/auth/leads', payload, { observe: 'response' }),
       );
       return response.status === 201 ? 'created' : 'unconfirmed';
     } catch (e) {

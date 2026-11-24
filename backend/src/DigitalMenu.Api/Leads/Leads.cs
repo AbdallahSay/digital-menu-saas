@@ -70,7 +70,8 @@ public static partial class LeadEndpoints
             Results.Ok(new LeadStatusResponse(holder.Options is not null, holder.Options?.NoticeVersion, holder.Options?.RetentionDays,
                 holder.Options?.ControllerName, holder.Options?.ContactChannel)))
             .AllowAnonymous().RequireRateLimiting("lead-status");
-        app.MapPost("/api/v1/leads", Create).AllowAnonymous().RequireRateLimiting("lead-create")
+        // Under /api/v1/auth so the SSR proxy forwards the antiforgery cookies (public paths are identity-free).
+        app.MapPost("/api/v1/auth/leads", Create).AllowAnonymous().RequireRateLimiting("lead-create")
             .Produces(201).ProducesProblem(400).ProducesProblem(415).ProducesProblem(429).ProducesProblem(503);
 
         var admin = app.MapGroup("/api/v1/platform/leads").RequireAuthorization("PlatformAdmin");

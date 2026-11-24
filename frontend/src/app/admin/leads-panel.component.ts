@@ -79,15 +79,28 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
                   @if (confirmDelete() === l.id) {
                     <span role="group" aria-label="تأكيد مسح الطلب">
                       <span>هيتمسح نهائيًا.</span>
-                      <button type="button" class="btn btn-secondary" (click)="remove(l)" [disabled]="busy()">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="remove(l)"
+                        [disabled]="busy()"
+                      >
                         تأكيد المسح
                       </button>
-                      <button type="button" class="btn btn-secondary" (click)="confirmDelete.set(null)">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="confirmDelete.set(null)"
+                      >
                         إلغاء
                       </button>
                     </span>
                   } @else {
-                    <button type="button" class="btn btn-secondary" (click)="confirmDelete.set(l.id)">
+                    <button
+                      type="button"
+                      class="btn btn-secondary"
+                      (click)="confirmDelete.set(l.id)"
+                    >
                       مسح
                     </button>
                   }
