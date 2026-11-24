@@ -10,6 +10,7 @@ import { gzipSync } from 'node:zlib';
 import { apiProxy } from './api-proxy';
 import { secureAssets } from './secure-assets';
 import { publicPage, publicOrigin, publicApiOrigin } from './public-menu-server';
+import { readSitemapConfig, robotsTxt, sitemapResponse } from './sitemap-policy';
 
 // F01 only: this is a reversible local router, never a production hosting decision.
 const app = express();
@@ -26,20 +27,19 @@ app.use((_req, res, next) => {
 app.use('/api', apiProxy(publicApiOrigin));
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.get('/m/demo-code', (_req, res) => res.redirect(302, '/r/demo'));
-app.get('/robots.txt', (_req, res) =>
-  res
-    .type('text/plain')
-    .send(
-      `User-agent: *\nDisallow: /admin\nDisallow: /api/\nSitemap: ${publicOrigin}/sitemap.xml\n`,
-    ),
-);
-app.get('/sitemap.xml', (_req, res) =>
-  res
-    .type('application/xml')
-    .send(
-      `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${publicOrigin}/r/demo</loc></url></urlset>`,
-    ),
-);
+const sitemapConfig = readSitemapConfig(process.env);
+if (process.env['SITEMAP_ENABLED'] === 'true' && !sitemapConfig.enabled)
+  console.error('Sitemap disabled: ' + sitemapConfig.reason); // fixed reason strings only, never the raw value
+app.get('/robots.txt', (_req, res) => res.type('text/plain').send(robotsTxt(sitemapConfig)));
+app.get('/sitemap.xml', async (_req, res) => {
+  const result = await sitemapResponse(
+    sitemapConfig,
+    publicApiOrigin + '/api/v1/public/sitemap?page=1',
+    fetch,
+  );
+  for (const [key, value] of Object.entries(result.headers)) res.setHeader(key, value);
+  res.status(result.status).type(result.type).send(result.body);
+});
 
 app.use(secureAssets(join(import.meta.dirname, '../browser'), isMainModule(import.meta.url)));
 

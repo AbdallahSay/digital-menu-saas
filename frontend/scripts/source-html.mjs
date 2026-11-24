@@ -74,18 +74,11 @@ test('marketing is prerendered, admin is CSR and noindex, proxy reaches .NET', a
   assert.equal((await fetch(origin + '/api/openapi/v1.json')).status, 200);
 });
 
-test('sitemap contains only canonical fixture and forged Host cannot poison canonical', async () => {
-  const xml = await (await fetch(origin + '/sitemap.xml')).text();
-  const doc = new JSDOM(xml, { contentType: 'text/xml' }).window.document;
-  assert.deepEqual(
-    [...doc.querySelectorAll('loc')].map((n) => n.textContent),
-    [origin + '/r/demo'],
-  );
-  assert.doesNotMatch(xml, /\/m\/|admin|lastmod/);
-  assert.match(
-    await (await fetch(origin + '/robots.txt')).text(),
-    /Sitemap: http:\/\/localhost:4000\/sitemap.xml/,
-  );
+test('sitemap is disabled by default, robots does not advertise it, and forged Host cannot poison anything', async () => {
+  const sitemap = await fetch(origin + '/sitemap.xml');
+  assert.equal(sitemap.status, 404);
+  assert.doesNotMatch(await sitemap.text(), /<url|\/r\/demo/);
+  assert.doesNotMatch(await (await fetch(origin + '/robots.txt')).text(), /Sitemap:/);
   const response = await fetch(origin + '/r/demo', { headers: { host: 'evil.example' } });
   assert.ok([200, 400, 403, 421].includes(response.status));
   if (response.status === 200) assert.doesNotMatch(await response.text(), /evil\.example/);
@@ -170,11 +163,11 @@ function rawGet(port, path, host) {
   });
 }
 
-test('robots and sitemap use the configured PUBLIC_ORIGIN, never localhost or the Host header', async () => {
+test('with sitemap disabled (default) robots has no Sitemap line and a forged Host changes nothing', async () => {
   const configured = 'https://menu.example.test';
   const port = await freePort();
   const child = spawn(process.execPath, ['dist/digital-menu/server/server.mjs'], {
-    env: { ...process.env, F01_LOCAL_ONLY: '1', PORT: String(port), PUBLIC_ORIGIN: configured },
+    env: { ...process.env, F01_LOCAL_ONLY: '1', PORT: String(port), PUBLIC_ORIGIN: configured, SITEMAP_ENABLED: '' },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   const exited = new Promise((resolve) => child.once('exit', resolve));
@@ -197,17 +190,10 @@ test('robots and sitemap use the configured PUBLIC_ORIGIN, never localhost or th
     const robots = await rawGet(port, '/robots.txt', forged);
     assert.equal(robots.status, 200);
     assert.match(robots.headers['content-type'], /^text\/plain/);
-    assert.match(robots.body, /^Sitemap: https:\/\/menu\.example\.test\/sitemap\.xml$/m);
-    assert.doesNotMatch(robots.body, /localhost|127\.0\.0\.1|evil\.example/);
+    assert.doesNotMatch(robots.body, /Sitemap:|localhost|127\.0\.0\.1|evil\.example/);
     const sitemap = await rawGet(port, '/sitemap.xml', forged);
-    assert.equal(sitemap.status, 200);
-    assert.match(sitemap.headers['content-type'], /xml/);
-    assert.doesNotMatch(sitemap.body, /localhost|127\.0\.0\.1|evil\.example/);
-    const doc = new JSDOM(sitemap.body, { contentType: 'text/xml' }).window.document;
-    assert.deepEqual(
-      [...doc.querySelectorAll('loc')].map((n) => n.textContent),
-      [configured + '/r/demo'],
-    );
+    assert.equal(sitemap.status, 404);
+    assert.doesNotMatch(sitemap.body, /<url|localhost|127\.0\.0\.1|evil\.example/);
   } finally {
     child.kill();
     await exited;
