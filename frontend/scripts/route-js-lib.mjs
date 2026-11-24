@@ -36,7 +36,7 @@ export async function coldScripts(
   browser,
   url,
   folder,
-  { readySelector, expectText, lang, dir, timeout = 15000, prepare },
+  { readySelector, expectText, lang, dir, timeout = 15000, prepare, interact },
 ) {
   const expectedOrigin = new URL(url).origin;
   const context = await browser.newContext({
@@ -80,12 +80,18 @@ export async function coldScripts(
       [readySelector, expectText, lang ?? '', dir ?? ''],
       { timeout },
     );
+    // Optional routed-component oracle: a client-only interaction that cannot work from static
+    // SSR/CSR markup alone (a click handler, or a client-side router navigation).
+    // Measure the route's own requests first: the interaction may navigate and load another
+    // route's chunks, which must not be billed to this route.
+    const routeScripts = [...scripts].sort();
+    if (interact) await interact(page, timeout);
     // Stable window: let hydration and any deferred requests settle before the set is read.
     await page.waitForTimeout(1000);
     await page.waitForLoadState('networkidle', { timeout });
     if (scripts.size === 0) problems.push('no scripts observed');
     if (problems.length) throw new Error(`cold load problems for ${url}: ${problems.join('; ')}`);
-    return [...scripts].sort();
+    return routeScripts;
   } finally {
     await context.close();
   }

@@ -33,9 +33,43 @@ import {
 } from './route-js-lib.mjs';
 
 const SRC = 'dist/digital-menu/browser';
+// Routed-component oracles. '/' proves the marketing component's click handler runs. '/privacy'
+// proves the client router is live: a routerLink click must navigate without a document reload
+// (a window marker set before the click survives) and render the marketing component.
+// '/r/demo' has no interactive control, so it keeps the bootstrap oracle only.
 const ROUTES = {
-  '/': { lang: 'ar', dir: 'rtl', readySelector: 'h1.hero-headline', expectText: 'منيو مطعمك' },
+  '/': {
+    interact: async (page, timeout) => {
+      const button = page.locator('button.mobile-menu-btn');
+      await button.click({ timeout });
+      await page.waitForFunction(
+        () =>
+          document.querySelector('button.mobile-menu-btn')?.getAttribute('aria-expanded') ===
+          'true',
+        null,
+        { timeout },
+      );
+    },
+    lang: 'ar',
+    dir: 'rtl',
+    readySelector: 'h1.hero-headline',
+    expectText: 'منيو مطعمك',
+  },
   '/privacy': {
+    interact: async (page, timeout) => {
+      await page.evaluate(() => (window.__routeProbe = 'alive'));
+      await page.locator('app-privacy a[href="/"]').click({ timeout });
+      await page.waitForFunction(
+        () => location.pathname === '/' && !!document.querySelector('h1.hero-headline'),
+        null,
+        { timeout },
+      );
+      assert.equal(
+        await page.evaluate(() => window.__routeProbe),
+        'alive',
+        'document reloaded; not a client navigation',
+      );
+    },
     lang: 'ar',
     dir: 'rtl',
     readySelector: 'app-privacy h1',
@@ -198,5 +232,25 @@ test('a dist that differs from its build manifest is refused', () => {
     assert.throws(() => verifyBuildManifest(browser), /build-manifest.json missing/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('routed oracle fails when client event handlers never attach (stalled hydration)', async () => {
+  for (const route of ['/', '/privacy']) {
+    await assert.rejects(
+      measureRoutes(SRC, [route], {
+        timeout: 4000,
+        prepare: (page) =>
+          page.addInitScript(() => {
+            const original = EventTarget.prototype.addEventListener;
+            EventTarget.prototype.addEventListener = function (type, ...rest) {
+              if (type === 'click') return; // framework click handlers are never registered
+              return original.call(this, type, ...rest);
+            };
+          }),
+      }),
+      /Timeout|document reloaded/,
+      route,
+    );
   }
 });
