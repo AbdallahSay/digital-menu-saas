@@ -324,6 +324,106 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.Login(fixture.Password, "expired@example.test")).StatusCode);
     }
 
+    private static (Guid UserId, string Token) ParseLink(string url)
+    {
+        var uri = new Uri(url);
+        Assert.Equal("https://menu.example/owner-setup", uri.GetLeftPart(UriPartial.Path));
+        Assert.Equal("", uri.Query);
+        var parts = uri.Fragment.TrimStart('#').Split('&').Select(p => p.Split('=', 2)).ToDictionary(p => p[0], p => p[1]);
+        return (Guid.ParseExact(parts["u"], "N"), Uri.UnescapeDataString(parts["t"]));
+    }
+
+    // The 10/min credential limiter is per IP and shared by a fixture, so each scenario stays under it on purpose.
+    private static Task<(AuthFixture Fixture, Browser Admin, TestDelivery Delivery)> HandoffSetup() => Setup(s =>
+    {
+        var links = new OwnerSetupLinks(new Uri("https://menu.example"));
+        s.AddSingleton(links);
+        s.AddScoped<IOwnerOnboardingDelivery>(_ => new OperatorHandoffDelivery(links));
+    });
+    private static async Task<(Guid RestaurantId, (Guid UserId, string Token) Link)> ProvisionWithLink(Browser admin, string slug)
+    {
+        var created = await admin.Send(HttpMethod.Post, Route, Request(slug));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal("no-store", created.Headers.CacheControl!.ToString());
+        var body = await created.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        return (body.GetProperty("id").GetGuid(), ParseLink(body.GetProperty("ownerSetupUrl").GetString()!));
+    }
+    private static async Task<(Guid UserId, string Token)> Reissue(Browser admin, Guid restaurantId)
+    {
+        var response = await admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl!.ToString());
+        return ParseLink((await response.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl);
+    }
+
+    [SqlServerFact]
+    public async Task Operator_handoff_first_link_is_single_use_and_owners_cannot_mint_links()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "handoff");
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password + "x9!"))).StatusCode);
+        var owner = new Browser(fixture.Factory);
+        await owner.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "handoff@example.test")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link")).StatusCode);
+    }
+
+    [SqlServerFact]
+    public async Task Operator_handoff_reissue_revokes_earlier_links_and_unknown_restaurants_are_404()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, _) = await ProvisionWithLink(admin, "reissue");
+        var a = await Reissue(admin, restaurantId);
+        var b = await Reissue(admin, restaurantId);
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(a.UserId, a.Token, fixture.Password))).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(b.UserId, b.Token, fixture.Password))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(b.UserId, b.Token, fixture.Password))).StatusCode);
+        using var scope = fixture.Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+        Assert.Equal(2, await db.Set<AuditEntry>().CountAsync(x => x.Action == "OwnerSetupLinkIssued"));
+        Assert.DoesNotContain(await db.Set<AuditEntry>().Select(x => x.Action + x.ResourceType).ToListAsync(), v => v.Contains(a.Token));
+    }
+
+    [SqlServerFact]
+    public async Task Operator_handoff_reset_replaces_the_password_and_signs_the_owner_out()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "reset");
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
+        var owner = new Browser(fixture.Factory);
+        await owner.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "reset@example.test")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+        var link = await Reissue(admin, restaurantId);
+        var newPassword = fixture.Password + "x9!";
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(link.UserId, link.Token, newPassword))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+        using var scope = fixture.Factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = (await users.FindByIdAsync(link.UserId.ToString()))!;
+        Assert.True(await users.CheckPasswordAsync(user, newPassword));
+        Assert.False(await users.CheckPasswordAsync(user, fixture.Password));
+    }
+
+    [SqlServerFact]
+    public async Task Without_handoff_or_pipe_production_provisioning_fails_closed_and_links_are_unavailable()
+    {
+        var (f2, admin, _) = await Setup(s => s.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>());
+        await using var cleanup2 = f2;
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await admin.Send(HttpMethod.Post, Route, Request("nolink"))).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await admin.Send(HttpMethod.Post, Route + "/" + Guid.NewGuid() + "/owner-setup-link")).StatusCode);
+    }
+
     [SqlServerFact]
     public async Task Platform_listing_load_smoke_returns_bounded_independent_results()
     {

@@ -20,6 +20,11 @@ public static class DevelopmentOnboarding
             services.AddSingleton<IOwnerOnboardingDelivery>(s => s.GetRequiredService<DevelopmentPipeDelivery>());
             services.AddHostedService(s => s.GetRequiredService<DevelopmentPipeDelivery>());
         }
+        else if (OwnerSetupLinks.FromConfiguration(configuration, environment) is { } links)
+        {
+            services.AddSingleton(links);
+            services.AddScoped<IOwnerOnboardingDelivery, OperatorHandoffDelivery>(s => new OperatorHandoffDelivery(links));
+        }
         else services.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>();
         return services;
     }
