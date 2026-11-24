@@ -159,16 +159,24 @@ public static partial class LeadEndpoints
         return Results.StatusCode(201);
     }
 
-    /// <summary>Atomic shared hourly quota: one conditional UPDATE decides, so concurrent requests and instances cannot exceed the cap.</summary>
-    public static async Task<bool> TryTakeQuota(MenuDbContext db, DateTime now, CancellationToken ct)
+    /// <summary>
+    /// Atomic shared quota per fixed UTC clock hour (not a rolling 60 minutes). One conditional UPDATE decides, so concurrent
+    /// requests and instances cannot exceed the cap. A permit is spent when granted even if the later insert fails (conservative).
+    /// <paramref name="afterZeroRowUpdate"/> is a test seam to interleave another writer after an UPDATE matched no row.
+    /// </summary>
+    public static async Task<bool> TryTakeQuota(MenuDbContext db, DateTime now, CancellationToken ct, Func<Task>? afterZeroRowUpdate = null)
     {
         var hour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
-        for (var attempt = 0; attempt < 3; attempt++)
+        for (var attempt = 0; attempt < 5; attempt++)
         {
             var updated = await db.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE LeadQuotas SET [Count] = [Count] + 1 WHERE HourUtc = {hour} AND [Count] < {GlobalHourlyCap}", ct);
             if (updated == 1) return true;
-            if (await db.Set<LeadQuota>().AsNoTracking().AnyAsync(q => q.HourUtc == hour, ct)) return false; // row exists, at cap
+            if (afterZeroRowUpdate is not null && attempt == 0) await afterZeroRowUpdate();
+            // Zero rows matched: either the row is at the cap, or it does not exist yet, or another writer created it just now.
+            var current = await db.Set<LeadQuota>().AsNoTracking().Where(q => q.HourUtc == hour).Select(q => (int?)q.Count).SingleOrDefaultAsync(ct);
+            if (current is >= GlobalHourlyCap) return false; // genuinely at the cap
+            if (current is not null) continue;               // row exists below the cap: retry the conditional UPDATE
             try
             {
                 await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO LeadQuotas (HourUtc, [Count]) VALUES ({hour}, 1)", ct);

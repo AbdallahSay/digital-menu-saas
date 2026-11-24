@@ -230,4 +230,66 @@ public sealed class LeadTests
         { ["Leads:Enabled"] = "true", ["Leads:NoticeVersion"] = "n1", ["Leads:RetentionDays"] = "30", ["Leads:ControllerName"] = "C", ["Leads:ContactChannel"] = "W", ["Leads:NoticeContentSha256"] = hash }).Build();
         Assert.Throws<InvalidOperationException>(() => LeadOptions.FromConfiguration(config));
     }
+
+    [SqlServerFact]
+    public async Task Quota_initialization_race_does_not_cause_a_false_refusal()
+    {
+        var (f, _, _, _) = await Setup(Open);
+        await using var _c = f;
+        var now = DateTime.UtcNow;
+        var hour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
+        using var scope = f.Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+        // After this request's UPDATE matched no row, another instance creates the hour's row with count 1.
+        var granted = await LeadEndpoints.TryTakeQuota(db, now, default, async () =>
+        {
+            using var other = f.Factory.Services.CreateScope();
+            await other.ServiceProvider.GetRequiredService<MenuDbContext>().Database
+                .ExecuteSqlInterpolatedAsync($"INSERT INTO LeadQuotas (HourUtc, [Count]) VALUES ({hour}, 1)");
+        });
+        Assert.True(granted);
+        Assert.Equal(2, await db.Set<LeadQuota>().AsNoTracking().Where(q => q.HourUtc == hour).Select(q => q.Count).SingleAsync());
+    }
+
+    [SqlServerFact]
+    public async Task Retention_service_lifecycle_purges_at_startup_with_intake_closed()
+    {
+        var (f, _, _, _) = await Setup(null);
+        await using var _c = f;
+        using (var scope = f.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+            for (var i = 0; i < 700; i++) db.Add(Row(DateTime.UtcNow.AddDays(-40), DateTime.UtcNow.AddDays(-10)));
+            db.Add(Row(DateTime.UtcNow, DateTime.UtcNow.AddDays(5)));
+            await db.SaveChangesAsync();
+        }
+        var service = new LeadRetentionService(f.Factory.Services.GetRequiredService<IServiceScopeFactory>(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<LeadRetentionService>.Instance);
+        await service.StartAsync(default);
+        try
+        {
+            for (var i = 0; i < 100 && await Count(f) != 1; i++) await Task.Delay(100);
+            Assert.Equal(1, await Count(f));
+        }
+        finally { await service.StopAsync(default); }
+    }
+
+    [SqlServerFact]
+    public async Task Stored_lead_records_the_full_fingerprint_of_the_real_configuration()
+    {
+        var content = new string('d', 64);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        { ["Leads:Enabled"] = "true", ["Leads:NoticeVersion"] = "v9", ["Leads:RetentionDays"] = "14", ["Leads:ControllerName"] = "Ctl", ["Leads:ContactChannel"] = "Chan", ["Leads:NoticeContentSha256"] = content }).Build();
+        var options = LeadOptions.FromConfiguration(config)!;
+        var (f, pub, _, _) = await Setup(options);
+        await using var _c = f;
+        var status = await (await pub.Send(HttpMethod.Get, "/api/v1/leads/status")).Content.ReadFromJsonAsync<LeadStatusResponse>();
+        Assert.Equal(content, status!.NoticeContentSha256);
+        Assert.Equal(HttpStatusCode.Created, (await pub.Send(HttpMethod.Post, Route, Body(notice: status.NoticeVersion))).StatusCode);
+        using var scope = f.Factory.Services.CreateScope();
+        var lead = await scope.ServiceProvider.GetRequiredService<MenuDbContext>().Set<Lead>().SingleAsync();
+        var full = LeadOptions.FullFingerprint("v9", 14, "Ctl", "Chan", content);
+        Assert.Equal(full, lead.NoticeFingerprint);
+        Assert.Equal(LeadOptions.NoticeId("v9", full), lead.NoticeVersion);
+    }
 }
