@@ -427,6 +427,58 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
     }
 
     [SqlServerFact]
+    public async Task Concurrent_minting_leaves_exactly_one_usable_link_and_only_fails_closed()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "racemint");
+        var responses = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link")));
+        // Contention on the security stamp is reported as the documented fail-closed 503 (nothing minted); any other status is a defect.
+        Assert.All(responses, r => Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable, "mint returned " + r.StatusCode));
+        var links = new List<(Guid UserId, string Token)>();
+        foreach (var r in responses.Where(r => r.StatusCode == HttpStatusCode.OK))
+            links.Add(ParseLink((await r.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl));
+        Assert.NotEmpty(links);
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
+        var accepted = 0;
+        var seen = new List<HttpStatusCode>();
+        foreach (var l in links)
+        {
+            var code = (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(l.UserId, l.Token, fixture.Password))).StatusCode;
+            seen.Add(code);
+            if (code == HttpStatusCode.NoContent) accepted++;
+        }
+        Assert.True(accepted == 1, "mints " + string.Join(",", responses.Select(r => (int)r.StatusCode)) + " onboarding " + string.Join(",", seen.Select(c => (int)c)));
+    }
+
+    [SqlServerFact]
+    public async Task Minting_racing_with_consumption_ends_with_the_old_token_dead_and_the_new_link_usable_once()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "raceconsume");
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        var consume = guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password));
+        var mint = admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link");
+        await Task.WhenAll(consume, mint);
+        Assert.True(consume.Result.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.BadRequest, "consume " + consume.Result.StatusCode);
+        Assert.True(mint.Result.StatusCode is HttpStatusCode.OK, "mint " + mint.Result.StatusCode);
+        var fresh = ParseLink((await mint.Result.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl);
+        // The first token never works again after the race, whichever side won.
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password + "x9!"))).StatusCode);
+        // The freshly minted link works exactly once.
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(fresh.UserId, fresh.Token, fixture.Password))).StatusCode);
+        // (single use of the fresh link is covered by the reissue tests; the auth limiter allows 10 requests a minute)
+        // The final password is the one from the winning consume of the fresh link, and it signs in.
+        var owner = new Browser(fixture.Factory);
+        await owner.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "raceconsume@example.test")).StatusCode);
+    }
+
+    [SqlServerFact]
     public async Task Operator_handoff_reset_replaces_the_password_and_signs_the_owner_out()
     {
         var (fixture, admin, _) = await HandoffSetup();
