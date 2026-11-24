@@ -254,11 +254,13 @@ test('with click listeners suppressed, the route still bootstraps and settles, a
   }
 });
 
-test('a script that arrives late in the initial route window is counted in its measurement', async () => {
+test('a script injected after goto resolves, inside the settle window, is counted (bounded observation closure)', async () => {
   const late = adminChunks(SRC)[0];
   const m = await measureRoutes(SRC, ['/privacy'], {
     interact: undefined,
     prepare: (page) =>
+      // Timing anchor: goto resolves ~500 ms after load (networkidle), so a 1000 ms timer fires inside the
+      // later settle window. Verified to fail against the pre-fix helper (b32cf0e).
       page.addInitScript((file) => {
         addEventListener('load', () =>
           setTimeout(() => {
@@ -266,7 +268,7 @@ test('a script that arrives late in the initial route window is counted in its m
             s.type = 'module';
             s.src = '/' + file;
             document.head.append(s);
-          }, 400),
+          }, 1000),
         );
       }, late),
   });
