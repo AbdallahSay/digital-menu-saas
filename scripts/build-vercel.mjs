@@ -9,6 +9,11 @@ if (Number(process.versions.node.split(".")[0]) !== 24)
 const frontend = join(root, "frontend");
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 execFileSync(npm, ["run", "build"], { cwd: frontend, stdio: "inherit" });
+execFileSync(
+  process.execPath,
+  ["scripts/write-build-manifest.mjs", "npm run build:vercel (build-vercel.mjs)"],
+  { cwd: frontend, stdio: "inherit" },
+);
 execFileSync(process.execPath, ["scripts/vercel-output.mjs"], {
   cwd: frontend,
   stdio: "inherit",

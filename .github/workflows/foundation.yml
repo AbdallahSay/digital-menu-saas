@@ -42,8 +42,7 @@ jobs:
           npm test -- --watch=false
           npm run test:router
           npm run build
-          node scripts/write-build-manifest.mjs "npm run build"
-          node ../scripts/build-vercel.mjs
+          node ../scripts/build-vercel.mjs # also writes dist/digital-menu/build-manifest.json
           npm run test:vercel:wiring
           npm run test:vercel
           npx playwright install --with-deps chromium
