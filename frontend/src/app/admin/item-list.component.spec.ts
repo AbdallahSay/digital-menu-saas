@@ -196,6 +196,48 @@ describe('ItemListComponent', () => {
     fixture.nativeElement.remove();
   });
 
+  it('reloads after a successful upload so the new thumbnail shows immediately', async () => {
+    const rows = signal([item({ id: 'new-9', nameAr: 'طعمية', imageId: null })]);
+    let uploaded = false;
+    const stub = itemStoreStub({
+      items: rows,
+      filtered: rows,
+      nextPosition: async (): Promise<number | null> => 0,
+      save: async () => ({ result: 'ok' as ItemSaveResult, item: item({ id: 'new-9' }) }),
+      uploadImage: async () => {
+        uploaded = true;
+        return 'ok';
+      },
+      load: async () => {
+        // the server now reports the stored image for this item
+        if (uploaded) rows.set([item({ id: 'new-9', nameAr: 'طعمية', imageId: 'img-new' })]);
+      },
+    });
+    const fixture = await create(stub);
+    expect(fixture.nativeElement.querySelectorAll('img.thumb').length).toBe(0);
+    fixture.componentInstance.openModal(null, document.createElement('button'));
+    fixture.detectChanges();
+    await fixture.componentInstance.saveItem({
+      input: {
+        categoryId: 'c1',
+        nameAr: 'طعمية',
+        nameEn: null,
+        descriptionAr: null,
+        descriptionEn: null,
+        price: 25,
+        currencyCode: 'EGP',
+        sortOrder: 0,
+        isPublished: true,
+        isAvailable: true,
+      },
+      file: new File(['x'], 'dish.png', { type: 'image/png' }),
+    });
+    fixture.detectChanges();
+    const img = fixture.nativeElement.querySelector('img.thumb') as HTMLImageElement;
+    expect(img.getAttribute('src')).toBe('/api/v1/admin/media/items/img-new/thumbnail');
+    fixture.nativeElement.remove();
+  });
+
   it('refuses the create when no safe append position exists', async () => {
     let saves = 0;
     const stub = itemStoreStub({

@@ -457,6 +457,7 @@ export class ItemListComponent implements OnInit, OnDestroy {
           return outcome;
         }
       }
+      if (result.file && saved) await this.store.load(); // server-confirmed thumbnail after upload
       this.feedback.set({ kind: 'success', text: 'تم حفظ الطبق بنجاح.' });
     } else if (outcome === 'stale') {
       await this.store.load();

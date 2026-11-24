@@ -58,6 +58,32 @@ public sealed class ItemTests(Xunit.Abstractions.ITestOutputHelper output)
     }
 
     [SqlServerFact]
+    public async Task First_image_is_one_deterministic_winner_per_item_even_beyond_100_image_rows()
+    {
+        await using var f = await Fixture.Create();
+        await f.A.Csrf();
+        var other = await Add(f.A, Request(f.CategoryA.Id));
+        Guid expectedOther;
+        using (var scope = f.Auth.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+            MenuItemImage Make(Guid item, int sort) => new() { RestaurantId = f.RestaurantA, MenuItemId = item, ObjectKey = f.RestaurantA + "/" + Guid.NewGuid() + ".webp", SortOrder = sort, Width = 1, Height = 1 };
+            // 150 later-sorted rows on ItemA must not hide ImageA (sort 0) nor starve the other item.
+            for (var i = 0; i < 150; i++) db.Add(Make(f.ItemA.Id, 5));
+            var tiedA = Make(other.Id, 1);
+            var tiedB = Make(other.Id, 1);
+            db.AddRange(Make(other.Id, 2), tiedA, tiedB);
+            await db.SaveChangesAsync();
+            expectedOther = (await db.Set<MenuItemImage>().Where(i => i.Id == tiedA.Id || i.Id == tiedB.Id).OrderBy(i => i.Id).Select(i => i.Id).FirstAsync());
+        }
+        var page = await (await f.A.Send(HttpMethod.Get, Route)).Content.ReadFromJsonAsync<ItemPageResponse>();
+        Assert.Equal(f.ImageA.Id, page!.Items.Single(i => i.Id == f.ItemA.Id).ImageId);
+        Assert.Equal(expectedOther, page.Items.Single(i => i.Id == other.Id).ImageId);
+        var single = await (await f.A.Send(HttpMethod.Get, Route + "/" + f.ItemA.Id)).Content.ReadFromJsonAsync<ItemResponse>();
+        Assert.Equal(f.ImageA.Id, single!.ImageId);
+    }
+
+    [SqlServerFact]
     public async Task Crud_publication_availability_soft_delete_and_version_audit_are_atomic()
     {
         await using var f = await Fixture.Create();

@@ -177,8 +177,8 @@ export class ItemStateService {
 
   /**
    * Uploads one image for an existing item. The backend normalizes to webp;
-   * there is no image read-back endpoint yet, so the returned metadata is
-   * used only for the in-session preview. Maps the media error contract:
+   * callers reload the list afterwards so the row's server-chosen imageId
+   * (admin thumbnail read-back) is shown. Maps the media error contract:
    * 413 too large, 415/400 unsupported or malformed, 503 storage down.
    */
   async uploadImage(itemId: string, file: File): Promise<ImageUploadResult> {

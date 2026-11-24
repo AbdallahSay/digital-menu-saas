@@ -25,18 +25,10 @@ public static class Items
     private static async Task<IReadOnlyList<ItemResponse>> WithImages(ITenantDataSession session, IReadOnlyList<ItemResponse> items, CancellationToken ct)
     {
         if (items.Count == 0) return items;
-        var first = new Dictionary<Guid, (int Sort, Guid Id)>();
-        foreach (var chunk in items.Select(i => i.Id).Chunk(20))
-        {
-            var ids = chunk;
-            var images = await session.ReadAsync<MenuItemImage, (Guid ItemId, Guid Id, int Sort)>(
-                i => ids.Contains(i.MenuItemId), i => new ValueTuple<Guid, Guid, int>(i.MenuItemId, i.Id, i.SortOrder), 100, ct);
-            foreach (var image in images)
-                if (!first.TryGetValue(image.ItemId, out var best) || image.Sort < best.Sort ||
-                    (image.Sort == best.Sort && image.Id.CompareTo(best.Id) < 0))
-                    first[image.ItemId] = (image.Sort, image.Id);
-        }
-        return items.Select(i => first.TryGetValue(i.Id, out var best) ? i with { ImageId = best.Id } : i).ToArray();
+        var first = new Dictionary<Guid, Guid>();
+        foreach (var chunk in items.Select(i => i.Id).Chunk(100))
+            foreach (var (itemId, imageId) in await session.ReadFirstImagesAsync(chunk, ct)) first[itemId] = imageId;
+        return items.Select(i => first.TryGetValue(i.Id, out var best) ? i with { ImageId = best } : i).ToArray();
     }
     private static string? Optional(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
     private static bool Text(string? text, int length, bool multiline = false) => text is null ||

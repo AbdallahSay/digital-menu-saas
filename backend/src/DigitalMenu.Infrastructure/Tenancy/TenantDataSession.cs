@@ -61,6 +61,22 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
         }
         catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
     }
+    public async Task<IReadOnlyList<(Guid ItemId, Guid ImageId)>> ReadFirstImagesAsync(IReadOnlyCollection<Guid> itemIds, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await BindAsync(cancellationToken);
+            if (itemIds.Count > 100) throw new TenantBoundaryException(TenantFailure.InvalidRequest);
+            var ids = itemIds.ToArray();
+            var images = Owned<MenuItemImage>().AsNoTracking();
+            var rows = await images.Where(i => ids.Contains(i.MenuItemId) &&
+                    !images.Any(o => o.MenuItemId == i.MenuItemId &&
+                        (o.SortOrder < i.SortOrder || (o.SortOrder == i.SortOrder && o.Id.CompareTo(i.Id) < 0))))
+                .Select(i => new { i.MenuItemId, i.Id }).ToListAsync(cancellationToken);
+            return rows.Select(r => (r.MenuItemId, r.Id)).ToArray();
+        }
+        catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
+    }
     public async Task<IReadOnlyList<TResult>> ReadCategoriesAsync<TResult>(Expression<Func<Category, TResult>> projection,
         int page, int pageSize, CancellationToken cancellationToken = default)
     {
