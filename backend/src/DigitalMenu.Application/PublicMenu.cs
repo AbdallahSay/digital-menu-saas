@@ -16,7 +16,9 @@ public sealed class PublicMenuUnavailableException : Exception
 
 // Sitemap listing. Exposes slug and last-modified only, for owner-opted-in, published, active tenants.
 public sealed record SitemapEntry(string Slug, DateTime LastModifiedUtc);
-public sealed record SitemapPage(int Page, int PageSize, bool HasMore, IReadOnlyList<SitemapEntry> Entries);
+// Truncated is true only on the last supported page when qualifying tenants exist beyond the
+// supported cap. Those tenants are NOT enumerable; the cap is a stated product limit.
+public sealed record SitemapPage(int Page, int PageSize, bool HasMore, bool Truncated, IReadOnlyList<SitemapEntry> Entries);
 public interface ISitemapReader
 {
     Task<SitemapPage> ReadAsync(int page, CancellationToken ct);

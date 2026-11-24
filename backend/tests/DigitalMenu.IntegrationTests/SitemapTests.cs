@@ -1,4 +1,11 @@
+using System.Data.Common;
+using System.Net;
+using System.Net.Http.Json;
+using DigitalMenu.Application;
 using DigitalMenu.Domain;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using static DigitalMenu.IntegrationTests.AuthenticationTests;
 using DigitalMenu.Infrastructure.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -82,14 +89,56 @@ public sealed class SitemapTests
             Assert.Equal(5, second.Entries.Count);
             Assert.False(second.HasMore);
             Assert.Equal("t" + SitemapReader.PageSize.ToString("D5"), second.Entries[0].Slug);
-            // The last allowed page is reachable and empty, not an error; later tenants are never cut off.
-            var last = await reader.ReadAsync(SitemapReader.MaxPage, CancellationToken.None);
-            Assert.Empty(last.Entries);
-            Assert.False(last.HasMore);
+            // Terminal overflow with a small supported cap: the last page is Truncated, never HasMore.
+            var capped = new SitemapReader(db, maxPage: 1);
+            var lastPage = await capped.ReadAsync(1, CancellationToken.None);
+            Assert.True(lastPage.Truncated);
+            Assert.False(lastPage.HasMore);
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => capped.ReadAsync(2, CancellationToken.None));
+            Assert.False(first.Truncated);
         }
         finally
         {
             await db.Database.EnsureDeletedAsync();
         }
+    }
+
+    private sealed class Failer : DbCommandInterceptor
+    {
+        public volatile bool Fail;
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData data,
+            InterceptionResult<DbDataReader> result, CancellationToken ct = default)
+            => Fail ? throw new InvalidOperationException("simulated sql outage") : ValueTask.FromResult(result);
+    }
+
+    [SqlServerFact]
+    public async Task Http_endpoint_lists_only_slug_and_time_validates_pages_and_maps_failure_to_503()
+    {
+        var failer = new Failer();
+        await using var auth = await AuthFixture.Create(empty: true, configure: s => s.AddDbContext<MenuDbContext>(o => o.AddInterceptors(failer)));
+        using (var scope = auth.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+            db.AddRange(R("listed-one", true), R("hidden-one", false));
+            await db.SaveChangesAsync();
+        }
+        using var client = auth.Factory.CreateClient(new() { BaseAddress = new Uri("https://localhost"), HandleCookies = false });
+        var ok = await client.GetAsync("/api/v1/public/sitemap");
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.False(ok.Headers.Contains("Set-Cookie"));
+        var body = await ok.Content.ReadAsStringAsync();
+        var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(body);
+        Assert.Equal(["entries", "hasMore", "page", "pageSize", "truncated"], json.EnumerateObject().Select(p => p.Name).Order().ToArray());
+        var entry = Assert.Single(json.GetProperty("entries").EnumerateArray());
+        Assert.Equal(["lastModifiedUtc", "slug"], entry.EnumerateObject().Select(p => p.Name).Order().ToArray());
+        Assert.Equal("listed-one", entry.GetProperty("slug").GetString());
+        foreach (var forbidden in new[] { "hidden-one", "n-listed-one", "publicCode", "rowVersion", "restaurantId" })
+            Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
+        foreach (var bad in new[] { "0", "-1", "100001", "abc" })
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/v1/public/sitemap?page=" + bad)).StatusCode);
+        failer.Fail = true;
+        var down = await client.GetAsync("/api/v1/public/sitemap");
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, down.StatusCode);
+        Assert.DoesNotContain("simulated", await down.Content.ReadAsStringAsync());
     }
 }

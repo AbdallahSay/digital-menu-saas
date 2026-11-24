@@ -36,7 +36,7 @@ writeFileSync(
       gitSha: git('git rev-parse HEAD'),
       gitTreeDirty:
         git(
-          'git status --porcelain -- .. ":!frontend/dist" ":!frontend/.lighthouseci" ":!frontend/.vercel" ":!.vercel"',
+          'git status --porcelain -- :/ ":(top,exclude)frontend/dist" ":(top,exclude)frontend/.lighthouseci" ":(top,exclude)frontend/.vercel" ":(top,exclude).vercel"',
         ) !== '',
       buildCommand: process.argv[2] ?? 'unrecorded',
       node: process.version,
