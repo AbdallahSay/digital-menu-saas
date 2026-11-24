@@ -10,6 +10,8 @@ import {
   adminChunks,
   chunksContaining,
   coldScripts,
+  hydrationProbe,
+  assertHydrated,
   enforceBudget,
   gzipBytes,
   verifyBuildManifest,
@@ -279,6 +281,31 @@ test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch 
       enforceBudget('/r/s01-a?lang=' + language, measurement);
       for (const f of adminChunks(folder))
         assert.ok(!files.includes(f), 'admin chunk fetched: ' + f);
+    }
+  } finally {
+    await browser.close();
+  }
+});
+test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM (node reused, markers consumed, no errors)', async () => {
+  const browser = await chromium.launch();
+  const prepare = (page) =>
+    page.route(logoUrl, (route) =>
+      route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }),
+    );
+  try {
+    for (const language of ['ar', 'en']) {
+      const url = origin + '/r/s01-a?lang=' + language;
+      const r = await hydrationProbe(browser, url, { prepare });
+      console.log('hydration', language, JSON.stringify({ before: r.before, after: r.after }));
+      assertHydrated(r, url);
+      // Negative control: with the client entry held forever the same probe must say "not hydrated".
+      const held = await hydrationProbe(browser, url, {
+        prepare,
+        neverRelease: true,
+        timeout: 8000,
+      });
+      assert.ok(held.after.hydrationMarkers >= 1);
+      assert.throws(() => assertHydrated(held, url), /not hydrated/);
     }
   } finally {
     await browser.close();

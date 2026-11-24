@@ -170,3 +170,80 @@ export function writeRouteEvidence(name, folder, measurements, browserVersion = 
     ),
   );
 }
+
+// Real SSR hydration probe (requires the real SSR server; the static CSR harness cannot use it).
+// The client entry script (main-*.js) is held until the server-rendered DOM has been marked, so the
+// check observes the SSR DOM before the client takes over:
+//   before: server markup present with hydration markers (`ngh`) still on it (ng-version is also
+//   emitted by the server, so it is NOT a client-boot signal);
+//   after release: markers consumed (Angular removes them when it hydrates), and the SAME server-rendered heading node (our
+//   expando survives) is reused, not discarded and re-created; no console/page errors.
+// `neverRelease` keeps the client script blocked and is the negative control: it must NOT hydrate.
+// Scope: the first-paint routed document only. It proves hydration of that DOM, not event behavior.
+export async function hydrationProbe(
+  browser,
+  url,
+  { prepare, timeout = 15000, neverRelease = false, selector = 'main h1' } = {},
+) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: 'block',
+  });
+  try {
+    context.setDefaultTimeout(timeout);
+    const page = await context.newPage();
+    if (prepare) await prepare(page);
+    const problems = [];
+    page.on('pageerror', (e) => problems.push('pageerror: ' + e.message));
+    page.on(
+      'console',
+      (m) =>
+        ['error', 'warning'].includes(m.type()) &&
+        problems.push(`console ${m.type()}: ` + m.text()),
+    );
+    let release;
+    const gate = new Promise((r) => (release = r));
+    let held = 0;
+    await page.route(/\/main-[^/]*\.js(\?.*)?$/, async (route) => {
+      held++;
+      if (neverRelease) return; // the request hangs
+      await gate;
+      await route.continue();
+    });
+    await page.goto(url, { waitUntil: 'commit' });
+    await page.waitForSelector(selector, { state: 'attached' });
+    const before = await page.evaluate((sel) => {
+      document.querySelector(sel).__ssrMark = 'ssr';
+      return {
+        text: document.querySelector(sel).textContent,
+        hydrationMarkers: document.querySelectorAll('[ngh]').length,
+      };
+    }, selector);
+    release();
+    if (!neverRelease) await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(neverRelease ? 1500 : 1000);
+    const after = await page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      return {
+        text: el?.textContent ?? null,
+        nodeReused: el?.__ssrMark === 'ssr',
+        hydrationMarkers: document.querySelectorAll('[ngh]').length,
+      };
+    }, selector);
+    return { held, before, after, problems };
+  } finally {
+    await context.close();
+  }
+}
+
+export function assertHydrated(r, label) {
+  const bad = [];
+  if (r.held < 1) bad.push('client entry script was never requested');
+  if (r.before.hydrationMarkers < 1) bad.push('SSR markup carried no hydration markers');
+  if (r.after.hydrationMarkers !== 0)
+    bad.push(`${r.after.hydrationMarkers} hydration markers left`);
+  if (!r.after.nodeReused) bad.push('server-rendered node was replaced, not reused');
+  if (r.after.text !== r.before.text) bad.push('heading text changed across hydration');
+  if (r.problems.length) bad.push('problems: ' + r.problems.join('; '));
+  if (bad.length) throw new Error(`${label} not hydrated: ${bad.join('; ')}`);
+}
