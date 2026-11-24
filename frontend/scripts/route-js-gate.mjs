@@ -37,7 +37,7 @@ const SRC = 'dist/digital-menu/browser';
 // so this is not SSR hydration of the real menu). '/' proves the marketing component's click handler runs. '/privacy'
 // proves the client router is live: a routerLink click must navigate without a document reload
 // (a window marker set before the click survives) and render the marketing component.
-// '/r/demo' has no interactive control, so it keeps the bootstrap oracle only.
+// '/r/demo' has no interactive control of its own, so its direct route keeps the bootstrap oracle; a separate test reaches it by client navigation from '/'.
 const ROUTES = {
   '/': {
     interact: async (page, timeout) => {
@@ -294,3 +294,27 @@ function assertNoNamedChunks(route, measurement, named) {
   for (const f of named)
     assert.ok(!measurement.files.includes(f), `${route} requested admin chunk ${f}`);
 }
+
+test('client router reaches the lazy /r/demo menu component from the marketing page without a document reload', async () => {
+  const interact = async (page, timeout) => {
+    await page.evaluate(() => (window.__routeProbe = 'alive'));
+    await page.locator('a[href="/r/demo"]:visible').first().click({ timeout });
+    await page.waitForFunction(
+      () => location.pathname === '/r/demo' && !!document.querySelector('app-menu main, main'),
+      null,
+      { timeout },
+    );
+    assert.equal(await page.evaluate(() => window.__routeProbe), 'alive', 'document reloaded');
+    assert.ok(
+      (await page.locator('main').first().innerText()).includes('مطعم'),
+      'demo menu content not rendered after client navigation',
+    );
+  };
+  const m = await measureRoutes(SRC, ['/'], { interact });
+  assert.ok(m['/'].files.length > 0);
+  // Control: with click listeners suppressed the same oracle must fail in the interaction phase.
+  await assert.rejects(
+    measureRoutes(SRC, ['/'], { timeout: 4000, interact, prepare: suppressClicks }),
+    /interaction failed for/,
+  );
+});
