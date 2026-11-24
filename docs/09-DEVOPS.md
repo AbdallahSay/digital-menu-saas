@@ -36,3 +36,13 @@ CI job URL or local commands with captured exit codes; before/after DB migration
 - CI: build Angular SSR/server bundle and .NET API; boot both behind test router; run Playwright public route with JavaScript ON and OFF plus a raw HTTP test; save LHCI performance/SEO artifacts and compare budgets. No hiding failure by marking it optional after implementation exists.
 - Staging: inspect actual rendered page via `curl` and Google Rich Results Test/URL Inspection (once publicly accessible); submit sitemap to Search Console only after release/domain ownership. Search indexing is external and never guaranteed.
 - Monitoring: separate public p75 LCP/INP/CLS RUM, SSR TTFB and error rate, Node memory/cold starts, origin/edge cache hit ratio, slow SQL queries. Alert on regressions; do not publish metrics without real collection.
+
+## Reproducible browser for SSR tests
+
+The SSR/Playwright tests need Playwright's own headless shell. Do not symlink a system Chrome.
+
+    cd frontend && npx playwright install chromium   # add --with-deps on a fresh Linux image
+
+Last verified locally: @playwright/test 1.64.0, Chrome Headless Shell 156.0.8078.4
+(playwright chromium-headless-shell v1248), Node 24.19.0. Record the versions again when
+either changes. Pass state is not proven until the SSR test is re-run against this install.
