@@ -144,6 +144,38 @@ public sealed class SitemapTests
     }
 
     [SqlServerFact]
+    public async Task Http_endpoint_is_no_store_ignores_forged_tenant_input_and_is_rate_limited()
+    {
+        await using var auth = await AuthFixture.Create(empty: true);
+        using (var scope = auth.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+            db.AddRange(R("listed-one", true), R("hidden-one", false));
+            await db.SaveChangesAsync();
+        }
+        using var client = auth.Factory.CreateClient(new() { BaseAddress = new Uri("https://localhost"), HandleCookies = false });
+        var plain = await client.GetAsync("/api/v1/public/sitemap");
+        Assert.Equal(HttpStatusCode.OK, plain.StatusCode);
+        Assert.Equal("no-store", plain.Headers.CacheControl?.ToString());
+        var plainBody = await plain.Content.ReadAsStringAsync();
+        Assert.Equal("no-store", (await client.GetAsync("/api/v1/public/sitemap?page=0")).Headers.CacheControl?.ToString());
+        // Forged tenant/owner inputs must not change what an anonymous caller sees.
+        using var forged = new HttpRequestMessage(HttpMethod.Get, "/api/v1/public/sitemap?restaurantId=00000000-0000-0000-0000-000000000001&tenant=hidden-one");
+        forged.Headers.Add("X-Restaurant-Id", "00000000-0000-0000-0000-000000000001");
+        forged.Headers.Add("X-Tenant", "hidden-one");
+        forged.Headers.Add("Cookie", "__Host-session=forged; __Host-csrf=forged");
+        var f = await client.SendAsync(forged);
+        Assert.Equal(HttpStatusCode.OK, f.StatusCode);
+        Assert.Equal(plainBody, await f.Content.ReadAsStringAsync());
+        Assert.DoesNotContain("hidden-one", plainBody);
+        // Per-source public limiter: 120/min. Two permits are already spent above (3 with the forged call).
+        HttpStatusCode last = HttpStatusCode.OK;
+        for (var i = 0; i < 130 && last != HttpStatusCode.TooManyRequests; i++)
+            last = (await client.GetAsync("/api/v1/public/sitemap")).StatusCode;
+        Assert.Equal(HttpStatusCode.TooManyRequests, last);
+    }
+
+    [SqlServerFact]
     public async Task Upgrading_an_existing_database_leaves_every_existing_restaurant_unlisted()
     {
         var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
