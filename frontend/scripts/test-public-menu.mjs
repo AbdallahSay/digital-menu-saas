@@ -6,11 +6,14 @@ import { JSDOM } from 'jsdom';
 import { chromium } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
 import {
-  writeRouteEvidence,
+  ADMIN_MARKERS,
   adminChunks,
+  chunksContaining,
   coldScripts,
   enforceBudget,
   gzipBytes,
+  verifyBuildManifest,
+  writeRouteEvidence,
 } from './route-js-lib.mjs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const origin = process.env.S01_ORIGIN;
@@ -252,6 +255,7 @@ test('JavaScript-disabled content, hydration without duplicate API fetch, RTL/LT
 });
 test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch the named marker chunks', async () => {
   const folder = 'dist/digital-menu/browser';
+  verifyBuildManifest(folder);
   for (const m of ADMIN_MARKERS)
     assert.ok(chunksContaining(folder, [m]).length > 0, `marker ${m} matches no chunk`);
   const browser = await chromium.launch();

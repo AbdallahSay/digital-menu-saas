@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -95,14 +95,31 @@ export async function coldScripts(
 // an estimate of what the budget gates compare. It is NOT the measured transfer size: the real
 // host may serve brotli or another gzip level, so actual encoded bytes are recorded separately
 // only where a server under test reports them (none here).
+// Fails unless the folder is byte-identical to the build recorded by write-build-manifest.mjs.
+export function verifyBuildManifest(folder) {
+  const path = join(folder, '..', 'build-manifest.json');
+  if (!existsSync(path))
+    throw new Error('build-manifest.json missing: run write-build-manifest.mjs after the build');
+  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  const actual = readdirSync(folder)
+    .filter((f) => /\.(js|css|html)$/.test(f))
+    .sort();
+  if (JSON.stringify(actual) !== JSON.stringify(Object.keys(manifest.files).sort()))
+    throw new Error('dist files differ from build manifest (rebuilt or stale)');
+  for (const f of actual) {
+    const sha = createHash('sha256')
+      .update(readFileSync(join(folder, f)))
+      .digest('hex');
+    if (sha !== manifest.files[f]) throw new Error(`dist file ${f} differs from build manifest`);
+  }
+  return manifest;
+}
+
+// Retained evidence. `gzipSourceBytes` is the default-level gzip of the exact local file bytes,
+// an estimate of what the budget gates compare. It is NOT the measured transfer size: transport
+// size is not recorded by this harness (unmeasured, not impossible).
 export function writeRouteEvidence(name, folder, measurements, browserVersion = 'unknown') {
-  const git = (c) => {
-    try {
-      return execSync(c, { encoding: 'utf8' }).trim();
-    } catch {
-      return 'unknown';
-    }
-  };
+  const manifest = verifyBuildManifest(folder);
   mkdirSync('.lighthouseci', { recursive: true });
   const routes = Object.fromEntries(
     Object.entries(measurements).map(([route, m]) => [
@@ -119,17 +136,17 @@ export function writeRouteEvidence(name, folder, measurements, browserVersion = 
       {
         budgetBytes: ROUTE_BUDGET_BYTES,
         estimate: 'gzip-default-local-source',
-        observedTransport: 'not recorded (static/local servers do not report encoded size)',
-        gitSha: process.env['ROUTE_GATE_GIT_SHA'] ?? git('git rev-parse HEAD'),
-        gitTreeDirty: git('git status --porcelain') !== '',
-        node: process.version,
-        browser: browserVersion,
-        buildCommand:
-          process.env['ROUTE_GATE_BUILD_COMMAND'] ??
-          'unrecorded (set ROUTE_GATE_BUILD_COMMAND to the command that produced the folder)',
-        buildFolder: folder,
+        observedTransport: 'unmeasured',
+        build: {
+          gitSha: manifest.gitSha,
+          gitTreeDirty: manifest.gitTreeDirty,
+          buildCommand: manifest.buildCommand,
+          node: manifest.node,
+          builtAt: manifest.builtAt,
+        },
+        measuredWith: { node: process.version, browser: browserVersion },
         cache:
-          'fresh browser context per route, service workers blocked, observation window 1000 ms + networkidle after hydration oracle',
+          'fresh browser context per route, service workers blocked, 1000 ms plus networkidle after the bootstrap oracle',
         protectedChunkMarkers: ADMIN_MARKERS,
         protectedChunksFound: adminChunks(folder),
         routes,

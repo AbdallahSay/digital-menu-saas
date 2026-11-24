@@ -28,6 +28,7 @@ import {
   writeRouteEvidence,
   enforceBudget,
   gzipBytes,
+  verifyBuildManifest,
   jsFiles,
 } from './route-js-lib.mjs';
 
@@ -115,6 +116,7 @@ async function measureRoutes(folder, routes = Object.keys(ROUTES), overrides = {
 const aggregate = (folder) => gzipBytes(folder, jsFiles(folder));
 
 test('public routes pass the budget and never request the named marker chunks', async () => {
+  verifyBuildManifest(SRC);
   const named = adminChunks(SRC);
   for (const m of ADMIN_MARKERS)
     assert.ok(chunksContaining(SRC, [m]).length > 0, `marker ${m} matches no chunk`);
@@ -182,4 +184,19 @@ test('a foreign-origin script fails the cold load closed', async () => {
     }),
     /foreign script origin/,
   );
+});
+
+test('a dist that differs from its build manifest is refused', () => {
+  const root = mkdtempSync(join(tmpdir(), 'route-manifest-'));
+  try {
+    cpSync('dist/digital-menu', join(root, 'digital-menu'), { recursive: true });
+    const browser = join(root, 'digital-menu', 'browser');
+    verifyBuildManifest(browser);
+    appendFileSync(join(browser, jsFiles(browser)[0]), '/* tampered */');
+    assert.throws(() => verifyBuildManifest(browser), /differs from build manifest/);
+    rmSync(join(root, 'digital-menu', 'build-manifest.json'));
+    assert.throws(() => verifyBuildManifest(browser), /build-manifest.json missing/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
