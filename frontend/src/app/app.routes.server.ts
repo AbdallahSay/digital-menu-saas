@@ -10,6 +10,15 @@ export const serverRoutes: ServerRoute[] = [
     headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
   },
   {
+    path: 'owner-setup',
+    renderMode: RenderMode.Client,
+    headers: {
+      'X-Robots-Tag': 'noindex, nofollow',
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer',
+    },
+  },
+  {
     path: 'admin',
     renderMode: RenderMode.Client,
     headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },

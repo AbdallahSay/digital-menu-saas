@@ -30,7 +30,7 @@ public sealed class UnconfiguredOwnerOnboardingDelivery : IOwnerOnboardingDelive
 /// <summary>
 /// No-vendor production onboarding: the platform operator receives a one-time setup link in the
 /// authenticated HTTPS response and hands it to the verified owner out of band. Nothing is sent,
-/// stored or logged. The token rides in the URL fragment so servers, proxies and referrers never see it.
+/// stored or logged. The token rides in the URL fragment, base64url-wrapped so no router or browser re-encodes it, so servers, proxies and referrers never see it.
 /// </summary>
 public sealed class OwnerSetupLinks(Uri publicOrigin)
 {
@@ -44,7 +44,7 @@ public sealed class OwnerSetupLinks(Uri publicOrigin)
         return new OwnerSetupLinks(origin);
     }
     public string Build(Guid userId, string token)
-        => new Uri(publicOrigin, "/owner-setup").AbsoluteUri + "#u=" + userId.ToString("N") + "&t=" + Uri.EscapeDataString(token);
+        => new Uri(publicOrigin, "/owner-setup").AbsoluteUri + "#u=" + userId.ToString("N") + "&t=" + Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(token));
 }
 
 public sealed class OperatorHandoffDelivery(OwnerSetupLinks links) : IOwnerOnboardingDelivery

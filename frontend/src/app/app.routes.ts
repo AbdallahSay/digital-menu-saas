@@ -16,6 +16,10 @@ export const routes: Routes = [
     loadComponent: () => import('./admin/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'owner-setup',
+    loadComponent: () => import('./admin/owner-setup.component').then((m) => m.OwnerSetupComponent),
+  },
+  {
     path: 'admin',
     canMatch: [ownerGuard],
     loadComponent: () => import('./admin/admin-shell.component').then((m) => m.AdminShellComponent),

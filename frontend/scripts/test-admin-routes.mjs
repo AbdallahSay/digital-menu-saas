@@ -61,6 +61,7 @@ for (const path of [
   '/admin/branding',
   '/admin/qr',
   '/platform',
+  '/owner-setup',
 ]) {
   test(`${path} is a 200 no-store noindex client shell`, async () => {
     const res = await fetch(base + path, { redirect: 'manual' });
@@ -71,6 +72,11 @@ for (const path of [
     assert.doesNotMatch(html, /local-test|owner@|password/i);
   });
 }
+
+test('/owner-setup sends no referrer', async () => {
+  const res = await fetch(base + '/owner-setup');
+  assert.equal(res.headers.get('referrer-policy'), 'no-referrer');
+});
 
 test('unknown admin child stays a 404 noindex', async () => {
   const res = await fetch(base + '/admin/not-a-screen');

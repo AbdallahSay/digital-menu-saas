@@ -82,6 +82,47 @@ describe('PlatformConsoleComponent HTTP behavior', () => {
     expect(c.pageCount()).toBe(13);
   });
 
+  it('shows the one-time owner link from create, never logs it, and hides it on demand', async () => {
+    list([]);
+    await tick();
+    c.name = 'مطعم';
+    c.slug = 'cafe';
+    c.ownerEmail = 'o@example.test';
+    const created = c.create();
+    const req = http.expectOne(
+      (r) => r.url === '/api/v1/platform/restaurants' && r.method === 'POST',
+    );
+    req.flush({ ...row(1), ownerSetupUrl: 'https://menu.example/owner-setup#u=a&t=b' });
+    await tick();
+    http
+      .expectOne((r) => r.method === 'GET')
+      .flush({ page: 1, pageSize: 20, total: 1, items: [row(1)] });
+    await created;
+    expect(c.setupLink()?.url).toBe('https://menu.example/owner-setup#u=a&t=b');
+    expect(c.message()?.text).not.toContain('https://');
+    c.hideLink();
+    expect(c.setupLink()).toBeNull();
+  });
+
+  it('issues a fresh link per row only through the confirm step and keeps it in memory only', async () => {
+    list([row(1)]);
+    await tick();
+    expect(c.confirmLinkFor()).toBeNull();
+    const issued = c.issueLink(row(1));
+    const req = http.expectOne('/api/v1/platform/restaurants/' + row(1).id + '/owner-setup-link');
+    expect(req.request.method).toBe('POST');
+    req.flush({ ownerSetupUrl: 'https://menu.example/owner-setup#u=c&t=d', issuedAtUtc: 'x' });
+    await tick();
+    http
+      .expectOne((r) => r.method === 'GET')
+      .flush({ page: 1, pageSize: 20, total: 1, items: [row(1)] });
+    await issued;
+    expect(c.setupLink()?.restaurant).toBe(row(1).name);
+    expect(c.rowMessage()?.id).toBe(row(1).id);
+    c.ngOnDestroy();
+    expect(c.setupLink()).toBeNull();
+  });
+
   it('requests the next page and resets to page 1 on search', async () => {
     list([row(1)], 250);
     await tick();

@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
@@ -79,6 +79,22 @@ export function describePlatformError(
         @if (message(); as m) {
           <p [class]="m.kind" role="status">{{ m.text }}</p>
         }
+        @if (setupLink(); as link) {
+          <div class="setup-link" role="region" aria-label="رابط إعداد المالك">
+            <p>
+              رابط إعداد المالك لـ {{ link.restaurant }}. بيظهر مرة واحدة، ومش بيتخزّن ولا بيتبعت.
+              ابعته للمالك المتأكد منه بس. أي رابط جديد بيلغي القديم.
+            </p>
+            <input readonly dir="ltr" [value]="link.url" aria-label="رابط الإعداد" />
+            <button type="button" class="btn btn-secondary" (click)="copyLink()">نسخ الرابط</button>
+            <button type="button" class="btn btn-secondary" (click)="hideLink()">
+              إخفاء الرابط
+            </button>
+            @if (copyState()) {
+              <span role="status">{{ copyState() }}</span>
+            }
+          </div>
+        }
       </section>
 
       <section aria-labelledby="list-title" class="card">
@@ -123,6 +139,26 @@ export function describePlatformError(
                       @if (m.id === r.id) {
                         <span [class]="m.kind" role="status">{{ m.text }}</span>
                       }
+                    }
+                    @if (confirmLinkFor() === r.id) {
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="issueLink(r)"
+                        [disabled]="busy()"
+                        title="هيلغي أي رابط قديم ويطلّع المالك من أي جلسة مفتوحة"
+                      >
+                        تأكيد رابط جديد
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="confirmLinkFor.set(r.id)"
+                        [disabled]="busy()"
+                      >
+                        رابط إعداد المالك
+                      </button>
                     }
                     <button
                       type="button"
@@ -218,6 +254,11 @@ export function describePlatformError(
         display: flex;
         gap: var(--space-2);
       }
+      .setup-link {
+        display: grid;
+        gap: var(--space-2);
+        margin-top: var(--space-4);
+      }
       .ok {
         color: var(--color-success, #166534);
       }
@@ -227,7 +268,7 @@ export function describePlatformError(
     `,
   ],
 })
-export class PlatformConsoleComponent {
+export class PlatformConsoleComponent implements OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AdminAuthService);
   private readonly router = inject(Router);
@@ -240,6 +281,9 @@ export class PlatformConsoleComponent {
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly message = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  readonly setupLink = signal<{ restaurant: string; url: string } | null>(null);
+  readonly copyState = signal<string | null>(null);
+  readonly confirmLinkFor = signal<string | null>(null);
   readonly listMessage = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
   readonly rowMessage = signal<{ id: string; kind: 'ok' | 'error'; text: string } | null>(null);
   name = '';
@@ -299,14 +343,60 @@ export class PlatformConsoleComponent {
       return;
     }
     await this.run(async () => {
-      await firstValueFrom(
-        this.http.post('/api/v1/platform/restaurants', { name, slug, ownerEmail }),
+      const created = await firstValueFrom(
+        this.http.post<{ ownerSetupUrl?: string }>('/api/v1/platform/restaurants', {
+          name,
+          slug,
+          ownerEmail,
+        }),
       );
       this.name = this.slug = this.ownerEmail = '';
       this.search = '';
-      this.message.set({ kind: 'ok', text: 'اتعمل المطعم. دعوة المالك اتسلمت حسب إعداد السيرفر.' });
+      if (typeof created?.ownerSetupUrl === 'string') {
+        this.setupLink.set({ restaurant: name, url: created.ownerSetupUrl });
+        this.message.set({ kind: 'ok', text: 'اتعمل المطعم. خد رابط إعداد المالك من تحت.' });
+      } else {
+        this.message.set({
+          kind: 'ok',
+          text: 'اتعمل المطعم. دعوة المالك اتسلمت حسب إعداد السيرفر.',
+        });
+      }
       this.createdAtEnd = true;
     });
+  }
+
+  /** Issues a fresh one-time owner setup/reset link. The URL is held in memory only until hidden. */
+  async issueLink(r: PlatformRestaurant): Promise<void> {
+    await this.run(async () => {
+      const issued = await firstValueFrom(
+        this.http.post<{ ownerSetupUrl: string }>(
+          `/api/v1/platform/restaurants/${r.id}/owner-setup-link`,
+          {},
+        ),
+      );
+      this.setupLink.set({ restaurant: r.name, url: issued.ownerSetupUrl });
+      this.rowMessage.set({ id: r.id, kind: 'ok', text: 'اتعمل رابط جديد، والقديم اتلغى.' });
+    }, r.id);
+  }
+
+  async copyLink(): Promise<void> {
+    const link = this.setupLink();
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link.url);
+      this.copyState.set('اتنسخ.');
+    } catch {
+      this.copyState.set('النسخ مش متاح. حدّد الرابط وانسخه بإيدك.');
+    }
+  }
+
+  hideLink(): void {
+    this.setupLink.set(null);
+    this.copyState.set(null);
+  }
+
+  ngOnDestroy(): void {
+    this.hideLink();
   }
 
   async publish(r: PlatformRestaurant): Promise<void> {
@@ -348,6 +438,8 @@ export class PlatformConsoleComponent {
     this.message.set(null);
     this.listMessage.set(null);
     this.rowMessage.set(null);
+    this.confirmLinkFor.set(null);
+    this.copyState.set(null);
     try {
       await action();
       if (this.createdAtEnd) {

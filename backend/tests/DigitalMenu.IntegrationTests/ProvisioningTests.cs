@@ -330,7 +330,7 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         Assert.Equal("https://menu.example/owner-setup", uri.GetLeftPart(UriPartial.Path));
         Assert.Equal("", uri.Query);
         var parts = uri.Fragment.TrimStart('#').Split('&').Select(p => p.Split('=', 2)).ToDictionary(p => p[0], p => p[1]);
-        return (Guid.ParseExact(parts["u"], "N"), Uri.UnescapeDataString(parts["t"]));
+        return (Guid.ParseExact(parts["u"], "N"), System.Text.Encoding.UTF8.GetString(Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlDecode(parts["t"])));
     }
 
     // The 10/min credential limiter is per IP and shared by a fixture, so each scenario stays under it on purpose.
