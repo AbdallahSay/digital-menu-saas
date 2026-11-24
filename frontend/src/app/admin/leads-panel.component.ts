@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -13,6 +13,7 @@ export interface PlatformLead {
   email: string | null;
   notes: string | null;
   status: LeadStatusName;
+  rowVersion: string;
 }
 interface LeadPage {
   page: number;
@@ -109,6 +110,27 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
             }
           </tbody>
         </table>
+        @if (pages() > 1) {
+          <nav aria-label="صفحات الطلبات">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="goTo(page() - 1)"
+              [disabled]="busy() || page() <= 1"
+            >
+              السابق
+            </button>
+            <span>{{ page() }} / {{ pages() }}</span>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="goTo(page() + 1)"
+              [disabled]="busy() || page() >= pages()"
+            >
+              التالي
+            </button>
+          </nav>
+        }
       }
     </section>
   `,
@@ -133,6 +155,10 @@ export class LeadsPanelComponent {
   readonly statuses: LeadStatusName[] = ['New', 'Contacted', 'Closed'];
   readonly rows = signal<PlatformLead[]>([]);
   readonly total = signal(0);
+  readonly page = signal(1);
+  pages(): number {
+    return Math.max(1, Math.ceil(this.total() / LEAD_PAGE_SIZE));
+  }
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly confirmDelete = signal<string | null>(null);
@@ -147,22 +173,41 @@ export class LeadsPanelComponent {
     return STATUS_LABEL[s];
   }
 
-  async load(): Promise<void> {
+  async goTo(page: number): Promise<void> {
+    if (this.busy()) return;
+    this.page.set(Math.min(Math.max(1, Math.floor(page) || 1), this.pages()));
+    await this.load();
+  }
+
+  /** Loads the current page; returns false when the list could not be refreshed (and says so). */
+  async load(): Promise<boolean> {
     const ticket = ++this.ticket;
     this.loading.set(true);
     this.message.set(null);
     try {
       const page = await firstValueFrom(
         this.http.get<LeadPage>('/api/v1/platform/leads', {
-          params: { page: 1, pageSize: LEAD_PAGE_SIZE },
+          params: { page: this.page(), pageSize: LEAD_PAGE_SIZE },
         }),
       );
-      if (ticket !== this.ticket) return;
+      if (ticket !== this.ticket) return false;
+      const total = typeof page.total === 'number' ? page.total : 0;
+      this.total.set(total);
+      const last = Math.max(1, Math.ceil(total / LEAD_PAGE_SIZE));
+      if (this.page() > last) {
+        // The page emptied (deleted or expired rows): clamp to the last page and reload it.
+        this.page.set(last);
+        this.loading.set(false);
+        return await this.load();
+      }
       this.rows.set(Array.isArray(page.items) ? page.items : []);
-      this.total.set(typeof page.total === 'number' ? page.total : this.rows().length);
+      return true;
     } catch {
-      if (ticket === this.ticket)
+      if (ticket === this.ticket) {
+        this.rows.set([]);
         this.message.set({ kind: 'error', text: 'ما قدرناش نحمّل الطلبات. جرّب تاني.' });
+      }
+      return false;
     } finally {
       if (ticket === this.ticket) this.loading.set(false);
     }
@@ -172,7 +217,9 @@ export class LeadsPanelComponent {
     if (this.busy() || !this.statuses.includes(status as LeadStatusName) || status === l.status)
       return;
     await this.run(async () => {
-      await firstValueFrom(this.http.patch(`/api/v1/platform/leads/${l.id}`, { status }));
+      await firstValueFrom(
+        this.http.patch(`/api/v1/platform/leads/${l.id}`, { status, rowVersion: l.rowVersion }),
+      );
     }, 'اتحدّثت حالة الطلب.');
   }
 
@@ -180,7 +227,11 @@ export class LeadsPanelComponent {
     if (this.busy()) return;
     this.confirmDelete.set(null);
     await this.run(async () => {
-      await firstValueFrom(this.http.delete(`/api/v1/platform/leads/${l.id}`));
+      await firstValueFrom(
+        this.http.delete(`/api/v1/platform/leads/${l.id}`, {
+          params: { rowVersion: l.rowVersion },
+        }),
+      );
     }, 'اتمسح الطلب.');
   }
 
@@ -189,12 +240,22 @@ export class LeadsPanelComponent {
     this.message.set(null);
     try {
       await action();
-      await this.load();
-      this.message.set({ kind: 'ok', text: okText });
-    } catch {
-      this.message.set({ kind: 'error', text: 'العملية فشلت. حدّث الصفحة وجرّب تاني.' });
-    } finally {
+    } catch (e) {
+      const stale = e instanceof HttpErrorResponse && e.status === 412;
       this.busy.set(false);
+      const refreshed = await this.load();
+      if (refreshed)
+        this.message.set({
+          kind: 'error',
+          text: stale
+            ? 'الطلب اتغيّر من حد تاني. حدّثنا القائمة، راجع وجرّب تاني.'
+            : 'العملية فشلت. جرّب تاني.',
+        });
+      return;
     }
+    const refreshed = await this.load();
+    // A failed refresh keeps its own error: never claim success over a stale list.
+    if (refreshed) this.message.set({ kind: 'ok', text: okText });
+    this.busy.set(false);
   }
 }
