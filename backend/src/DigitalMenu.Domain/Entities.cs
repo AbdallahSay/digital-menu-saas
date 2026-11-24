@@ -16,6 +16,8 @@ public sealed class Restaurant : VersionedEntity
     public string Status { get; set; } = "Active";
     public bool IsPublished { get; set; }
     public long PublishedMenuVersion { get; set; } = 1;
+    // Search-engine listing opt-in. Default off for every row. Who may change it is an open owner decision.
+    public bool IsIndexable { get; set; }
 }
 
 public sealed class RestaurantUser

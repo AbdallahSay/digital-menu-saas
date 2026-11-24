@@ -11,6 +11,7 @@ public static class PublicMenus
     public static void AddPublicMenus(this IServiceCollection services)
     {
         services.AddScoped<IPublicMenuReader, PublicMenuReader>();
+        services.AddScoped<ISitemapReader, SitemapReader>();
         // Dedicated byte-budgeted projection cache (see PublicMenuProjectionCache).
         services.AddSingleton<PublicMenuProjectionCache>();
         services.AddRateLimiter(o => o.AddPolicy("public-menu", context => RateLimitPartition.GetFixedWindowLimiter(
@@ -24,6 +25,13 @@ public static class PublicMenus
             .Produces<PublicMenu>().ProducesProblem(400).ProducesProblem(404).ProducesProblem(429).ProducesProblem(503);
         group.MapGet("/restaurants/by-slug/{slug}", (string slug, string? lang, IPublicMenuReader reader, HttpContext http, CancellationToken ct) => Get(slug, true, lang, reader, http, ct))
             .Produces<PublicMenu>().ProducesProblem(400).ProducesProblem(404).ProducesProblem(429).ProducesProblem(503);
+        group.MapGet("/sitemap", async (int? page, ISitemapReader reader, CancellationToken ct) =>
+        {
+            var p = page ?? 1;
+            if (p < 1 || p > SitemapReader.MaxPage) return Results.Problem(statusCode: 400, title: "Invalid sitemap page.");
+            try { return Results.Ok(await reader.ReadAsync(p, ct)); }
+            catch (Exception ex) when (ex is not OperationCanceledException) { return Results.Problem(statusCode: 503, title: "Sitemap unavailable."); }
+        }).Produces<SitemapPage>().ProducesProblem(400).ProducesProblem(429).ProducesProblem(503);
     }
     private static async Task<IResult> Get(string identifier, bool slug, string? language, IPublicMenuReader reader, HttpContext http, CancellationToken ct)
     {

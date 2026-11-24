@@ -31,7 +31,7 @@ public sealed class PersistenceTests
         try
         {
             await db.Database.MigrateAsync();
-            var expectedMigrations = new[] { "20261012030220_InitialTenantModel", "20261122000000_ReadCommittedSnapshot", "20261124152320_AddLeads", "20261124154532_LeadConcurrencyAndQuota", "20261124155314_AddLeadNoticeFingerprint" };
+            var expectedMigrations = new[] { "20261012030220_InitialTenantModel", "20261122000000_ReadCommittedSnapshot", "20261124152320_AddLeads", "20261124154532_LeadConcurrencyAndQuota", "20261124155314_AddLeadNoticeFingerprint", "20261124185237_AddRestaurantIsIndexable" };
             Assert.Equal(expectedMigrations.Order(), (await db.Database.GetAppliedMigrationsAsync()).Order());
             Assert.False(db.Database.HasPendingModelChanges());
             // The RCSI migration is raw SQL outside the model snapshot: verify the
@@ -138,7 +138,7 @@ public sealed class PersistenceTests
             await using var other = new SqlConnection(connection.ConnectionString);
             await other.OpenAsync();
             await db.Database.MigrateAsync();
-            Assert.Equal(new[] { "20261012030220_InitialTenantModel", "20261122000000_ReadCommittedSnapshot", "20261124152320_AddLeads", "20261124154532_LeadConcurrencyAndQuota", "20261124155314_AddLeadNoticeFingerprint" }.Order(),
+            Assert.Equal(new[] { "20261012030220_InitialTenantModel", "20261122000000_ReadCommittedSnapshot", "20261124152320_AddLeads", "20261124154532_LeadConcurrencyAndQuota", "20261124155314_AddLeadNoticeFingerprint", "20261124185237_AddRestaurantIsIndexable" }.Order(),
                 (await db.Database.GetAppliedMigrationsAsync()).Order());
             Assert.True(await ReadCommittedSnapshotOn(db));
         }

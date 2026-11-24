@@ -29,6 +29,7 @@ public sealed class RestaurantConfiguration : IEntityTypeConfiguration<Restauran
         b.Property(x => x.Slug).HasMaxLength(100).IsRequired();
         b.Property(x => x.PublicCode).HasMaxLength(20).IsRequired();
         b.Property(x => x.Status).HasMaxLength(16).IsRequired();
+        b.Property(x => x.IsIndexable).HasDefaultValue(false);
         b.HasIndex(x => x.Slug).IsUnique();
         b.HasIndex(x => x.PublicCode).IsUnique();
         b.Property(x => x.PublicCode).Metadata.SetAfterSaveBehavior(Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Throw);
