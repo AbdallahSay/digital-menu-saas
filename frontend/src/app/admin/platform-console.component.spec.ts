@@ -192,6 +192,51 @@ describe('PlatformConsoleComponent HTTP behavior', () => {
     expect(c.message()?.text).toContain('مستخدم');
   });
 
+  it('clears stale errors on the next action and on a successful reload', async () => {
+    // list error clears on a successful reload
+    const first = http.expectOne(
+      (r) => r.url === '/api/v1/platform/restaurants' && r.method === 'GET',
+    );
+    first.flush({}, { status: 500, statusText: 'Server Error' });
+    await tick();
+    expect(c.listMessage()?.kind).toBe('error');
+    const reload = c.load(1);
+    list([row(1)]);
+    await reload;
+    expect(c.listMessage()).toBeNull();
+
+    // create error clears when the next create starts and succeeds
+    c.name = 'x';
+    c.slug = 'ok-slug';
+    c.ownerEmail = 'o@example.test';
+    const failed = c.create();
+    http.expectOne((r) => r.method === 'POST').flush({}, { status: 409, statusText: 'Conflict' });
+    await failed;
+    expect(c.message()?.kind).toBe('error');
+    const retry = c.create();
+    expect(c.message()).toBeNull();
+    http.expectOne((r) => r.method === 'POST').flush({});
+    await tick();
+    list([row(1)]);
+    await retry;
+    expect(c.message()?.kind).toBe('ok');
+
+    // row error clears when another row action starts
+    const r = c.rows()[0];
+    const bad = c.publish(r);
+    http
+      .expectOne((q) => q.method === 'PATCH')
+      .flush({}, { status: 412, statusText: 'Precondition Failed' });
+    await bad;
+    expect(c.rowMessage()?.kind).toBe('error');
+    const again = c.toggleStatus(c.rows()[0]);
+    expect(c.rowMessage()).toBeNull();
+    http.expectOne((q) => q.method === 'PATCH').flush({});
+    await tick();
+    list([row(1)]);
+    await again;
+  });
+
   it('sends the row version with publication and status changes and reports 412 on the row', async () => {
     const r = row(1, { isPublished: false });
     list([r]);
