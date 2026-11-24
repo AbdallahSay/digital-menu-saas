@@ -259,8 +259,9 @@ test('a script injected after goto resolves, inside the settle window, is counte
   const m = await measureRoutes(SRC, ['/privacy'], {
     interact: undefined,
     prepare: (page) =>
-      // Timing anchor: goto resolves ~500 ms after load (networkidle), so a 1000 ms timer fires inside the
-      // later settle window. Verified to fail against the pre-fix helper (b32cf0e).
+      // Intended timing (wall-clock relative to window.load, NOT a phase invariant): goto normally resolves
+      // ~500 ms after load, so a 1000 ms timer is expected to land in the later settle window. Observed to
+      // fail against the pre-fix helper (b32cf0e); a slow bootstrap could shift it. A deterministic phase hook would be stronger.
       page.addInitScript((file) => {
         addEventListener('load', () =>
           setTimeout(() => {
