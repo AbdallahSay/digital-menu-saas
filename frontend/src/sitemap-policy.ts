@@ -22,7 +22,7 @@ export function parseStrictDate(value: unknown): Date | null {
   const check = new Date(Date.UTC(y, mo - 1, d, h, mi, se));
   if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d || h > 23 || mi > 59 || se > 59) return null;
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) || date.getUTCFullYear() < 2000 ? null : date;
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/;
 
@@ -111,51 +111,75 @@ export async function sitemapResponse(
   if (!config.enabled)
     return { status: 404, type: 'text/plain', body: 'Not found', headers: NO_STORE };
   const fail: SitemapResult = { status: 503, type: 'text/plain', body: 'Sitemap unavailable', headers: NO_STORE };
-  try {
-    const signal = AbortSignal.timeout(timeoutMs);
-    const response = await doFetch(backendUrl, {
-      headers: { accept: 'application/json' },
-      redirect: 'error',
-      signal,
-    });
-    if (!response.ok) {
-      await response.body?.cancel().catch(() => undefined);
+  const controller = new AbortController();
+  const open: { cancel(): Promise<void> }[] = [];
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // One deadline for the WHOLE operation (fetch, body read, cancellation). The deadline race does not depend on
+  // the fetch adapter, the stream or cancel() honouring the signal: whichever settles first wins, and any work
+  // that never settles is abandoned (its rejection is swallowed), not awaited.
+  const deadline = new Promise<SitemapResult>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      for (const r of open) bestEffortCancel(r); // abandon, never await
+      resolve(fail);
+    }, timeoutMs);
+  });
+  const operation = (async (): Promise<SitemapResult> => {
+    try {
+      if (controller.signal.aborted) return fail;
+      const response = await doFetch(backendUrl, {
+        headers: { accept: 'application/json' },
+        redirect: 'error',
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        bestEffortCancel(response.body);
+        return fail;
+      }
+      const text = await readBounded(response, MAX_BODY_BYTES, open);
+      if (text === null) return fail;
+      const xml = renderSitemap(config, JSON.parse(text));
+      return xml === null ? fail : { status: 200, type: 'application/xml', body: xml, headers: NO_STORE };
+    } catch {
       return fail;
     }
-    const text = await readBounded(response, MAX_BODY_BYTES, signal);
-    if (text === null) return fail;
-    const xml = renderSitemap(config, JSON.parse(text));
-    return xml === null ? fail : { status: 200, type: 'application/xml', body: xml, headers: NO_STORE };
-  } catch {
-    return fail;
+  })();
+  operation.catch(() => undefined);
+  try {
+    return await Promise.race([operation, deadline]);
+  } finally {
+    clearTimeout(timer);
+    controller.abort(); // idempotent; releases anything still tied to the signal
   }
 }
 
-// Reads the actual bytes incrementally, cancels the stream as soon as the cap is crossed, and stays inside the
-// same deadline signal for the whole body (a never-ending body is aborted by the deadline, not buffered).
-async function readBounded(response: Response, max: number, signal: AbortSignal): Promise<string | null> {
+// Cancellation is best effort and never awaited: a cancel() that never settles must not hold the response.
+function bestEffortCancel(target: { cancel(): Promise<void> } | null | undefined): void {
+  if (!target) return;
+  try {
+    void Promise.resolve(target.cancel()).catch(() => undefined);
+  } catch {
+    /* ignore */
+  }
+}
+
+// Reads the actual bytes incrementally and stops as soon as the cap is crossed. Deadline handling lives in the
+// caller's race; a read that never settles is abandoned there.
+async function readBounded(response: Response, max: number, open: { cancel(): Promise<void> }[]): Promise<string | null> {
   const reader = response.body?.getReader();
   if (!reader) return null;
+  open.push(reader);
   const chunks: Uint8Array[] = [];
   let total = 0;
-  const abort = new Promise<never>((_, reject) =>
-    signal.addEventListener('abort', () => reject(new Error('deadline')), { once: true }),
-  );
-  abort.catch(() => undefined);
-  try {
-    for (;;) {
-      const { done, value } = await Promise.race([reader.read(), abort]);
-      if (done) break;
-      total += value.byteLength;
-      if (total > max) {
-        await reader.cancel().catch(() => undefined);
-        return null;
-      }
-      chunks.push(value);
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      bestEffortCancel(reader);
+      return null;
     }
-  } catch {
-    reader.cancel().catch(() => undefined);
-    return null;
+    chunks.push(value);
   }
   return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks));
 }

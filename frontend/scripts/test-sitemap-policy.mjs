@@ -91,9 +91,9 @@ test('XML safety: hostile-but-URL-valid origin is escaped and the output parses'
   assert.ok(xml.includes('a&amp;b.example') && !xml.includes('a&b'));
 });
 
-test('strict dates: null, 0, true, numbers, impossible calendar dates, date-only and pre-2000 are rejected', () => {
+test('strict dates: null, 0, true, numbers, impossible calendar dates, date-only are rejected', () => {
   const c = readSitemapConfig(on);
-  for (const d of [null, 0, true, 1700000000000, '2026-02-31T00:00:00Z', '2026-13-01T00:00:00Z', '2026-01-01', '2026-01-01T25:00:00Z', '1970-01-01T00:00:00Z', '2026-01-01T00:00:00'])
+  for (const d of [null, 0, true, 1700000000000, '2026-02-31T00:00:00Z', '2026-13-01T00:00:00Z', '2026-01-01', '2026-01-01T25:00:00Z', '2026-01-01T00:00:00'])
     assert.equal(renderSitemap(c, page({ entries: [{ slug: 'ok', lastModifiedUtc: d }] })), null, String(d));
 });
 
@@ -120,6 +120,7 @@ test('real deadline: a body that never ends is aborted by the deadline, not buff
   const r = await sitemapResponse(readSitemapConfig(on), url, async () => s.response, 150);
   assert.equal(r.status, 503);
   assert.ok(Date.now() - t0 < 2000);
+  await new Promise((r) => setTimeout(r, 20));
   assert.equal(s.cancelled, true);
 });
 
@@ -128,4 +129,58 @@ test('a non-OK response body is cancelled, not read', async () => {
   const r = await sitemapResponse(readSitemapConfig(on), url, async () => new Response(s.response.body, { status: 503 }));
   assert.equal(r.status, 503);
   assert.equal(s.cancelled, true);
+});
+
+const never = () => new Promise(() => {});
+const unhandled = [];
+process.on('unhandledRejection', (e) => unhandled.push(e));
+const hangCancel = (chunks) => {
+  let i = 0, cancelCalled = false;
+  const body = new ReadableStream({ pull(ctl) { if (i < chunks.length) ctl.enqueue(chunks[i++]); else return never(); }, cancel() { cancelCalled = true; return never(); } });
+  return { body, get cancelCalled() { return cancelCalled; } };
+};
+
+test('never-settling cancel() does not hold the response: oversize and non-OK', async () => {
+  const big = new Uint8Array(1_100_000);
+  const a = hangCancel([big]);
+  const t0 = Date.now();
+  const r1 = await sitemapResponse(readSitemapConfig(on), url, async () => new Response(a.body, { status: 200 }), 500);
+  assert.equal(r1.status, 503);
+  assert.ok(Date.now() - t0 < 400, 'must not wait for the deadline or the cancel');
+  const b = hangCancel([new Uint8Array(4)]);
+  const t1 = Date.now();
+  const r2 = await sitemapResponse(readSitemapConfig(on), url, async () => new Response(b.body, { status: 503 }), 500);
+  assert.equal(r2.status, 503);
+  assert.ok(Date.now() - t1 < 400);
+  await new Promise((r) => setTimeout(r, 20));
+  assert.ok(a.cancelCalled, "oversize cancel not invoked");
+  assert.ok(b.cancelCalled, "non-OK cancel not invoked");
+});
+
+test('a fetch adapter that ignores the signal and never resolves is bounded by the whole-operation deadline', async () => {
+  const t0 = Date.now();
+  const r = await sitemapResponse(readSitemapConfig(on), url, never, 150);
+  assert.equal(r.status, 503);
+  assert.ok(Date.now() - t0 < 1500);
+});
+
+test('a body whose read ignores abort and never settles is bounded by the deadline', async () => {
+  const body = new ReadableStream({ pull: never });
+  const r = await sitemapResponse(readSitemapConfig(on), url, async () => new Response(body, { status: 200 }), 150);
+  assert.equal(r.status, 503);
+});
+
+test('fetch resolving after the deadline cannot revive the result; no unhandled rejections', async () => {
+  const r = await sitemapResponse(readSitemapConfig(on), url, () => new Promise((res, rej) => setTimeout(() => rej(new Error('late')), 300)), 100);
+  assert.equal(r.status, 503);
+  await new Promise((r2) => setTimeout(r2, 400));
+  assert.deepEqual(unhandled, []);
+});
+
+test('output is real XML: parsed with a strict parser, loc/lastmod round-trip', async () => {
+  const { JSDOM } = await import('jsdom');
+  const xml = renderSitemap(readSitemapConfig(on), page());
+  const doc = new JSDOM(xml, { contentType: 'text/xml' }).window.document;
+  assert.equal(doc.querySelector('parsererror'), null);
+  assert.deepEqual([...doc.querySelectorAll('loc')].map((n) => n.textContent), ['https://menu.example/r/cafe-1']);
 });
