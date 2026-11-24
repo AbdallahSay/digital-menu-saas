@@ -151,3 +151,25 @@ public sealed class AuditConfiguration : IEntityTypeConfiguration<AuditEntry>
         b.HasIndex(x => new { x.RestaurantId, x.TimestampUtc });
     }
 }
+
+public sealed class LeadConfiguration : IEntityTypeConfiguration<Lead>
+{
+    public void Configure(EntityTypeBuilder<Lead> b)
+    {
+        b.ToTable("Leads", t =>
+        {
+            t.UseSqlOutputClause(false);
+            t.HasCheckConstraint("CK_Leads_Status", "[Status] IN ('New','Contacted','Closed')");
+        });
+        b.HasKey(x => x.Id);
+        b.Property(x => x.ContactName).HasMaxLength(120);
+        b.Property(x => x.BusinessName).HasMaxLength(160);
+        b.Property(x => x.Phone).HasMaxLength(24);
+        b.Property(x => x.Email).HasMaxLength(256);
+        b.Property(x => x.Notes).HasMaxLength(1000);
+        b.Property(x => x.NoticeVersion).HasMaxLength(40);
+        b.Property(x => x.Status).HasMaxLength(16);
+        b.HasIndex(x => x.CreatedUtc);
+        b.HasIndex(x => x.ExpiresUtc);
+    }
+}

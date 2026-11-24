@@ -5,6 +5,11 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'r/demo', renderMode: RenderMode.Server },
   { path: 'r/:slug', renderMode: RenderMode.Server },
   {
+    path: 'privacy',
+    renderMode: RenderMode.Client,
+    headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
+  },
+  {
     path: 'login',
     renderMode: RenderMode.Client,
     headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },

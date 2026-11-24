@@ -1,5 +1,6 @@
 using DigitalMenu.Api.Auth;
 using DigitalMenu.Api.Catalog;
+using DigitalMenu.Api.Leads;
 using DigitalMenu.Api.Media;
 using DigitalMenu.Api.Platform;
 using DigitalMenu.Api.Public;
@@ -29,6 +30,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
 builder.Services.AddMenuMedia(builder.Environment, builder.Configuration);
 builder.Services.AddPublicMenus();
+builder.Services.AddLeadIntake(builder.Configuration);
 builder.Services.AddDevelopmentOnboarding(builder.Environment, builder.Configuration);
 builder.Services.AddSingleton<IRestaurantPublicCodeGenerator, CryptographicPublicCodeGenerator>();
 builder.Services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(options =>
@@ -72,6 +74,9 @@ app.Use(async (context, next) =>
         await Results.Problem(statusCode: 400, title: "HTTPS is required.").ExecuteAsync(context);
         return;
     }
+    if (context.Request.Path.StartsWithSegments("/api/v1/leads") &&
+        context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } leadBody)
+        leadBody.MaxRequestBodySize = LeadEndpoints.BodyLimit;
     if ((context.Request.Path.StartsWithSegments("/api/v1/auth") || context.Request.Path.StartsWithSegments("/api/v1/platform") || context.Request.Path.StartsWithSegments("/api/v1/admin")) &&
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
         bodySize.MaxRequestBodySize = context.GetEndpoint()?.Metadata.GetMetadata<MediaUploadMetadata>() is not null
@@ -101,6 +106,7 @@ app.Use(async (context, next) =>
 });
 app.MapMenuAuthentication();
 app.MapPlatformProvisioning();
+app.MapLeads();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();

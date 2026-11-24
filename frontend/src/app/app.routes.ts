@@ -11,6 +11,7 @@ export const routes: Routes = [
     runGuardsAndResolvers: 'paramsOrQueryParamsChange',
     loadComponent: () => import('./public-menu').then((m) => m.PublicMenuComponent),
   },
+  { path: 'privacy', loadComponent: () => import('./privacy').then((m) => m.PrivacyComponent) },
   {
     path: 'login',
     loadComponent: () => import('./admin/login.component').then((m) => m.LoginComponent),

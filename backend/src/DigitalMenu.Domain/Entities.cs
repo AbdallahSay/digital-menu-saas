@@ -92,3 +92,21 @@ public sealed class AuditEntry
     public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
     public string? CorrelationId { get; set; }
 }
+
+/// <summary>
+/// Sales lead from the marketing form. Platform-level data (no tenant). Personal data: keep minimal,
+/// never log it, and expire it after the configured retention window.
+/// </summary>
+public sealed class Lead
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+    public DateTime ExpiresUtc { get; set; }
+    public string ContactName { get; set; } = "";
+    public string BusinessName { get; set; } = "";
+    public string Phone { get; set; } = "";
+    public string? Email { get; set; }
+    public string? Notes { get; set; }
+    public string NoticeVersion { get; set; } = "";
+    public string Status { get; set; } = "New";
+}

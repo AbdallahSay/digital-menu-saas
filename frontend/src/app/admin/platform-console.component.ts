@@ -5,6 +5,7 @@ import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AdminAuthService } from './admin-auth.service';
+import { LeadsPanelComponent } from './leads-panel.component';
 
 export interface PlatformRestaurant {
   id: string;
@@ -49,7 +50,7 @@ export function describePlatformError(
  */
 @Component({
   selector: 'app-platform-console',
-  imports: [FormsModule],
+  imports: [FormsModule, LeadsPanelComponent],
   template: `
     <main class="platform">
       <header class="platform-header">
@@ -213,6 +214,7 @@ export function describePlatformError(
           }
         }
       </section>
+      <app-leads-panel />
     </main>
   `,
   styles: [

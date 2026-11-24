@@ -1327,3 +1327,17 @@ h6,
 .footer-note {
   margin: 0;
 }
+
+.hp-field {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.consent-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  line-height: 1.6;
+}
