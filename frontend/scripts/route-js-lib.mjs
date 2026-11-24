@@ -67,7 +67,8 @@ export async function coldScripts(
       scripts.add(file);
     });
     await page.goto(url, { waitUntil: 'networkidle', timeout });
-    // Hydration oracle: expected text is present (it is also in SSR HTML), AND Angular's client
+    // BOOTSTRAP oracle, not a proof that the routed component finished hydrating: expected text is
+    // present (SSR HTML already has it for SSR routes), AND Angular's client
     // runtime has attached to the root (the __ngContext__ property exists only after client bootstrap), AND the
     // expected lang/dir hold when given.
     await page.waitForFunction(
@@ -119,10 +120,14 @@ export function writeRouteEvidence(name, folder, measurements, browserVersion = 
         budgetBytes: ROUTE_BUDGET_BYTES,
         estimate: 'gzip-default-local-source',
         observedTransport: 'not recorded (static/local servers do not report encoded size)',
-        gitSha: git('git rev-parse HEAD'),
+        gitSha: process.env['ROUTE_GATE_GIT_SHA'] ?? git('git rev-parse HEAD'),
+        gitTreeDirty: git('git status --porcelain') !== '',
         node: process.version,
         browser: browserVersion,
-        buildCommand: 'npm run build (ng build); folder dist/digital-menu/browser',
+        buildCommand:
+          process.env['ROUTE_GATE_BUILD_COMMAND'] ??
+          'unrecorded (set ROUTE_GATE_BUILD_COMMAND to the command that produced the folder)',
+        buildFolder: folder,
         cache:
           'fresh browser context per route, service workers blocked, observation window 1000 ms + networkidle after hydration oracle',
         protectedChunkMarkers: ADMIN_MARKERS,

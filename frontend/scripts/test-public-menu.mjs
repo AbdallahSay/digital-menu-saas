@@ -250,9 +250,10 @@ test('JavaScript-disabled content, hydration without duplicate API fetch, RTL/LT
     await browser.close();
   }
 });
-test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch admin chunks', async () => {
+test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch the named marker chunks', async () => {
   const folder = 'dist/digital-menu/browser';
-  assert.ok(adminChunks(folder).length >= 2, 'protected chunk marker map must be non-empty');
+  for (const m of ADMIN_MARKERS)
+    assert.ok(chunksContaining(folder, [m]).length > 0, `marker ${m} matches no chunk`);
   const browser = await chromium.launch();
   const measured = {};
   try {

@@ -114,7 +114,7 @@ async function measureRoutes(folder, routes = Object.keys(ROUTES), overrides = {
 
 const aggregate = (folder) => gzipBytes(folder, jsFiles(folder));
 
-test('public routes pass the budget and never request named admin chunks', async () => {
+test('public routes pass the budget and never request the named marker chunks', async () => {
   const named = adminChunks(SRC);
   for (const m of ADMIN_MARKERS)
     assert.ok(chunksContaining(SRC, [m]).length > 0, `marker ${m} matches no chunk`);

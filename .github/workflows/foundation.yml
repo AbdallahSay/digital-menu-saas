@@ -46,8 +46,7 @@ jobs:
           npm run test:vercel:wiring
           npm run test:vercel
           npx playwright install --with-deps chromium
-          npm run test:html
-          npm run test:routes
+          ROUTE_GATE_BUILD_COMMAND="npm run build" npm run test:routes
       - name: Raw HTTP, browser and Lighthouse gates against local production build
         shell: bash
         run: |
