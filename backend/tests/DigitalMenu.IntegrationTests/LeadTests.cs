@@ -198,7 +198,20 @@ public sealed class LeadTests
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["Leads:Enabled"] = enabled, ["Leads:NoticeVersion"] = notice, ["Leads:RetentionDays"] = days, ["Leads:ControllerName"] = controller, ["Leads:ContactChannel"] = contact }).Build();
         if (enabled != "true") Assert.Null(LeadOptions.FromConfiguration(config));
-        else if (valid) Assert.Equal(new LeadOptions("n1", 30, "C", "W"), LeadOptions.FromConfiguration(config));
+        else if (valid) Assert.Equal(new LeadOptions(LeadOptions.Fingerprint("n1", 30, "C", "W"), 30, "C", "W"), LeadOptions.FromConfiguration(config));
         else Assert.Throws<InvalidOperationException>(() => LeadOptions.FromConfiguration(config));
+    }
+
+    [Fact]
+    public void Notice_id_changes_when_any_stated_fact_changes_and_is_stable_otherwise()
+    {
+        var a = LeadOptions.Fingerprint("v1", 30, "Seller", "wa:1");
+        Assert.Equal(a, LeadOptions.Fingerprint("v1", 30, "Seller", "wa:1"));
+        Assert.NotEqual(a, LeadOptions.Fingerprint("v1", 31, "Seller", "wa:1"));
+        Assert.NotEqual(a, LeadOptions.Fingerprint("v1", 30, "Other", "wa:1"));
+        Assert.NotEqual(a, LeadOptions.Fingerprint("v1", 30, "Seller", "wa:2"));
+        Assert.NotEqual(a, LeadOptions.Fingerprint("v2", 30, "Seller", "wa:1"));
+        Assert.StartsWith("v1~", a);
+        Assert.True(LeadOptions.Fingerprint(new string('v', 30), 30, "S", "c").Length <= 40);
     }
 }

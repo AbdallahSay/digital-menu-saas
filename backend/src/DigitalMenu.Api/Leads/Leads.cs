@@ -15,12 +15,23 @@ public sealed record LeadOptions(string NoticeVersion, int RetentionDays, string
 {
     public const int MaxRetentionDays = 365;
 
+    /// <summary>
+    /// The notice id shown to visitors and stored with each lead: the configured version plus a hash of the facts the notice states
+    /// (retention, controller, contact). Changing any of them changes the id, so a form loaded under old facts is refused and
+    /// every stored lead records exactly which facts it was collected under.
+    /// </summary>
+    public static string Fingerprint(string version, int days, string controller, string contact)
+    {
+        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes($"{version}\n{days}\n{controller}\n{contact}"));
+        return $"{version}~{Convert.ToHexString(hash)[..8].ToLowerInvariant()}";
+    }
+
     public static LeadOptions? FromConfiguration(IConfiguration configuration)
     {
         if (!string.Equals(configuration["Leads:Enabled"], "true", StringComparison.OrdinalIgnoreCase)) return null;
         var notice = configuration["Leads:NoticeVersion"]?.Trim();
-        if (string.IsNullOrEmpty(notice) || notice.Length > 40 || notice.Any(char.IsControl))
-            throw new InvalidOperationException("Leads:NoticeVersion is required (max 40 chars) when lead intake is enabled.");
+        if (string.IsNullOrEmpty(notice) || notice.Length > 30 || notice.Any(char.IsControl))
+            throw new InvalidOperationException("Leads:NoticeVersion is required (max 30 chars) when lead intake is enabled.");
         if (!int.TryParse(configuration["Leads:RetentionDays"], out var days) || days < 1 || days > MaxRetentionDays)
             throw new InvalidOperationException("Leads:RetentionDays must be 1 to 365 when lead intake is enabled.");
         var controller = configuration["Leads:ControllerName"]?.Trim();
@@ -28,7 +39,7 @@ public sealed record LeadOptions(string NoticeVersion, int RetentionDays, string
         if (string.IsNullOrEmpty(controller) || controller.Length > 120 || controller.Any(char.IsControl) ||
             string.IsNullOrEmpty(contact) || contact.Length > 200 || contact.Any(char.IsControl))
             throw new InvalidOperationException("Leads:ControllerName and Leads:ContactChannel are required when lead intake is enabled.");
-        return new LeadOptions(notice, days, controller, contact);
+        return new LeadOptions(Fingerprint(notice, days, controller, contact), days, controller, contact);
     }
 }
 

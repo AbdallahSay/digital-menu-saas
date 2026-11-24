@@ -69,6 +69,14 @@ describe('lead form', () => {
     await c.onFormSubmit();
     expect(calls[0]).toMatchObject({ consent: true, noticeVersion: 'v1', website: '' });
   });
+  it('keeps the combined notes within the server limit at the maximum input', async () => {
+    const { c, calls } = await marketing(open);
+    c.formData.consent = true;
+    c.formData.message = 'ن'.repeat(500);
+    c.formData.businessType = 'foodtruck';
+    await c.onFormSubmit();
+    expect((calls[0] as { notes: string }).notes.length).toBeLessThanOrEqual(1000);
+  });
   it('shows done only after created; failures keep the form open with an error', async () => {
     for (const r of ['rate', 'invalid', 'closed', 'unconfirmed', 'error'] as LeadResult[]) {
       TestBed.resetTestingModule();
