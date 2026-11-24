@@ -426,56 +426,85 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         Assert.Single(results, r => r.StatusCode == HttpStatusCode.BadRequest);
     }
 
+    // Reads validity against the CURRENT persisted security stamp without consuming the token
+    // (VerifyUserToken does not rotate the stamp, unlike a password reset).
+    private static async Task<bool> TokenIsValid(AuthFixture fixture, (Guid UserId, string Token) link)
+    {
+        using var scope = fixture.Factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await users.FindByIdAsync(link.UserId.ToString());
+        return user is not null && await users.VerifyUserTokenAsync(user, users.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", link.Token);
+    }
+
+    // SMOKE coverage, not a controlled interleaving: overlapping HTTP requests with no barrier inside the
+    // handler. Four concurrent mints were used when this test first failed ("accepted 0, expected 1" with
+    // the earlier sequential-consumption oracle); that failure's cause was never isolated and is UNRESOLVED.
     [SqlServerFact]
-    public async Task Concurrent_minting_leaves_exactly_one_usable_link_and_only_fails_closed()
+    public async Task Concurrent_minting_smoke_validity_is_checked_against_the_final_state_before_any_consumption()
     {
         var (fixture, admin, _) = await HandoffSetup();
         await using var cleanup = fixture;
         var (restaurantId, first) = await ProvisionWithLink(admin, "racemint");
-        var responses = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link")));
-        // Contention on the security stamp is reported as the documented fail-closed 503 (nothing minted); any other status is a defect.
-        Assert.All(responses, r => Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable, "mint returned " + r.StatusCode));
+        var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link")));
+        var statuses = string.Join(",", responses.Select(r => (int)r.StatusCode));
+        // Contention on the security stamp is the documented fail-closed 503 (nothing minted); any other status is a defect.
+        Assert.All(responses, r => Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable, "mint statuses " + statuses));
         var links = new List<(Guid UserId, string Token)>();
         foreach (var r in responses.Where(r => r.StatusCode == HttpStatusCode.OK))
             links.Add(ParseLink((await r.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl));
         Assert.NotEmpty(links);
+        Assert.False(await TokenIsValid(fixture, first), "pre-existing link survived; mint statuses " + statuses);
+        var validity = new List<bool>();
+        foreach (var l in links) validity.Add(await TokenIsValid(fixture, l));
+        Assert.True(validity.Count(v => v) == 1, "valid links " + string.Join(",", validity) + "; mint statuses " + statuses);
+        // Now consume the valid one over HTTP (budgeted: guest csrf + 2 onboarding requests), then prove replay fails.
+        var valid = links[validity.IndexOf(true)];
         var guest = new Browser(fixture.Factory);
         await guest.Csrf();
-        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
-        var accepted = 0;
-        var seen = new List<HttpStatusCode>();
-        foreach (var l in links)
-        {
-            var code = (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(l.UserId, l.Token, fixture.Password))).StatusCode;
-            seen.Add(code);
-            if (code == HttpStatusCode.NoContent) accepted++;
-        }
-        Assert.True(accepted == 1, "mints " + string.Join(",", responses.Select(r => (int)r.StatusCode)) + " onboarding " + string.Join(",", seen.Select(c => (int)c)));
+        var consumed = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(valid.UserId, valid.Token, fixture.Password));
+        Assert.True(consumed.StatusCode == HttpStatusCode.NoContent, "consume " + (int)consumed.StatusCode + "; mint statuses " + statuses);
+        var replay = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(valid.UserId, valid.Token, fixture.Password));
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+        // The links that validated false are dead for the same reason (stamp rotated); check each without HTTP.
+        foreach (var l in links) Assert.False(await TokenIsValid(fixture, l));
     }
 
+    // SMOKE coverage of a mint racing a consume of the previous link (no barrier). Distinct passwords show which
+    // operation set the final one.
     [SqlServerFact]
-    public async Task Minting_racing_with_consumption_ends_with_the_old_token_dead_and_the_new_link_usable_once()
+    public async Task Minting_racing_with_consumption_smoke_old_token_dead_new_link_usable_once_with_distinct_passwords()
     {
         var (fixture, admin, _) = await HandoffSetup();
         await using var cleanup = fixture;
         var (restaurantId, first) = await ProvisionWithLink(admin, "raceconsume");
+        var oldPassword = fixture.Password;
+        var newPassword = fixture.Password + "N7#q";
         var guest = new Browser(fixture.Factory);
         await guest.Csrf();
-        var consume = guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password));
+        var consume = guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, oldPassword));
         var mint = admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link");
         await Task.WhenAll(consume, mint);
-        Assert.True(consume.Result.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.BadRequest, "consume " + consume.Result.StatusCode);
-        Assert.True(mint.Result.StatusCode is HttpStatusCode.OK, "mint " + mint.Result.StatusCode);
+        var outcome = "consume " + (int)consume.Result.StatusCode + ", mint " + (int)mint.Result.StatusCode;
+        Assert.True(consume.Result.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.BadRequest, outcome);
+        Assert.True(mint.Result.StatusCode == HttpStatusCode.OK, outcome);
         var fresh = ParseLink((await mint.Result.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl);
-        // The first token never works again after the race, whichever side won.
-        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password + "x9!"))).StatusCode);
-        // The freshly minted link works exactly once.
-        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(fresh.UserId, fresh.Token, fixture.Password))).StatusCode);
-        // (single use of the fresh link is covered by the reissue tests; the auth limiter allows 10 requests a minute)
-        // The final password is the one from the winning consume of the fresh link, and it signs in.
-        var owner = new Browser(fixture.Factory);
-        await owner.Csrf();
-        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "raceconsume@example.test")).StatusCode);
+        Assert.False(await TokenIsValid(fixture, first), "old token still valid; " + outcome);
+        // Whichever side won, the link the operator was handed must be usable. (If consume committed after
+        // the mint's stamp read, the stamp rotates and the handed-out link is dead: that would be a real finding.)
+        Assert.True(await TokenIsValid(fixture, fresh), "freshly minted link is not valid after the race; " + outcome);
+        var set = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(fresh.UserId, fresh.Token, newPassword));
+        Assert.True(set.StatusCode == HttpStatusCode.NoContent, "set new password " + (int)set.StatusCode + "; " + outcome);
+        var replay = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(fresh.UserId, fresh.Token, newPassword));
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+        // Request budget on the 10/min "auth" limiter (csrf, login, onboarding and the mint all count): setup 3,
+        // guest csrf 1, consume 1, mint 1, set 1, replay 1, login 1 = 9. The old-password check therefore uses
+        // UserManager instead of another HTTP login, to stay under the limit.
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Login(newPassword, "raceconsume@example.test")).StatusCode);
+        using var scope = fixture.Factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = (await users.FindByIdAsync(fresh.UserId.ToString()))!;
+        Assert.True(await users.CheckPasswordAsync(user, newPassword));
+        Assert.False(await users.CheckPasswordAsync(user, oldPassword));
     }
 
     [SqlServerFact]
