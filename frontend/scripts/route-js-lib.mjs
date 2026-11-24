@@ -173,17 +173,31 @@ export function writeRouteEvidence(name, folder, measurements, browserVersion = 
 
 // Real SSR hydration probe (requires the real SSR server; the static CSR harness cannot use it).
 // The client entry script (main-*.js) is held until the server-rendered DOM has been marked, so the
-// check observes the SSR DOM before the client takes over:
-//   before: server markup present with hydration markers (`ngh`) still on it (ng-version is also
-//   emitted by the server, so it is NOT a client-boot signal);
-//   after release: markers consumed (Angular removes them when it hydrates), and the SAME server-rendered heading node (our
-//   expando survives) is reused, not discarded and re-created; no console/page errors.
-// `neverRelease` keeps the client script blocked and is the negative control: it must NOT hydrate.
-// Scope: the first-paint routed document only. It proves hydration of that DOM, not event behavior.
+// check compares the SSR DOM with the DOM after the client takes over:
+//   before: the route host holds the expected tenant heading, item text, lang and dir, still carrying
+//   Angular hydration markers (`ngh`); the held entry script has actually been requested.
+//   after release: same tenant/item/lang/dir, markers consumed, the SAME heading node (our expando
+//   survives) is reused, and no console error/warning, pageerror, failed request or HTTP >= 400.
+// Scope, stated narrowly: observed reuse of the SSR heading node and consumption of hydration
+// metadata after a fixed settle, in the SAME load that also reports its script set. It is NOT an
+// Angular application-stability signal (none is exposed by a production build) and does not prove
+// every node of the routed tree was reused. ng-version is emitted by the server, so it is no signal.
+// Controls: `neverRelease` (client never boots) and `replaceSsrNode` (the SSR heading is swapped for an
+// unmarked clone before the client boots, so reuse cannot be claimed).
 export async function hydrationProbe(
   browser,
   url,
-  { prepare, timeout = 15000, neverRelease = false, selector = 'main h1' } = {},
+  {
+    prepare,
+    timeout = 15000,
+    neverRelease = false,
+    replaceSsrNode = false,
+    host = 'app-public-menu main.public-menu',
+    headingText,
+    contains,
+    lang,
+    dir,
+  } = {},
 ) {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -194,13 +208,20 @@ export async function hydrationProbe(
     const page = await context.newPage();
     if (prepare) await prepare(page);
     const problems = [];
+    const scripts = new Set();
     page.on('pageerror', (e) => problems.push('pageerror: ' + e.message));
-    page.on(
-      'console',
-      (m) =>
-        ['error', 'warning'].includes(m.type()) &&
-        problems.push(`console ${m.type()}: ` + m.text()),
-    );
+    page.on('console', (m) => {
+      if (['error', 'warning'].includes(m.type()))
+        problems.push(`console ${m.type()}: ` + m.text());
+    });
+    page.on('requestfailed', (r) => {
+      if (!(neverRelease && /\/main-[^/]*\.js/.test(r.url()))) problems.push('failed: ' + r.url());
+    });
+    page.on('response', (r) => {
+      const u = new URL(r.url());
+      if (r.status() >= 400) problems.push(`http ${r.status()}: ${u.pathname}`);
+      if (/\.m?js$/.test(u.pathname)) scripts.add(u.pathname.replace(/^\//, ''));
+    });
     let release;
     const gate = new Promise((r) => (release = r));
     let held = 0;
@@ -211,26 +232,36 @@ export async function hydrationProbe(
       await route.continue();
     });
     await page.goto(url, { waitUntil: 'commit' });
-    await page.waitForSelector(selector, { state: 'attached' });
-    const before = await page.evaluate((sel) => {
-      document.querySelector(sel).__ssrMark = 'ssr';
-      return {
-        text: document.querySelector(sel).textContent,
-        hydrationMarkers: document.querySelectorAll('[ngh]').length,
-      };
-    }, selector);
+    await page.waitForSelector(host + ' h1', { state: 'attached' });
+    const read = (args) =>
+      page.evaluate(({ host, headingText, contains, lang, dir, mark, replace }) => {
+        const root = document.querySelector(host);
+        let h1 = root?.querySelector('h1') ?? null;
+        if (h1 && mark) h1.__ssrMark = 'ssr';
+        if (h1 && replace) {
+          const clone = h1.cloneNode(true);
+          h1.replaceWith(clone);
+          h1 = clone;
+        }
+        return {
+          hostPresent: !!root,
+          heading: h1?.textContent?.trim() ?? null,
+          headingOk: headingText === undefined || h1?.textContent?.trim() === headingText,
+          containsOk: contains === undefined || !!root?.textContent?.includes(contains),
+          langOk: lang === undefined || document.documentElement.lang === lang,
+          dirOk: dir === undefined || document.documentElement.dir === dir,
+          hydrationMarkers: document.querySelectorAll('[ngh]').length,
+          nodeReused: h1?.__ssrMark === 'ssr',
+        };
+      }, args);
+    const base = { host, headingText, contains, lang, dir };
+    const heldBefore = held;
+    const before = await read({ ...base, mark: true, replace: replaceSsrNode });
     release();
     if (!neverRelease) await page.waitForLoadState('networkidle');
     await page.waitForTimeout(neverRelease ? 1500 : 1000);
-    const after = await page.evaluate((sel) => {
-      const el = document.querySelector(sel);
-      return {
-        text: el?.textContent ?? null,
-        nodeReused: el?.__ssrMark === 'ssr',
-        hydrationMarkers: document.querySelectorAll('[ngh]').length,
-      };
-    }, selector);
-    return { held, before, after, problems };
+    const after = await read({ ...base, mark: false, replace: false });
+    return { heldBefore, before, after, problems, files: [...scripts].sort() };
   } finally {
     await context.close();
   }
@@ -238,12 +269,21 @@ export async function hydrationProbe(
 
 export function assertHydrated(r, label) {
   const bad = [];
-  if (r.held < 1) bad.push('client entry script was never requested');
+  if (r.heldBefore < 1) bad.push('client entry script was not held before the SSR DOM was marked');
+  for (const [phase, v] of [
+    ['before', r.before],
+    ['after', r.after],
+  ]) {
+    if (!v.hostPresent) bad.push(`${phase}: route host missing`);
+    if (!v.headingOk) bad.push(`${phase}: tenant heading differs from expected (${v.heading})`);
+    if (!v.containsOk) bad.push(`${phase}: expected item text missing`);
+    if (!v.langOk) bad.push(`${phase}: document lang differs`);
+    if (!v.dirOk) bad.push(`${phase}: document dir differs`);
+  }
   if (r.before.hydrationMarkers < 1) bad.push('SSR markup carried no hydration markers');
   if (r.after.hydrationMarkers !== 0)
     bad.push(`${r.after.hydrationMarkers} hydration markers left`);
   if (!r.after.nodeReused) bad.push('server-rendered node was replaced, not reused');
-  if (r.after.text !== r.before.text) bad.push('heading text changed across hydration');
   if (r.problems.length) bad.push('problems: ' + r.problems.join('; '));
   if (bad.length) throw new Error(`${label} not hydrated: ${bad.join('; ')}`);
 }

@@ -286,8 +286,10 @@ test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch 
     await browser.close();
   }
 });
-test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM (node reused, markers consumed, no errors)', async () => {
+test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM in the same load that is budgeted', async () => {
+  const folder = 'dist/digital-menu/browser';
   const browser = await chromium.launch();
+  const evidence = {};
   const prepare = (page) =>
     page.route(logoUrl, (route) =>
       route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }),
@@ -295,20 +297,57 @@ test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM (node reused,
   try {
     for (const language of ['ar', 'en']) {
       const url = origin + '/r/s01-a?lang=' + language;
-      const r = await hydrationProbe(browser, url, { prepare });
-      console.log('hydration', language, JSON.stringify({ before: r.before, after: r.after }));
+      const expected = {
+        headingText: a,
+        contains: language === 'ar' ? 'صنف ألف' : 'Item A',
+        lang: language,
+        dir: language === 'ar' ? 'rtl' : 'ltr',
+      };
+      const r = await hydrationProbe(browser, url, { prepare, ...expected });
+      evidence[language] = {
+        url: new URL(url).pathname + new URL(url).search,
+        heldBefore: r.heldBefore,
+        before: r.before,
+        after: r.after,
+        problems: r.problems,
+        files: r.files,
+        gzipBytes: gzipBytes(folder, r.files),
+      };
       assertHydrated(r, url);
-      // Negative control: with the client entry held forever the same probe must say "not hydrated".
-      const held = await hydrationProbe(browser, url, {
+      // The same load that proved hydration is the one that is budgeted.
+      enforceBudget(url + ' (hydration load)', {
+        files: r.files,
+        bytes: evidence[language].gzipBytes,
+      });
+      for (const f of adminChunks(folder))
+        assert.ok(!r.files.includes(f), 'admin chunk fetched: ' + f);
+      // Controls: client never boots; and the SSR heading is replaced before the client boots.
+      const never = await hydrationProbe(browser, url, {
         prepare,
+        ...expected,
         neverRelease: true,
         timeout: 8000,
       });
-      assert.ok(held.after.hydrationMarkers >= 1);
-      assert.throws(() => assertHydrated(held, url), /not hydrated/);
+      assert.throws(() => assertHydrated(never, url), /hydration markers left/);
+      const swapped = await hydrationProbe(browser, url, {
+        prepare,
+        ...expected,
+        replaceSsrNode: true,
+      });
+      assert.throws(() => assertHydrated(swapped, url), /not hydrated/);
+      evidence[language].controls = {
+        neverRelease: { markersLeft: never.after.hydrationMarkers, rejected: true },
+        replaceSsrNode: {
+          nodeReused: swapped.after.nodeReused,
+          problems: swapped.problems.length,
+          rejected: true,
+        },
+      };
     }
   } finally {
     await browser.close();
+    mkdirSync('.lighthouseci', { recursive: true });
+    writeFileSync('.lighthouseci/hydration-sql.json', JSON.stringify(evidence, null, 2));
   }
 });
 test('three Lighthouse runs on a genuine SQL-backed menu retain >=90 mobile gates', () => {
