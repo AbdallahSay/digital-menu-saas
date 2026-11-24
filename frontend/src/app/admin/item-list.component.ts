@@ -103,7 +103,18 @@ type Feedback = { kind: 'success' | 'error'; text: string } | null;
             @for (item of store.filtered(); track item.id) {
               <tr>
                 <td data-label="الصورة">
-                  <span class="thumb-placeholder" aria-hidden="true">🍽️</span>
+                  @if (item.imageId) {
+                    <img
+                      class="thumb"
+                      width="48"
+                      height="48"
+                      loading="lazy"
+                      alt=""
+                      [src]="'/api/v1/admin/media/items/' + item.imageId + '/thumbnail'"
+                    />
+                  } @else {
+                    <span class="thumb-placeholder" aria-hidden="true">🍽️</span>
+                  }
                 </td>
                 <td data-label="الاسم">
                   <span class="item-name">{{ item.nameAr }}</span>
@@ -249,6 +260,12 @@ type Feedback = { kind: 'success' | 'error'; text: string } | null;
         padding: var(--space-3);
         text-align: start;
         border-bottom: 1px solid var(--color-border, #e2e8f0);
+      }
+      .thumb {
+        width: 44px;
+        height: 44px;
+        object-fit: cover;
+        border-radius: var(--radius-sm, 6px);
       }
       .thumb-placeholder {
         display: inline-flex;

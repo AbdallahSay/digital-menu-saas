@@ -13,13 +13,31 @@ public sealed record UpdateItemRequest(Guid CategoryId, string? NameAr, string? 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record DeleteItemRequest(string? RowVersion);
 public sealed record ItemResponse(Guid Id, Guid CategoryId, string NameAr, string? NameEn, string? DescriptionAr,
-    string? DescriptionEn, decimal Price, string CurrencyCode, int SortOrder, bool IsPublished, bool IsAvailable, string RowVersion);
+    string? DescriptionEn, decimal Price, string CurrencyCode, int SortOrder, bool IsPublished, bool IsAvailable, string RowVersion, Guid? ImageId = null);
 public sealed record ItemPageResponse(int Page, int PageSize, IReadOnlyList<ItemResponse> Items);
 
 public static class Items
 {
     private static ItemResponse Response(MenuItem i) => new(i.Id, i.CategoryId, i.NameAr, i.NameEn,
         i.DescriptionAr, i.DescriptionEn, i.Price, i.CurrencyCode, i.SortOrder, i.IsPublished, i.IsAvailable, Convert.ToBase64String(i.RowVersion));
+    // Attaches the first stored image id (by sort order) so the owner UI can read it back through the
+    // tenant-scoped admin media endpoint. Reads go through the tenant session, never a raw context.
+    private static async Task<IReadOnlyList<ItemResponse>> WithImages(ITenantDataSession session, IReadOnlyList<ItemResponse> items, CancellationToken ct)
+    {
+        if (items.Count == 0) return items;
+        var first = new Dictionary<Guid, (int Sort, Guid Id)>();
+        foreach (var chunk in items.Select(i => i.Id).Chunk(20))
+        {
+            var ids = chunk;
+            var images = await session.ReadAsync<MenuItemImage, (Guid ItemId, Guid Id, int Sort)>(
+                i => ids.Contains(i.MenuItemId), i => new ValueTuple<Guid, Guid, int>(i.MenuItemId, i.Id, i.SortOrder), 100, ct);
+            foreach (var image in images)
+                if (!first.TryGetValue(image.ItemId, out var best) || image.Sort < best.Sort ||
+                    (image.Sort == best.Sort && image.Id.CompareTo(best.Id) < 0))
+                    first[image.ItemId] = (image.Sort, image.Id);
+        }
+        return items.Select(i => first.TryGetValue(i.Id, out var best) ? i with { ImageId = best.Id } : i).ToArray();
+    }
     private static string? Optional(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
     private static bool Text(string? text, int length, bool multiline = false) => text is null ||
         (text.Trim().Length <= length && !text.Any(c => char.IsControl(c) && !(multiline && c is '\r' or '\n' or '\t')));
@@ -64,10 +82,10 @@ public static class Items
             var items = await session.ReadItemsAsync(i => new ItemResponse(i.Id, i.CategoryId, i.NameAr, i.NameEn,
                 i.DescriptionAr, i.DescriptionEn, i.Price, i.CurrencyCode, i.SortOrder, i.IsPublished, i.IsAvailable,
                 Convert.ToBase64String(i.RowVersion)), number, size, categoryId, search, ct);
-            return Results.Ok(new ItemPageResponse(number, size, items));
+            return Results.Ok(new ItemPageResponse(number, size, await WithImages(session, items, ct)));
         });
         group.MapGet("/{id:guid}", async (Guid id, ITenantDataSession session, CancellationToken ct) =>
-            Results.Ok(Response(await Owned(session, id, ct))));
+            Results.Ok((await WithImages(session, [Response(await Owned(session, id, ct))], ct))[0]));
         group.MapPost("", async (CreateItemRequest request, ITenantContext tenants, ITenantDataSession session, CancellationToken ct) =>
         {
             var item = new MenuItem { RestaurantId = (await tenants.RequireAsync(ct)).RestaurantId };

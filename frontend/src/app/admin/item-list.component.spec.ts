@@ -105,6 +105,20 @@ describe('ItemListComponent', () => {
     fixture.nativeElement.remove();
   });
 
+  it('shows the tenant-scoped thumbnail when the item has an image', async () => {
+    const stub = itemStoreStub({
+      filtered: signal([
+        item({ id: 'a', nameAr: 'كبدة', imageId: 'img-1' }),
+        item({ id: 'b', nameAr: 'سلطة', imageId: null }),
+      ]),
+    });
+    const fixture = await create(stub);
+    const imgs = fixture.nativeElement.querySelectorAll('img.thumb');
+    expect(imgs.length).toBe(1);
+    expect(imgs[0].getAttribute('src')).toBe('/api/v1/admin/media/items/img-1/thumbnail');
+    expect(fixture.nativeElement.querySelectorAll('.thumb-placeholder').length).toBe(1);
+    fixture.nativeElement.remove();
+  });
   it('toggles availability and confirms with feedback', async () => {
     const target = item({ id: 'i1', isAvailable: true });
     const calls: boolean[] = [];

@@ -25,12 +25,18 @@ export const PAGE_SIZE = 20;
 
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export function describePlatformError(error: unknown): string {
+export function describePlatformError(
+  error: unknown,
+  operation: 'create' | 'other' = 'other',
+): string {
   const status = error instanceof HttpErrorResponse ? error.status : 0;
   if (status === 409) return 'الاسم المختصر (slug) أو بريد المالك مستخدم قبل كده.';
   if (status === 412) return 'البيانات اتغيرت من مكان تاني. حدّث القائمة وجرّب تاني.';
   if (status === 429) return 'محاولات كتير. استنى دقيقة وجرّب تاني.';
-  if (status === 503) return 'إرسال دعوة المالك مش متفعّل على السيرفر ده، فمفيش حساب اتعمل.';
+  if (status === 503)
+    return operation === 'create'
+      ? 'إرسال دعوة المالك مش متفعّل على السيرفر ده، فمفيش حساب اتعمل.'
+      : 'الخدمة مش متاحة دلوقتي. جرّب تاني بعد شوية.';
   if (status === 400) return 'البيانات غير صحيحة. راجع الحقول.';
   return 'حصل خطأ. جرّب تاني بعد شوية.';
 }
@@ -251,6 +257,7 @@ export class PlatformConsoleComponent {
   async load(page = this.page()): Promise<void> {
     const ticket = ++this.loadTicket;
     this.loading.set(true);
+    this.listMessage.set(null);
     try {
       const params: Record<string, string | number> = { page, pageSize: PAGE_SIZE };
       if (this.search.trim()) params['search'] = this.search.trim();
@@ -351,7 +358,7 @@ export class PlatformConsoleComponent {
         await this.load();
       }
     } catch (error) {
-      const text = describePlatformError(error);
+      const text = describePlatformError(error, rowId ? 'other' : 'create');
       if (rowId) this.rowMessage.set({ id: rowId, kind: 'error', text });
       else this.message.set({ kind: 'error', text });
     } finally {

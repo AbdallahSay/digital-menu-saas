@@ -82,7 +82,7 @@ public sealed class AuthenticationTests
     }
 
     [SqlServerFact]
-    public async Task Session_probe_is_not_throttled_by_the_credential_limit_but_login_still_is()
+    public async Task Session_probe_is_not_throttled_by_the_credential_limit_but_csrf_still_is()
     {
         await using var fixture = await AuthFixture.Create();
         var browser = new Browser(fixture.Factory);

@@ -36,7 +36,11 @@ describe('platform console helpers', () => {
     const msg = (status: number) => describePlatformError(new HttpErrorResponse({ status }));
     expect(msg(409)).toContain('مستخدم');
     expect(msg(412)).toContain('حدّث');
-    expect(msg(503)).toContain('مفيش حساب اتعمل');
+    expect(describePlatformError(new HttpErrorResponse({ status: 503 }), 'create')).toContain(
+      'مفيش حساب اتعمل',
+    );
+    expect(msg(503)).not.toContain('مفيش حساب');
+    expect(msg(503)).toContain('الخدمة مش متاحة');
     expect(msg(500)).toContain('حصل خطأ');
     expect(describePlatformError(new Error('boom'))).toContain('حصل خطأ');
   });

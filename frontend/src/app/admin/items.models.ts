@@ -12,6 +12,8 @@ export interface ItemDto {
   isPublished: boolean;
   isAvailable: boolean;
   rowVersion: string;
+  /** First stored image id; read back through the tenant-scoped admin media endpoint. */
+  imageId?: string | null;
 }
 
 export interface ItemPage {
