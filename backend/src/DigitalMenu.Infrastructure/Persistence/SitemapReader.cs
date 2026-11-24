@@ -29,6 +29,9 @@ public sealed class SitemapReader(MenuDbContext db, int maxPage = SitemapReader.
             .ToListAsync(ct);
         var more = rows.Count > PageSize;
         var atCap = page == maxPage;
-        return new SitemapPage(page, PageSize, more && !atCap, more && atCap, rows.Take(PageSize).ToList());
+        return new SitemapPage(page, PageSize, more && !atCap, more && atCap, rows.Take(PageSize)
+            // SQL datetime2 materializes as Kind=Unspecified, which serializes without a zone. The column stores UTC,
+            // so make that explicit at the boundary: consumers get a "...Z" timestamp, not a guessed zone.
+            .Select(e => e with { LastModifiedUtc = DateTime.SpecifyKind(e.LastModifiedUtc, DateTimeKind.Utc) }).ToList());
     }
 }

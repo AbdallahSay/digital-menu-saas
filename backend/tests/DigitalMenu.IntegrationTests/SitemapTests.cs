@@ -133,6 +133,8 @@ public sealed class SitemapTests
         var entry = Assert.Single(json.GetProperty("entries").EnumerateArray());
         Assert.Equal(["lastModifiedUtc", "slug"], entry.EnumerateObject().Select(p => p.Name).Order().ToArray());
         Assert.Equal("listed-one", entry.GetProperty("slug").GetString());
+        // Observed before the fix: "2026-11-24T21:46:43.8674314" (no zone). The contract is an explicit UTC timestamp.
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$", entry.GetProperty("lastModifiedUtc").GetString());
         foreach (var forbidden in new[] { "hidden-one", "n-listed-one", "publicCode", "rowVersion", "restaurantId" })
             Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
         foreach (var bad in new[] { "0", "-1", "100001", "abc" })
