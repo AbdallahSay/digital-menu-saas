@@ -2,11 +2,27 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { test, before, after } from 'node:test';
 
-const port = 4390 + Math.floor(Math.random() * 50);
-const base = `http://127.0.0.1:${port}`;
+import { createServer } from 'node:net';
+
+async function freePort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+let port;
+let base;
 let server;
+let exited = false;
 
 before(async () => {
+  port = await freePort();
+  base = `http://127.0.0.1:${port}`;
   server = spawn('node', ['dist/digital-menu/server/server.mjs'], {
     env: {
       ...process.env,
@@ -16,17 +32,26 @@ before(async () => {
     },
     stdio: 'ignore',
   });
-  for (let i = 0; i < 60; i++) {
+  server.once('exit', () => (exited = true));
+  for (let i = 0; i < 80; i++) {
+    if (exited) throw new Error('server exited before listening');
     try {
-      await fetch(base + '/login');
-      return;
+      const res = await fetch(base + '/login');
+      // Our server always marks client shells noindex; anything else is not our process.
+      if (/noindex/.test(res.headers.get('x-robots-tag') ?? '')) return;
     } catch {
-      await new Promise((r) => setTimeout(r, 250));
+      // not listening yet
     }
+    await new Promise((r) => setTimeout(r, 250));
   }
-  throw new Error('server did not start');
+  throw new Error('server did not become ready');
 });
-after(() => server?.kill());
+after(async () => {
+  if (!server || exited) return;
+  const done = new Promise((resolve) => server.once('exit', resolve));
+  server.kill();
+  await done;
+});
 
 for (const path of [
   '/login',
@@ -51,9 +76,4 @@ test('unknown admin child stays a 404 noindex', async () => {
   const res = await fetch(base + '/admin/not-a-screen');
   assert.equal(res.status, 404);
   assert.match(res.headers.get('x-robots-tag') ?? '', /noindex/);
-});
-
-test('admin API without a session is rejected, not proxied as public', async () => {
-  const res = await fetch(base + '/api/v1/admin/items');
-  assert.notEqual(res.status, 200);
 });

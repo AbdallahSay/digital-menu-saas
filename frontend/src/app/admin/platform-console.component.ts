@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
@@ -20,6 +20,8 @@ interface PlatformPage {
   items: PlatformRestaurant[];
   total: number;
 }
+
+export const PAGE_SIZE = 20;
 
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -79,10 +81,13 @@ export function describePlatformError(error: unknown): string {
           type="search"
           name="search"
           [(ngModel)]="search"
-          (keyup.enter)="load()"
+          (keyup.enter)="runSearch()"
           placeholder="ابحث بالاسم أو الـ slug"
           aria-label="بحث"
         />
+        @if (listMessage(); as m) {
+          <p [class]="m.kind" role="alert">{{ m.text }}</p>
+        }
         @if (loading()) {
           <p>جاري التحميل…</p>
         } @else if (rows().length === 0) {
@@ -108,6 +113,11 @@ export function describePlatformError(error: unknown): string {
                   <td>{{ r.status === 'Active' ? 'نشط' : 'موقوف' }}</td>
                   <td>{{ r.isPublished ? 'منشور' : 'غير منشور' }}</td>
                   <td class="actions">
+                    @if (rowMessage(); as m) {
+                      @if (m.id === r.id) {
+                        <span [class]="m.kind" role="status">{{ m.text }}</span>
+                      }
+                    }
                     <button
                       type="button"
                       class="btn btn-secondary"
@@ -129,6 +139,27 @@ export function describePlatformError(error: unknown): string {
               }
             </tbody>
           </table>
+          @if (pageCount() > 1) {
+            <nav class="pager" aria-label="الصفحات">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="goToPage(page() - 1)"
+                [disabled]="page() <= 1 || loading()"
+              >
+                السابق
+              </button>
+              <span>صفحة {{ page() }} من {{ pageCount() }}</span>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="goToPage(page() + 1)"
+                [disabled]="page() >= pageCount() || loading()"
+              >
+                التالي
+              </button>
+            </nav>
+          }
         }
       </section>
     </main>
@@ -197,9 +228,14 @@ export class PlatformConsoleComponent {
 
   readonly rows = signal<PlatformRestaurant[]>([]);
   readonly total = signal(0);
+  readonly page = signal(1);
+  private loadTicket = 0;
+  private createdAtEnd = false;
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly message = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  readonly listMessage = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  readonly rowMessage = signal<{ id: string; kind: 'ok' | 'error'; text: string } | null>(null);
   name = '';
   slug = '';
   ownerEmail = '';
@@ -211,21 +247,37 @@ export class PlatformConsoleComponent {
     void this.load();
   }
 
-  async load(): Promise<void> {
+  /** Loads one page. Overlapping loads are sequenced: only the newest result is applied. */
+  async load(page = this.page()): Promise<void> {
+    const ticket = ++this.loadTicket;
     this.loading.set(true);
     try {
-      const params: Record<string, string | number> = { page: 1, pageSize: 100 };
+      const params: Record<string, string | number> = { page, pageSize: PAGE_SIZE };
       if (this.search.trim()) params['search'] = this.search.trim();
-      const page = await firstValueFrom(
+      const result = await firstValueFrom(
         this.http.get<PlatformPage>('/api/v1/platform/restaurants', { params }),
       );
-      this.rows.set(Array.isArray(page.items) ? page.items : []);
-      this.total.set(typeof page.total === 'number' ? page.total : this.rows().length);
+      if (ticket !== this.loadTicket) return;
+      this.rows.set(Array.isArray(result.items) ? result.items : []);
+      this.total.set(typeof result.total === 'number' ? result.total : this.rows().length);
+      this.page.set(page);
     } catch (error) {
-      this.message.set({ kind: 'error', text: describePlatformError(error) });
+      if (ticket === this.loadTicket)
+        this.listMessage.set({ kind: 'error', text: describePlatformError(error) });
     } finally {
-      this.loading.set(false);
+      if (ticket === this.loadTicket) this.loading.set(false);
     }
+  }
+
+  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
+
+  async runSearch(): Promise<void> {
+    await this.load(1);
+  }
+
+  async goToPage(page: number): Promise<void> {
+    if (page < 1 || page > this.pageCount()) return;
+    await this.load(page);
   }
 
   async create(): Promise<void> {
@@ -244,7 +296,9 @@ export class PlatformConsoleComponent {
         this.http.post('/api/v1/platform/restaurants', { name, slug, ownerEmail }),
       );
       this.name = this.slug = this.ownerEmail = '';
+      this.search = '';
       this.message.set({ kind: 'ok', text: 'اتعمل المطعم. دعوة المالك اتسلمت حسب إعداد السيرفر.' });
+      this.createdAtEnd = true;
     });
   }
 
@@ -256,8 +310,12 @@ export class PlatformConsoleComponent {
           rowVersion: r.rowVersion,
         }),
       );
-      this.message.set({ kind: 'ok', text: r.isPublished ? 'اتلغى النشر.' : 'اتنشر المنيو.' });
-    });
+      this.rowMessage.set({
+        id: r.id,
+        kind: 'ok',
+        text: r.isPublished ? 'اتلغى النشر.' : 'اتنشر المنيو.',
+      });
+    }, r.id);
   }
 
   async toggleStatus(r: PlatformRestaurant): Promise<void> {
@@ -268,8 +326,8 @@ export class PlatformConsoleComponent {
           rowVersion: r.rowVersion,
         }),
       );
-      this.message.set({ kind: 'ok', text: 'اتحدّثت حالة المطعم.' });
-    });
+      this.rowMessage.set({ id: r.id, kind: 'ok', text: 'اتحدّثت حالة المطعم.' });
+    }, r.id);
   }
 
   async logout(): Promise<void> {
@@ -277,13 +335,25 @@ export class PlatformConsoleComponent {
     else this.message.set({ kind: 'error', text: 'فشل تسجيل الخروج. جرّب تاني.' });
   }
 
-  private async run(action: () => Promise<void>): Promise<void> {
+  private async run(action: () => Promise<void>, rowId?: string): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(true);
+    this.message.set(null);
+    this.listMessage.set(null);
+    this.rowMessage.set(null);
     try {
       await action();
-      await this.load();
+      if (this.createdAtEnd) {
+        this.createdAtEnd = false;
+        await this.load(1);
+        if (this.pageCount() > 1) await this.load(this.pageCount());
+      } else {
+        await this.load();
+      }
     } catch (error) {
-      this.message.set({ kind: 'error', text: describePlatformError(error) });
+      const text = describePlatformError(error);
+      if (rowId) this.rowMessage.set({ id: rowId, kind: 'error', text });
+      else this.message.set({ kind: 'error', text });
     } finally {
       this.busy.set(false);
     }

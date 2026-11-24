@@ -65,6 +65,11 @@ public static class Authentication
             options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
                 { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
+            // Read-only session probe used on every admin page load: a looser bucket so normal
+            // navigation never trips the credential-guessing limit above.
+            options.AddPolicy("session-read", context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+                { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
         });
         return services;
     }
@@ -133,6 +138,6 @@ public static class Authentication
                                      where m.UserId == user.Id && m.IsActive && r.Status == "Active"
                                      select new { r.Name }).Take(10).ToListAsync();
             return Results.Ok(new { role = platform ? "PlatformAdmin" : "Owner", restaurants });
-        });
+        }).RequireRateLimiting("session-read");
     }
 }

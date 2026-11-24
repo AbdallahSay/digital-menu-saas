@@ -82,6 +82,20 @@ public sealed class AuthenticationTests
     }
 
     [SqlServerFact]
+    public async Task Session_probe_is_not_throttled_by_the_credential_limit_but_login_still_is()
+    {
+        await using var fixture = await AuthFixture.Create();
+        var browser = new Browser(fixture.Factory);
+        await browser.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await browser.Login(fixture.Password)).StatusCode);
+        for (var i = 0; i < 30; i++)
+            Assert.Equal(HttpStatusCode.OK, (await browser.Send(HttpMethod.Get, "/me")).StatusCode);
+        HttpResponseMessage? limited = null;
+        for (var i = 0; i < 12; i++) limited = await browser.Send(HttpMethod.Get, "/csrf");
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited!.StatusCode);
+    }
+
+    [SqlServerFact]
     public async Task Invalid_credentials_lockout_and_rate_limit_are_generic()
     {
         await using var fixture = await AuthFixture.Create();
