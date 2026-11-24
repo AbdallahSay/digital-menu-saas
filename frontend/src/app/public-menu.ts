@@ -109,6 +109,13 @@ import type { PublicPage } from './public-menu-contract';
       }
       nav a {
         padding: var(--space-3);
+        color: var(--color-brand-primary);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      nav a:hover,
+      nav a:focus-visible {
+        text-decoration: underline;
       }
       section {
         border-block-start: 2px solid;
