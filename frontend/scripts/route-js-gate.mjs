@@ -299,22 +299,42 @@ test('client router reaches the lazy /r/demo menu component from the marketing p
   const interact = async (page, timeout) => {
     await page.evaluate(() => (window.__routeProbe = 'alive'));
     await page.locator('a[href="/r/demo"]:visible').first().click({ timeout });
+    // Demo-only DOM: the Menu component's own heading with the exact demo restaurant name, and the
+    // marketing hero must be gone. The URL alone (or any <main>) proves nothing: the router can
+    // update the URL before the lazy component activates.
     await page.waitForFunction(
-      () => location.pathname === '/r/demo' && !!document.querySelector('app-menu main, main'),
+      () =>
+        location.pathname === '/r/demo' &&
+        document.querySelector('app-menu main h1.demo-restaurant-name')?.textContent?.trim() ===
+          'مطعم التجربة' &&
+        !document.querySelector('h1.hero-headline'),
       null,
       { timeout },
     );
     assert.equal(await page.evaluate(() => window.__routeProbe), 'alive', 'document reloaded');
-    assert.ok(
-      (await page.locator('main').first().innerText()).includes('مطعم'),
-      'demo menu content not rendered after client navigation',
-    );
   };
   const m = await measureRoutes(SRC, ['/'], { interact });
   assert.ok(m['/'].files.length > 0);
-  // Control: with click listeners suppressed the same oracle must fail in the interaction phase.
+  // Control 1: with click listeners suppressed the same oracle fails in the interaction phase.
   await assert.rejects(
     measureRoutes(SRC, ['/'], { timeout: 4000, interact, prepare: suppressClicks }),
+    /interaction failed for/,
+  );
+  // Control 2: the click works and navigation starts, but the lazy Menu chunk never arrives, so the
+  // old marketing DOM (and possibly the new URL) must not satisfy the oracle. Bootstrap succeeds first
+  // (measureRoutes only reaches the interaction phase after the ordinary oracle and snapshot).
+  const menuChunks = chunksContaining(SRC, ['demo-restaurant-name']);
+  assert.ok(menuChunks.length >= 1, 'demo menu chunk not identified');
+  await assert.rejects(
+    measureRoutes(SRC, ['/'], {
+      timeout: 4000,
+      interact,
+      prepare: (page) =>
+        page.route(
+          (url) => menuChunks.some((c) => url.pathname.endsWith('/' + c)),
+          () => {}, // never continued: the lazy chunk request hangs
+        ),
+    }),
     /interaction failed for/,
   );
 });
