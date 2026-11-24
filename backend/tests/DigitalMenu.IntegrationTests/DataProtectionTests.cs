@@ -15,9 +15,25 @@ public sealed class DataProtectionTests
     public void Production_without_a_key_path_fails_closed_and_Development_does_not()
     {
         var content = Path.Combine(Path.GetTempPath(), "dm-content-" + Guid.NewGuid().ToString("N"));
-        Assert.Throws<InvalidOperationException>(() => Build(content, new()));
+        Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" }));
         using var dev = BuildEnv(content, new(), "Development");
         Assert.NotNull(dev.GetService<IDataProtectionProvider>());
+    }
+
+    [Fact]
+    public void Application_name_is_required_in_production_and_isolates_rings()
+    {
+        var content = Tmp("content"); var keys = Tmp("keys");
+        try
+        {
+            Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys }));
+            string cipher;
+            using (var a = Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "staging" }))
+                cipher = a.GetRequiredService<IDataProtectionProvider>().CreateProtector("t").Protect("x");
+            using var other = Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "production" });
+            Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => other.GetRequiredService<IDataProtectionProvider>().CreateProtector("t").Unprotect(cipher));
+        }
+        finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
     }
 
     static ServiceProvider BuildEnv(string content, Dictionary<string, string?> cfg, string envName)
@@ -42,7 +58,7 @@ public sealed class DataProtectionTests
         var keys = Path.Combine(Path.GetTempPath(), "dm-keys-" + Guid.NewGuid().ToString("N"));
         try
         {
-            var cfg = new Dictionary<string, string?> { [DataProtectionConfiguration.KeysPathKey] = keys };
+            var cfg = new Dictionary<string, string?> { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" };
             string cipher;
             using (var a = Build(content, cfg)) cipher = a.GetRequiredService<IDataProtectionProvider>().CreateProtector("t").Protect("hello");
             Assert.NotEmpty(Directory.GetFiles(keys, "*.xml"));
@@ -61,7 +77,7 @@ public sealed class DataProtectionTests
         var content = Tmp("content"); var media = Tmp("media"); Directory.CreateDirectory(content); Directory.CreateDirectory(media);
         var shared = Tmp("shared"); Directory.CreateDirectory(shared);
         File.SetUnixFileMode(shared, (UnixFileMode)Convert.ToInt32("755", 8));
-        void Rejects(string path) => Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = path, ["Media:LocalRoot"] = media }));
+        void Rejects(string path) => Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.ApplicationNameKey] = "t-prod", [DataProtectionConfiguration.KeysPathKey] = path, ["Media:LocalRoot"] = media }));
         Rejects("relative/keys");
         Rejects("/");
         Rejects(Path.Combine(content, "keys"));
@@ -83,9 +99,9 @@ public sealed class DataProtectionTests
         var content = Tmp("content"); var keys = Tmp("keys");
         try
         {
-            using (Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys })) { }
+            using (Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" })) { }
             Assert.Equal(Convert.ToInt32("700", 8), (int)File.GetUnixFileMode(keys) & 0x1FF);
-            using var again = Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys });
+            using var again = Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" });
         }
         finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
     }

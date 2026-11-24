@@ -42,5 +42,5 @@ public class FoundationTests
     }
 
     private static WebApplicationFactory<Program> Factory(string environment) =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseEnvironment(environment).UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()));
+        new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseEnvironment(environment).UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()).UseSetting("DataProtection:ApplicationName", "test-prod"));
 }

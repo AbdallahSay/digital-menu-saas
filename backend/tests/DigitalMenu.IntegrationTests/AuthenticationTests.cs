@@ -229,7 +229,7 @@ public sealed class AuthenticationTests
     [Fact]
     public async Task Bootstrap_refuses_production_before_any_database_access()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment("Production").UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()));
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment("Production").UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()).UseSetting("DataProtection:ApplicationName", "test-prod"));
         await Assert.ThrowsAsync<InvalidOperationException>(() => DevelopmentBootstrap.RunAsync(factory.Services,
             factory.Services.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>(),
             factory.Services.GetRequiredService<IConfiguration>()));

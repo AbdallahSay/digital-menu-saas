@@ -16,11 +16,18 @@ namespace DigitalMenu.Api;
 public static class DataProtectionConfiguration
 {
     public const string KeysPathKey = "DataProtection:KeysPath";
-    public const string ApplicationName = "DigitalMenu";
+    public const string ApplicationNameKey = "DataProtection:ApplicationName";
 
     public static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
     {
-        var builder = services.AddDataProtection().SetApplicationName(ApplicationName);
+        var name = configuration[ApplicationNameKey];
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            if (!environment.IsDevelopment())
+                throw new InvalidOperationException("DataProtection:ApplicationName is required outside Development and must differ per deployment (for example staging vs production) so rings are isolated.");
+            name = "DigitalMenu-Development";
+        }
+        var builder = services.AddDataProtection().SetApplicationName(name.Trim());
         var path = configuration[KeysPathKey];
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -58,11 +65,26 @@ public static class DataProtectionConfiguration
             if (!OperatingSystem.IsWindows() &&
                 (File.GetUnixFileMode(full) & (UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute)) != 0)
                 throw new InvalidOperationException("Existing DataProtection key directory must be private (mode 0700); it is not modified automatically.");
+            if (!OperatingSystem.IsWindows() && OwnerUid(full) != CurrentUid())
+                throw new InvalidOperationException("Existing DataProtection key directory must be owned by the service account.");
         }
         else if (OperatingSystem.IsWindows()) Directory.CreateDirectory(full);
         else Directory.CreateDirectory(full, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         return full;
     }
+
+    // Linux/macOS: owner uid via coreutils/BSD stat, and effective uid via id. Fails closed if unavailable.
+    static string Run(string file, params string[] args)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo(file) { RedirectStandardOutput = true, RedirectStandardError = true };
+        foreach (var a in args) psi.ArgumentList.Add(a);
+        using var p = System.Diagnostics.Process.Start(psi) ?? throw new InvalidOperationException("Cannot verify key directory ownership.");
+        var o = p.StandardOutput.ReadToEnd().Trim();
+        if (!p.WaitForExit(5000) || p.ExitCode != 0 || o.Length == 0) throw new InvalidOperationException("Cannot verify key directory ownership.");
+        return o;
+    }
+    static string OwnerUid(string path) => OperatingSystem.IsMacOS() ? Run("stat", "-f", "%u", path) : Run("stat", "-c", "%u", path);
+    static string CurrentUid() => Run("id", "-u");
 
     static bool Overlaps(string a, string b)
     {
