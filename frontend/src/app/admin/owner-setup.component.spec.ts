@@ -68,6 +68,18 @@ describe('OwnerSetupComponent', () => {
     expect(c.password).toBe('');
   });
 
+  it.each([200, 202])('does not show saved for an unexpected %i response', async (status) => {
+    const c = TestBed.runInInjectionContext(() => new OwnerSetupComponent());
+    c.password = c.confirm = 'a-long-enough-password';
+    const done = c.submit(new Event('submit'));
+    http.expectOne('/api/v1/auth/csrf').flush({});
+    await new Promise((r) => setTimeout(r));
+    http.expectOne('/api/v1/auth/onboarding').flush({}, { status, statusText: 'x' });
+    await done;
+    expect(c.state()).toBe('form');
+    expect(c.error()).toContain('ما قدرناش نتأكد');
+  });
+
   it('shows an invalid-link state and sends nothing when the fragment is missing', async () => {
     window.history.replaceState(null, '', '/owner-setup');
     const c = TestBed.runInInjectionContext(() => new OwnerSetupComponent());

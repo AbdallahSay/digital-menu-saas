@@ -141,19 +141,28 @@ export function describePlatformError(
                       }
                     }
                     @if (confirmLinkFor() === r.id) {
+                      <span class="confirm-text" role="alert">
+                        رابط جديد هيلغي أي رابط قديم ويطلّع المالك من كل الجلسات المفتوحة.
+                      </span>
                       <button
                         type="button"
-                        class="btn btn-secondary"
+                        class="btn btn-secondary confirm-link"
                         (click)="issueLink(r)"
                         [disabled]="busy()"
-                        title="هيلغي أي رابط قديم ويطلّع المالك من أي جلسة مفتوحة"
                       >
                         تأكيد رابط جديد
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary cancel-link"
+                        (click)="confirmLinkFor.set(null)"
+                      >
+                        إلغاء
                       </button>
                     } @else {
                       <button
                         type="button"
-                        class="btn btn-secondary"
+                        class="btn btn-secondary ask-link"
                         (click)="confirmLinkFor.set(r.id)"
                         [disabled]="busy()"
                       >

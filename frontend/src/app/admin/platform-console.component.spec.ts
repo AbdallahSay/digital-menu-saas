@@ -213,3 +213,49 @@ describe('PlatformConsoleComponent HTTP behavior', () => {
     expect(c.rowMessage()?.text).toContain('حدّث');
   });
 });
+
+describe('PlatformConsoleComponent rendered owner-link confirm', () => {
+  it('shows the visible warning, cancels, and sends one request after confirm', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: AdminAuthService, useValue: { logout: async () => 'ok' } },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(PlatformConsoleComponent);
+    fixture.detectChanges();
+    http
+      .expectOne((r) => r.method === 'GET')
+      .flush({ page: 1, pageSize: PAGE_SIZE, total: 1, items: [row(1)] });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.confirm-text')).toBeNull();
+    (el.querySelector('.ask-link') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('.confirm-text')?.textContent).toContain('كل الجلسات');
+    (el.querySelector('.cancel-link') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('.confirm-text')).toBeNull();
+    http.expectNone((r) => r.url.endsWith('/owner-setup-link'));
+    (el.querySelector('.ask-link') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const confirm = el.querySelector('.confirm-link') as HTMLButtonElement;
+    confirm.click();
+    confirm.click(); // duplicate click must not send a second request
+    const req = http.expectOne((r) => r.url.endsWith('/owner-setup-link'));
+    req.flush({ ownerSetupUrl: 'https://menu.example/owner-setup#u=a&t=b', issuedAtUtc: 'x' });
+    await fixture.whenStable();
+    http
+      .expectOne((r) => r.method === 'GET')
+      .flush({ page: 1, pageSize: PAGE_SIZE, total: 1, items: [row(1)] });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.querySelector('.setup-link input')).not.toBeNull();
+    http.verify();
+    el.remove();
+  });
+});

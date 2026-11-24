@@ -176,13 +176,22 @@ export class OwnerSetupComponent {
     this.error.set(null);
     try {
       await firstValueFrom(this.http.get('/api/v1/auth/csrf'));
-      await firstValueFrom(
-        this.http.post('/api/v1/auth/onboarding', {
-          userId: this.link.userId,
-          token: this.link.token,
-          password: this.password,
-        }),
+      const response = await firstValueFrom(
+        this.http.post(
+          '/api/v1/auth/onboarding',
+          {
+            userId: this.link.userId,
+            token: this.link.token,
+            password: this.password,
+          },
+          { observe: 'response' },
+        ),
       );
+      // Only the exact documented 204 counts as saved; anything else stays unconfirmed.
+      if (response.status !== 204) {
+        this.error.set('ما قدرناش نتأكد إن كلمة السر اتحفظت. جرّب تسجيل الدخول أو اطلب رابط جديد.');
+        return;
+      }
       this.link = null;
       this.password = this.confirm = '';
       this.state.set('done');

@@ -14,15 +14,16 @@ public static class DevelopmentOnboarding
 {
     public static IServiceCollection AddDevelopmentOnboarding(this IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
     {
+        var handoff = OwnerSetupLinks.FromConfiguration(configuration, environment);
+        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton(services, new OwnerSetupLinkOptions(handoff));
         if (environment.IsDevelopment() && configuration.GetValue<bool>("DevelopmentOnboarding:Enabled"))
         {
             services.AddSingleton<DevelopmentPipeDelivery>();
             services.AddSingleton<IOwnerOnboardingDelivery>(s => s.GetRequiredService<DevelopmentPipeDelivery>());
             services.AddHostedService(s => s.GetRequiredService<DevelopmentPipeDelivery>());
         }
-        else if (OwnerSetupLinks.FromConfiguration(configuration, environment) is { } links)
+        else if (handoff is { } links)
         {
-            services.AddSingleton(links);
             services.AddScoped<IOwnerOnboardingDelivery, OperatorHandoffDelivery>(s => new OperatorHandoffDelivery(links));
         }
         else services.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>();

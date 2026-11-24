@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
@@ -337,7 +338,7 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
     private static Task<(AuthFixture Fixture, Browser Admin, TestDelivery Delivery)> HandoffSetup() => Setup(s =>
     {
         var links = new OwnerSetupLinks(new Uri("https://menu.example"));
-        s.AddSingleton(links);
+        s.AddSingleton(new OwnerSetupLinkOptions(links));
         s.AddScoped<IOwnerOnboardingDelivery>(_ => new OperatorHandoffDelivery(links));
     });
     private static async Task<(Guid RestaurantId, (Guid UserId, string Token) Link)> ProvisionWithLink(Browser admin, string slug)
@@ -392,6 +393,40 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
     }
 
     [SqlServerFact]
+    public async Task Minting_a_link_signs_the_owner_out_immediately_before_the_link_is_used()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "midsession");
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
+        var owner = new Browser(fixture.Factory);
+        await owner.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "midsession@example.test")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+        await Reissue(admin, restaurantId);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+    }
+
+    [SqlServerFact]
+    public async Task Concurrent_consumption_of_a_reissued_link_succeeds_exactly_once()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, _) = await ProvisionWithLink(admin, "raceissue");
+        var link = await Reissue(admin, restaurantId);
+        var one = new Browser(fixture.Factory);
+        var two = new Browser(fixture.Factory);
+        await one.Csrf();
+        await two.Csrf();
+        var payload = new CompleteOnboardingRequest(link.UserId, link.Token, fixture.Password);
+        var results = await Task.WhenAll(one.Send(HttpMethod.Post, "/onboarding", payload), two.Send(HttpMethod.Post, "/onboarding", payload));
+        Assert.Single(results, r => r.StatusCode == HttpStatusCode.NoContent);
+        Assert.Single(results, r => r.StatusCode == HttpStatusCode.BadRequest);
+    }
+
+    [SqlServerFact]
     public async Task Operator_handoff_reset_replaces_the_password_and_signs_the_owner_out()
     {
         var (fixture, admin, _) = await HandoffSetup();
@@ -415,10 +450,37 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         Assert.False(await users.CheckPasswordAsync(user, fixture.Password));
     }
 
+    [Theory]
+    [InlineData("https://menu.example", "Production", true)]
+    [InlineData("http://127.0.0.1:4000", "Development", true)]
+    [InlineData("http://127.0.0.1:4000", "Production", false)]
+    [InlineData("http://menu.example", "Development", false)]
+    [InlineData("https://user:pw@menu.example", "Production", false)]
+    [InlineData("https://menu.example/app", "Production", false)]
+    [InlineData("https://menu.example/?x=1", "Production", false)]
+    [InlineData("https://menu.example/#f", "Production", false)]
+    [InlineData("ftp://127.0.0.1", "Development", false)]
+    [InlineData("", "Production", false)]
+    public void Public_origin_is_validated_from_configuration_only(string origin, string environment, bool accepted)
+    {
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        { ["Onboarding:OperatorHandoff:Enabled"] = "true", ["Onboarding:PublicOrigin"] = origin }).Build();
+        var env = new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = environment };
+        if (accepted) Assert.NotNull(OwnerSetupLinks.FromConfiguration(config, env));
+        else Assert.Throws<InvalidOperationException>((Action)(() => _ = OwnerSetupLinks.FromConfiguration(config, env)));
+    }
+
+    [Fact]
+    public void Handoff_disabled_yields_no_links()
+    {
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
+        Assert.Null(OwnerSetupLinks.FromConfiguration(config, new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Production" }));
+    }
+
     [SqlServerFact]
     public async Task Without_handoff_or_pipe_production_provisioning_fails_closed_and_links_are_unavailable()
     {
-        var (f2, admin, _) = await Setup(s => s.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>());
+        var (f2, admin, _) = await Setup(s => s.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>()); // default host: OwnerSetupLinkOptions comes from the real registration
         await using var cleanup2 = f2;
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await admin.Send(HttpMethod.Post, Route, Request("nolink"))).StatusCode);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await admin.Send(HttpMethod.Post, Route + "/" + Guid.NewGuid() + "/owner-setup-link")).StatusCode);

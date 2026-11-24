@@ -38,9 +38,10 @@ public sealed class OwnerSetupLinks(Uri publicOrigin)
     {
         if (!configuration.GetValue<bool>("Onboarding:OperatorHandoff:Enabled")) return null;
         var raw = configuration["Onboarding:PublicOrigin"];
-        if (!Uri.TryCreate(raw, UriKind.Absolute, out var origin) || origin.PathAndQuery != "/" || !string.IsNullOrEmpty(origin.Fragment) ||
-            !(origin.Scheme == Uri.UriSchemeHttps || (environment.IsDevelopment() && origin.IsLoopback)))
-            throw new InvalidOperationException("Onboarding:PublicOrigin must be an https origin when operator handoff is enabled.");
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var origin) || origin.PathAndQuery != "/" || !string.IsNullOrEmpty(origin.Query) ||
+            !string.IsNullOrEmpty(origin.Fragment) || !string.IsNullOrEmpty(origin.UserInfo) || raw!.EndsWith("//") ||
+            !(origin.Scheme == Uri.UriSchemeHttps || (environment.IsDevelopment() && origin.Scheme == Uri.UriSchemeHttp && origin.IsLoopback)))
+            throw new InvalidOperationException("Onboarding:PublicOrigin must be a bare https origin when operator handoff is enabled.");
         return new OwnerSetupLinks(origin);
     }
     public string Build(Guid userId, string token)
@@ -58,6 +59,9 @@ public sealed class OperatorHandoffDelivery(OwnerSetupLinks links) : IOwnerOnboa
     }
     public void Abort(Guid userId) => Url = null;
 }
+
+/// <summary>Always registered so endpoints bind it as a service; Links is null unless handoff is configured.</summary>
+public sealed record OwnerSetupLinkOptions(OwnerSetupLinks? Links);
 
 public interface IRestaurantPublicCodeGenerator
 {
@@ -206,8 +210,9 @@ public static partial class Provisioning
     // link and signs the owner out everywhere. The token is returned once to the authenticated platform admin
     // and is never logged, audited or persisted.
     private static async Task<IResult> IssueOwnerSetupLink(Guid id, MenuDbContext db, UserManager<ApplicationUser> users,
-        OwnerSetupLinks? links, HttpContext context, CancellationToken ct)
+        [Microsoft.AspNetCore.Mvc.FromServices] OwnerSetupLinkOptions options, HttpContext context, CancellationToken ct)
     {
+        var links = options.Links;
         if (links is null) return Problem(503, "Operator link handoff is not enabled.");
         var restaurant = await db.Set<Restaurant>().AsNoTracking().SingleOrDefaultAsync(r => r.Id == id, ct);
         if (restaurant is null) return Problem(404, "Restaurant not found.");
