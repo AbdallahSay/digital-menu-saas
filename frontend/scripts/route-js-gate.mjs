@@ -33,7 +33,8 @@ import {
 } from './route-js-lib.mjs';
 
 const SRC = 'dist/digital-menu/browser';
-// Routed-component oracles. '/' proves the marketing component's click handler runs. '/privacy'
+// Client-interaction readiness for STATIC CSR shells only (the static server serves index.csr.html,
+// so this is not SSR hydration of the real menu). '/' proves the marketing component's click handler runs. '/privacy'
 // proves the client router is live: a routerLink click must navigate without a document reload
 // (a window marker set before the click survives) and render the marketing component.
 // '/r/demo' has no interactive control, so it keeps the bootstrap oracle only.
@@ -159,7 +160,7 @@ test('public routes pass the budget and never request the named marker chunks', 
   for (const [route, r] of Object.entries(m)) {
     console.log(route, r.bytes, 'B gzip,', r.files.length, 'scripts');
     enforceBudget(route, r);
-    for (const f of named) assert.ok(!r.files.includes(f), `${route} requested admin chunk ${f}`);
+    assertNoNamedChunks(route, r, named);
   }
 });
 
@@ -235,22 +236,58 @@ test('a dist that differs from its build manifest is refused', () => {
   }
 });
 
-test('routed oracle fails when client event handlers never attach (stalled hydration)', async () => {
+test('with click listeners suppressed, the route still bootstraps and settles, and only the interaction check fails', async () => {
   for (const route of ['/', '/privacy']) {
+    // Precondition: the same suppression does not break the bootstrap/text/lang/dir oracle or
+    // measurement when no interaction is requested.
+    const plain = await measureRoutes(SRC, [route], {
+      interact: undefined,
+      prepare: suppressClicks,
+    });
+    enforceBudget(route + ' (clicks suppressed, no interaction)', plain[route]);
+    // The interaction check must then be what rejects it.
     await assert.rejects(
-      measureRoutes(SRC, [route], {
-        timeout: 4000,
-        prepare: (page) =>
-          page.addInitScript(() => {
-            const original = EventTarget.prototype.addEventListener;
-            EventTarget.prototype.addEventListener = function (type, ...rest) {
-              if (type === 'click') return; // framework click handlers are never registered
-              return original.call(this, type, ...rest);
-            };
-          }),
-      }),
-      /Timeout|document reloaded/,
+      measureRoutes(SRC, [route], { timeout: 4000, prepare: suppressClicks }),
+      /interaction failed for/,
       route,
     );
   }
 });
+
+test('a script that arrives late in the initial route window is counted in its measurement', async () => {
+  const late = adminChunks(SRC)[0];
+  const m = await measureRoutes(SRC, ['/privacy'], {
+    interact: undefined,
+    prepare: (page) =>
+      page.addInitScript((file) => {
+        addEventListener('load', () =>
+          setTimeout(() => {
+            const s = document.createElement('script');
+            s.type = 'module';
+            s.src = '/' + file;
+            document.head.append(s);
+          }, 400),
+        );
+      }, late),
+  });
+  assert.ok(m['/privacy'].files.includes(late), 'late initial-route script missing from the set');
+  assert.throws(
+    () => assertNoNamedChunks('/privacy', m['/privacy'], [late]),
+    /requested admin chunk/,
+  );
+});
+
+function suppressClicks(page) {
+  return page.addInitScript(() => {
+    const original = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function (type, ...rest) {
+      if (type === 'click') return; // click handlers are never registered
+      return original.call(this, type, ...rest);
+    };
+  });
+}
+
+function assertNoNamedChunks(route, measurement, named) {
+  for (const f of named)
+    assert.ok(!measurement.files.includes(f), `${route} requested admin chunk ${f}`);
+}

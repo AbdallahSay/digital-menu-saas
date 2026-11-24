@@ -80,17 +80,25 @@ export async function coldScripts(
       [readySelector, expectText, lang ?? '', dir ?? ''],
       { timeout },
     );
-    // Optional routed-component oracle: a client-only interaction that cannot work from static
-    // SSR/CSR markup alone (a click handler, or a client-side router navigation).
-    // Measure the route's own requests first: the interaction may navigate and load another
-    // route's chunks, which must not be billed to this route.
-    const routeScripts = [...scripts].sort();
-    if (interact) await interact(page, timeout);
-    // Stable window: let hydration and any deferred requests settle before the set is read.
+    // 1. Settle the initial route: hydration and deferred requests finish inside this window.
     await page.waitForTimeout(1000);
     await page.waitForLoadState('networkidle', { timeout });
-    if (scripts.size === 0) problems.push('no scripts observed');
+    // 2. Snapshot the complete initial-route closure. This is the measured set.
+    const routeScripts = [...scripts].sort();
+    if (routeScripts.length === 0) problems.push('no scripts observed');
     if (problems.length) throw new Error(`cold load problems for ${url}: ${problems.join('; ')}`);
+    // 3. Optional client-interaction readiness check (a click handler, or a client router
+    // navigation). It runs only after the route is ready, settled and measured, and may load
+    // other routes' chunks, which are never added to the measured set. A failure here is tagged.
+    if (interact) {
+      try {
+        await interact(page, timeout);
+      } catch (error) {
+        throw new Error(`interaction failed for ${url}: ${error.message}`);
+      }
+      if (problems.length)
+        throw new Error(`problems after interaction for ${url}: ${problems.join('; ')}`);
+    }
     return routeScripts;
   } finally {
     await context.close();
