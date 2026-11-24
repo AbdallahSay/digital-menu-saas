@@ -20,6 +20,21 @@ export const serverRoutes: ServerRoute[] = [
     headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
   },
   {
+    path: 'admin/items',
+    renderMode: RenderMode.Client,
+    headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
+  },
+  {
+    path: 'admin/branding',
+    renderMode: RenderMode.Client,
+    headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
+  },
+  {
+    path: 'admin/qr',
+    renderMode: RenderMode.Client,
+    headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
+  },
+  {
     path: 'platform',
     renderMode: RenderMode.Client,
     headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
