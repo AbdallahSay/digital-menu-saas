@@ -167,7 +167,8 @@ public sealed class LeadConfiguration : IEntityTypeConfiguration<Lead>
         b.Property(x => x.Phone).HasMaxLength(24);
         b.Property(x => x.Email).HasMaxLength(256);
         b.Property(x => x.Notes).HasMaxLength(1000);
-        b.Property(x => x.NoticeVersion).HasMaxLength(40);
+        b.Property(x => x.NoticeVersion).HasMaxLength(48);
+        b.Property(x => x.NoticeFingerprint).HasMaxLength(64);
         b.Property(x => x.Status).HasMaxLength(16);
         b.HasIndex(x => x.CreatedUtc);
         b.HasIndex(x => x.ExpiresUtc);

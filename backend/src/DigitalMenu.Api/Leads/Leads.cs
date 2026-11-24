@@ -11,20 +11,22 @@ namespace DigitalMenu.Api.Leads;
 /// Lead intake is closed unless an operator configures it. Collecting personal data requires a
 /// published notice version and a retention window; without both the endpoint answers 503.
 /// </summary>
-public sealed record LeadOptions(string NoticeVersion, int RetentionDays, string ControllerName, string ContactChannel)
+public sealed record LeadOptions(string NoticeVersion, int RetentionDays, string ControllerName, string ContactChannel, string ContentSha256 = "", string Fingerprint = "")
 {
     public const int MaxRetentionDays = 365;
 
     /// <summary>
-    /// The notice id shown to visitors and stored with each lead: the configured version plus a hash of the facts the notice states
-    /// (retention, controller, contact). Changing any of them changes the id, so a form loaded under old facts is refused and
-    /// every stored lead records exactly which facts it was collected under.
+    /// Full SHA-256 over the configured version, the stated facts (retention, controller, contact) and the SHA-256 of the approved
+    /// notice text. The visitor-facing id is the version plus a 12-hex prefix; the full value is stored with every lead, so a lead
+    /// records the exact approved notice it was collected under even after later wording or config changes.
     /// </summary>
-    public static string Fingerprint(string version, int days, string controller, string contact)
+    public static string FullFingerprint(string version, int days, string controller, string contact, string contentSha256)
     {
-        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes($"{version}\n{days}\n{controller}\n{contact}"));
-        return $"{version}~{Convert.ToHexString(hash)[..8].ToLowerInvariant()}";
+        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes($"{version}\n{days}\n{controller}\n{contact}\n{contentSha256}"));
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
+
+    public static string NoticeId(string version, string fingerprint) => $"{version}~{fingerprint[..12]}";
 
     public static LeadOptions? FromConfiguration(IConfiguration configuration)
     {
@@ -39,13 +41,17 @@ public sealed record LeadOptions(string NoticeVersion, int RetentionDays, string
         if (string.IsNullOrEmpty(controller) || controller.Length > 120 || controller.Any(char.IsControl) ||
             string.IsNullOrEmpty(contact) || contact.Length > 200 || contact.Any(char.IsControl))
             throw new InvalidOperationException("Leads:ControllerName and Leads:ContactChannel are required when lead intake is enabled.");
-        return new LeadOptions(Fingerprint(notice, days, controller, contact), days, controller, contact);
+        var content = configuration["Leads:NoticeContentSha256"]?.Trim().ToLowerInvariant();
+        if (content is null || !System.Text.RegularExpressions.Regex.IsMatch(content, "^[0-9a-f]{64}$"))
+            throw new InvalidOperationException("Leads:NoticeContentSha256 (SHA-256 of the approved notice text, 64 hex chars) is required when lead intake is enabled.");
+        var full = FullFingerprint(notice, days, controller, contact, content);
+        return new LeadOptions(NoticeId(notice, full), days, controller, contact, content, full);
     }
 }
 
 public sealed record LeadRequest(string? ContactName, string? BusinessName, string? Phone, string? Email, string? Notes,
     bool? Consent, string? NoticeVersion, string? Website);
-public sealed record LeadStatusResponse(bool Open, string? NoticeVersion, int? RetentionDays, string? ControllerName, string? ContactChannel);
+public sealed record LeadStatusResponse(bool Open, string? NoticeVersion, int? RetentionDays, string? ControllerName, string? ContactChannel, string? NoticeContentSha256 = null);
 public sealed record LeadResponse(Guid Id, DateTime CreatedUtc, DateTime ExpiresUtc, string ContactName, string BusinessName,
     string Phone, string? Email, string? Notes, string Status, string RowVersion);
 public sealed record LeadPageResponse(int Page, int PageSize, int Total, LeadResponse[] Items);
@@ -80,7 +86,7 @@ public static partial class LeadEndpoints
     {
         app.MapGet("/api/v1/leads/status", (LeadOptionsHolder holder) =>
             Results.Ok(new LeadStatusResponse(holder.Options is not null, holder.Options?.NoticeVersion, holder.Options?.RetentionDays,
-                holder.Options?.ControllerName, holder.Options?.ContactChannel)))
+                holder.Options?.ControllerName, holder.Options?.ContactChannel, holder.Options?.ContentSha256)))
             .AllowAnonymous().RequireRateLimiting("lead-status");
         // Under /api/v1/auth so the SSR proxy forwards the antiforgery cookies (public paths are identity-free).
         app.MapPost("/api/v1/auth/leads", Create).AllowAnonymous().RequireRateLimiting("lead-create")
@@ -147,7 +153,7 @@ public static partial class LeadEndpoints
         db.Add(new Lead
         {
             CreatedUtc = now, ExpiresUtc = now.AddDays(options.RetentionDays), ContactName = name, BusinessName = business,
-            Phone = phone, Email = email, Notes = notes, NoticeVersion = options.NoticeVersion,
+            Phone = phone, Email = email, Notes = notes, NoticeVersion = options.NoticeVersion, NoticeFingerprint = options.Fingerprint,
         });
         await db.SaveChangesAsync(ct);
         return Results.StatusCode(201);

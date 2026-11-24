@@ -8,7 +8,16 @@ export interface LeadStatus {
   retentionDays: number | null;
   controllerName: string | null;
   contactChannel: string | null;
+  noticeContentSha256?: string | null;
 }
+
+/**
+ * SHA-256 of the notice template in privacy.ts (the text between its template backticks). A spec recomputes it, so any
+ * wording change fails the build until this value is updated. The operator must set Leads:NoticeContentSha256 to the same
+ * value (after owner approval of the new wording); the form stays closed when the server reports a different hash.
+ */
+export const PRIVACY_NOTICE_SHA256 =
+  'ea5c4823c516ac0549049d49a87895d80dc9333b25cb5174167a8033b111a033';
 
 export interface LeadPayload {
   contactName: string;
@@ -39,7 +48,8 @@ export class LeadIntakeService {
         typeof s.controllerName === 'string' &&
         s.controllerName &&
         typeof s.contactChannel === 'string' &&
-        s.contactChannel
+        s.contactChannel &&
+        s.noticeContentSha256 === PRIVACY_NOTICE_SHA256
       )
         return s;
       return {

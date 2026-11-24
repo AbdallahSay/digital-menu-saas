@@ -108,6 +108,8 @@ public sealed class Lead
     public string? Email { get; set; }
     public string? Notes { get; set; }
     public string NoticeVersion { get; set; } = "";
+    /// <summary>Full SHA-256 of the approved notice (version, facts, text hash) this lead was collected under.</summary>
+    public string NoticeFingerprint { get; set; } = "";
     public string Status { get; set; } = "New";
     public byte[] RowVersion { get; set; } = [];
 }

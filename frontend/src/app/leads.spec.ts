@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LeadIntakeService, LeadPayload } from './leads';
+import { LeadIntakeService, LeadPayload, PRIVACY_NOTICE_SHA256 } from './leads';
 
 const payload: LeadPayload = {
   contactName: 'Synthetic',
@@ -71,7 +71,19 @@ describe('LeadIntakeService', () => {
       retentionDays: 30,
       controllerName: 'SYNTHETIC',
       contactChannel: 'SYNTHETIC',
+      noticeContentSha256: PRIVACY_NOTICE_SHA256,
     });
     expect((await p)?.open).toBe(true);
+    // The server was approved against different notice text: stay closed.
+    p = svc.status();
+    http.expectOne('/api/v1/leads/status').flush({
+      open: true,
+      noticeVersion: 'v1',
+      retentionDays: 30,
+      controllerName: 'SYNTHETIC',
+      contactChannel: 'SYNTHETIC',
+      noticeContentSha256: 'f'.repeat(64),
+    });
+    expect((await p)?.open).toBe(false);
   });
 });

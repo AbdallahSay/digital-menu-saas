@@ -196,22 +196,38 @@ public sealed class LeadTests
     public void Options_require_notice_retention_controller_and_contact_when_enabled(string? enabled, string? notice, string? days, string? controller, string? contact, bool valid)
     {
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-        { ["Leads:Enabled"] = enabled, ["Leads:NoticeVersion"] = notice, ["Leads:RetentionDays"] = days, ["Leads:ControllerName"] = controller, ["Leads:ContactChannel"] = contact }).Build();
+        { ["Leads:Enabled"] = enabled, ["Leads:NoticeVersion"] = notice, ["Leads:RetentionDays"] = days, ["Leads:ControllerName"] = controller, ["Leads:ContactChannel"] = contact, ["Leads:NoticeContentSha256"] = new string('c', 64) }).Build();
         if (enabled != "true") Assert.Null(LeadOptions.FromConfiguration(config));
-        else if (valid) Assert.Equal(new LeadOptions(LeadOptions.Fingerprint("n1", 30, "C", "W"), 30, "C", "W"), LeadOptions.FromConfiguration(config));
+        else if (valid) Assert.Equal(new LeadOptions(LeadOptions.NoticeId("n1", LeadOptions.FullFingerprint("n1", 30, "C", "W", new string('c', 64))), 30, "C", "W", new string('c', 64), LeadOptions.FullFingerprint("n1", 30, "C", "W", new string('c', 64))), LeadOptions.FromConfiguration(config));
         else Assert.Throws<InvalidOperationException>(() => LeadOptions.FromConfiguration(config));
     }
 
     [Fact]
-    public void Notice_id_changes_when_any_stated_fact_changes_and_is_stable_otherwise()
+    public void Notice_fingerprint_changes_with_any_fact_or_notice_text_hash_and_is_stable_otherwise()
     {
-        var a = LeadOptions.Fingerprint("v1", 30, "Seller", "wa:1");
-        Assert.Equal(a, LeadOptions.Fingerprint("v1", 30, "Seller", "wa:1"));
-        Assert.NotEqual(a, LeadOptions.Fingerprint("v1", 31, "Seller", "wa:1"));
-        Assert.NotEqual(a, LeadOptions.Fingerprint("v1", 30, "Other", "wa:1"));
-        Assert.NotEqual(a, LeadOptions.Fingerprint("v1", 30, "Seller", "wa:2"));
-        Assert.NotEqual(a, LeadOptions.Fingerprint("v2", 30, "Seller", "wa:1"));
-        Assert.StartsWith("v1~", a);
-        Assert.True(LeadOptions.Fingerprint(new string('v', 30), 30, "S", "c").Length <= 40);
+        var h = new string('a', 64);
+        var a = LeadOptions.FullFingerprint("v1", 30, "Seller", "wa:1", h);
+        Assert.Equal(64, a.Length);
+        Assert.Equal(a, LeadOptions.FullFingerprint("v1", 30, "Seller", "wa:1", h));
+        Assert.NotEqual(a, LeadOptions.FullFingerprint("v1", 31, "Seller", "wa:1", h));
+        Assert.NotEqual(a, LeadOptions.FullFingerprint("v1", 30, "Other", "wa:1", h));
+        Assert.NotEqual(a, LeadOptions.FullFingerprint("v1", 30, "Seller", "wa:2", h));
+        Assert.NotEqual(a, LeadOptions.FullFingerprint("v2", 30, "Seller", "wa:1", h));
+        Assert.NotEqual(a, LeadOptions.FullFingerprint("v1", 30, "Seller", "wa:1", new string('b', 64)));
+        // The visitor-facing id is only a 12-hex prefix: it is a staleness check, the stored full value is the record.
+        Assert.StartsWith("v1~" + a[..12], LeadOptions.NoticeId("v1", a));
+        Assert.True(LeadOptions.NoticeId(new string('v', 30), a).Length <= 48);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")]
+    public void Enabling_intake_requires_the_approved_notice_text_hash(string? hash)
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        { ["Leads:Enabled"] = "true", ["Leads:NoticeVersion"] = "n1", ["Leads:RetentionDays"] = "30", ["Leads:ControllerName"] = "C", ["Leads:ContactChannel"] = "W", ["Leads:NoticeContentSha256"] = hash }).Build();
+        Assert.Throws<InvalidOperationException>(() => LeadOptions.FromConfiguration(config));
     }
 }
