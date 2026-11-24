@@ -108,33 +108,53 @@ public sealed class LeadTests
         Assert.Equal(4, await Count(f));
     }
 
+    private static Lead Row(DateTime created, DateTime expires) =>
+        new() { CreatedUtc = created, ExpiresUtc = expires, ContactName = "c", BusinessName = "b", Phone = "+201000000000", NoticeVersion = "n" };
+
     [SqlServerFact]
-    public async Task Global_hourly_cap_and_expired_cleanup_hold()
+    public async Task Expired_rows_are_hidden_and_purged_without_any_new_submission_including_backlog()
     {
-        var (f, pub, admin, _) = await Setup(Open);
+        var (f, _, admin, _) = await Setup(null); // intake closed: no traffic path can purge
         await using var _c = f;
         using (var scope = f.Factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
-            db.Add(new Lead { CreatedUtc = DateTime.UtcNow.AddDays(-40), ExpiresUtc = DateTime.UtcNow.AddDays(-10), ContactName = "old", BusinessName = "old", Phone = "+201000000000", NoticeVersion = "n" });
+            for (var i = 0; i < LeadRetentionService.Batch * 2 + 37; i++) db.Add(Row(DateTime.UtcNow.AddDays(-40), DateTime.UtcNow.AddDays(-10)));
+            db.Add(Row(DateTime.UtcNow, DateTime.UtcNow.AddDays(5)));
             await db.SaveChangesAsync();
         }
         var list = await (await admin.Send(HttpMethod.Get, Admin)).Content.ReadFromJsonAsync<LeadPageResponse>();
-        Assert.Equal(0, list!.Total);
-        Assert.Equal(HttpStatusCode.Created, (await pub.Send(HttpMethod.Post, Route, Body())).StatusCode);
-        Assert.Equal(1, await Count(f));
+        Assert.Equal(1, list!.Total);
         using (var scope = f.Factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
-            for (var i = 0; i < LeadEndpoints.GlobalHourlyCap; i++)
-                db.Add(new Lead { CreatedUtc = DateTime.UtcNow, ExpiresUtc = DateTime.UtcNow.AddDays(1), ContactName = "c", BusinessName = "b", Phone = "+201000000000", NoticeVersion = "n" });
-            await db.SaveChangesAsync();
+            // The hosted service may already have purged some; PurgeOnce is idempotent and loops until none are left.
+            await LeadRetentionService.PurgeOnce(db, DateTime.UtcNow, default);
+            Assert.Equal(0, await db.Set<Lead>().CountAsync(l => l.ExpiresUtc <= DateTime.UtcNow));
+            Assert.Equal(1, await db.Set<Lead>().CountAsync());
         }
-        Assert.Equal(HttpStatusCode.TooManyRequests, (await pub.Send(HttpMethod.Post, Route, Body())).StatusCode);
     }
 
     [SqlServerFact]
-    public async Task Only_platform_admin_can_read_change_or_delete_leads()
+    public async Task Global_cap_is_atomic_under_concurrency_and_not_reopened_by_deleting_leads()
+    {
+        var (f, pub, admin, _) = await Setup(Open);
+        await using var _c = f;
+        var now = DateTime.UtcNow;
+        var results = await Task.WhenAll(Enumerable.Range(0, LeadEndpoints.GlobalHourlyCap + 30).Select(async _ =>
+        {
+            using var scope = f.Factory.Services.CreateScope();
+            return await LeadEndpoints.TryTakeQuota(scope.ServiceProvider.GetRequiredService<MenuDbContext>(), now, default);
+        }));
+        Assert.Equal(LeadEndpoints.GlobalHourlyCap, results.Count(x => x));
+        // Quota is independent of retained leads: with none stored, the next request is still refused.
+        Assert.Equal(0, await Count(f));
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await pub.Send(HttpMethod.Post, Route, Body())).StatusCode);
+        Assert.Equal(0, await Count(f));
+    }
+
+    [SqlServerFact]
+    public async Task Only_platform_admin_can_read_change_or_delete_leads_and_stale_versions_get_412()
     {
         var (f, pub, admin, owner) = await Setup(Open);
         await using var _c = f;
@@ -143,14 +163,22 @@ public sealed class LeadTests
         Assert.Equal(HttpStatusCode.Forbidden, (await owner.Send(HttpMethod.Get, Admin)).StatusCode);
         var page = await (await admin.Send(HttpMethod.Get, Admin)).Content.ReadFromJsonAsync<LeadPageResponse>();
         Assert.Equal(1, page!.Total);
-        var id = page.Items[0].Id;
-        Assert.Equal(HttpStatusCode.Forbidden, (await owner.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Closed" })).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await owner.Send(HttpMethod.Delete, Admin + "/" + id)).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Bogus" })).StatusCode);
-        var changed = await (await admin.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Contacted" })).Content.ReadFromJsonAsync<LeadResponse>();
+        var id = page.Items[0].Id; var v1 = page.Items[0].RowVersion;
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Closed", rowVersion = v1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.Send(HttpMethod.Delete, Admin + "/" + id + "?rowVersion=" + Uri.EscapeDataString(v1))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Bogus", rowVersion = v1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Closed" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Send(HttpMethod.Delete, Admin + "/" + id)).StatusCode);
+        var changed = await (await admin.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Contacted", rowVersion = v1 })).Content.ReadFromJsonAsync<LeadResponse>();
         Assert.Equal("Contacted", changed!.Status);
-        Assert.Equal(HttpStatusCode.NoContent, (await admin.Send(HttpMethod.Delete, Admin + "/" + id)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await admin.Send(HttpMethod.Delete, Admin + "/" + id)).StatusCode);
+        Assert.NotEqual(v1, changed.RowVersion);
+        // A second operator holding the old version must not overwrite or delete.
+        Assert.Equal(HttpStatusCode.PreconditionFailed, (await admin.Send(HttpMethod.Patch, Admin + "/" + id, new { status = "Closed", rowVersion = v1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.PreconditionFailed, (await admin.Send(HttpMethod.Delete, Admin + "/" + id + "?rowVersion=" + Uri.EscapeDataString(v1))).StatusCode);
+        Assert.Equal(1, await Count(f));
+        var v2 = Uri.EscapeDataString(changed.RowVersion);
+        Assert.Equal(HttpStatusCode.NoContent, (await admin.Send(HttpMethod.Delete, Admin + "/" + id + "?rowVersion=" + v2)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await admin.Send(HttpMethod.Delete, Admin + "/" + id + "?rowVersion=" + v2)).StatusCode);
         Assert.Equal(0, await Count(f));
     }
 

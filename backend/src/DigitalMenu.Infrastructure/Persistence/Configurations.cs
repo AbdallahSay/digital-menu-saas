@@ -171,5 +171,16 @@ public sealed class LeadConfiguration : IEntityTypeConfiguration<Lead>
         b.Property(x => x.Status).HasMaxLength(16);
         b.HasIndex(x => x.CreatedUtc);
         b.HasIndex(x => x.ExpiresUtc);
+        b.Property(x => x.RowVersion).IsRowVersion();
+    }
+}
+
+public sealed class LeadQuotaConfiguration : IEntityTypeConfiguration<LeadQuota>
+{
+    public void Configure(EntityTypeBuilder<LeadQuota> b)
+    {
+        b.ToTable("LeadQuotas");
+        b.HasKey(x => x.HourUtc);
+        b.Property(x => x.HourUtc).ValueGeneratedNever();
     }
 }

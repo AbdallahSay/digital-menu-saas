@@ -109,4 +109,12 @@ public sealed class Lead
     public string? Notes { get; set; }
     public string NoticeVersion { get; set; } = "";
     public string Status { get; set; } = "New";
+    public byte[] RowVersion { get; set; } = [];
+}
+
+/// <summary>Accepted-request counter per UTC hour. Independent of retained leads, so deleting a lead never reopens quota.</summary>
+public sealed class LeadQuota
+{
+    public DateTime HourUtc { get; set; }
+    public int Count { get; set; }
 }

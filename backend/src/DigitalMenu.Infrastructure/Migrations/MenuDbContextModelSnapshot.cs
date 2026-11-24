@@ -156,6 +156,12 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .HasMaxLength(24)
                         .HasColumnType("nvarchar(24)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -173,6 +179,19 @@ namespace DigitalMenu.Infrastructure.Migrations
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("DigitalMenu.Domain.LeadQuota", b =>
+                {
+                    b.Property<DateTime>("HourUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.HasKey("HourUtc");
+
+                    b.ToTable("LeadQuotas", (string)null);
                 });
 
             modelBuilder.Entity("DigitalMenu.Domain.MenuItem", b =>

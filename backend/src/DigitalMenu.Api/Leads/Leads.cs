@@ -36,9 +36,9 @@ public sealed record LeadRequest(string? ContactName, string? BusinessName, stri
     bool? Consent, string? NoticeVersion, string? Website);
 public sealed record LeadStatusResponse(bool Open, string? NoticeVersion, int? RetentionDays, string? ControllerName, string? ContactChannel);
 public sealed record LeadResponse(Guid Id, DateTime CreatedUtc, DateTime ExpiresUtc, string ContactName, string BusinessName,
-    string Phone, string? Email, string? Notes, string Status);
+    string Phone, string? Email, string? Notes, string Status, string RowVersion);
 public sealed record LeadPageResponse(int Page, int PageSize, int Total, LeadResponse[] Items);
-public sealed record LeadStatusChange(string? Status);
+public sealed record LeadStatusChange(string? Status, string? RowVersion);
 
 public static partial class LeadEndpoints
 {
@@ -49,6 +49,7 @@ public static partial class LeadEndpoints
     public static void AddLeadIntake(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddLeadOptionsHolder(LeadOptions.FromConfiguration(configuration));
+        services.AddHostedService<LeadRetentionService>();
         services.AddRateLimiter(o =>
         {
             o.AddPolicy("lead-status", c => RateLimitPartition.GetFixedWindowLimiter(c.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -87,17 +88,28 @@ public static partial class LeadEndpoints
         });
         admin.MapPatch("/{id:guid}", async (Guid id, LeadStatusChange request, MenuDbContext db, CancellationToken ct) =>
         {
-            if (request.Status is not ("New" or "Contacted" or "Closed")) return Problem(400, "Invalid status.");
+            if (request.Status is not ("New" or "Contacted" or "Closed") || !TryVersion(request.RowVersion, out var expected))
+                return Problem(400, "Invalid status or RowVersion.");
             var lead = await db.Set<Lead>().SingleOrDefaultAsync(l => l.Id == id && l.ExpiresUtc > DateTime.UtcNow, ct);
             if (lead is null) return Problem(404, "Lead not found.");
+            if (!lead.RowVersion.SequenceEqual(expected)) return Problem(412, "Lead was changed. Reload before retrying.");
             lead.Status = request.Status;
-            await db.SaveChangesAsync(ct);
+            db.Entry(lead).Property(x => x.RowVersion).OriginalValue = expected;
+            try { await db.SaveChangesAsync(ct); }
+            catch (DbUpdateConcurrencyException) { return Problem(412, "Lead was changed. Reload before retrying."); }
             return Results.Ok(Map(lead));
         });
-        admin.MapDelete("/{id:guid}", async (Guid id, MenuDbContext db, CancellationToken ct) =>
+        admin.MapDelete("/{id:guid}", async (Guid id, string? rowVersion, MenuDbContext db, CancellationToken ct) =>
         {
-            var deleted = await db.Set<Lead>().Where(l => l.Id == id).ExecuteDeleteAsync(ct);
-            return deleted == 0 ? Problem(404, "Lead not found.") : Results.NoContent();
+            if (!TryVersion(rowVersion, out var expected)) return Problem(400, "RowVersion is required.");
+            var lead = await db.Set<Lead>().SingleOrDefaultAsync(l => l.Id == id, ct);
+            if (lead is null) return Problem(404, "Lead not found.");
+            if (!lead.RowVersion.SequenceEqual(expected)) return Problem(412, "Lead was changed. Reload before retrying.");
+            db.Entry(lead).Property(x => x.RowVersion).OriginalValue = expected;
+            db.Remove(lead);
+            try { await db.SaveChangesAsync(ct); }
+            catch (DbUpdateConcurrencyException) { return Problem(412, "Lead was changed. Reload before retrying."); }
+            return Results.NoContent();
         });
     }
 
@@ -120,10 +132,7 @@ public static partial class LeadEndpoints
         // Bots fill hidden fields; they get the same answer as a real submission and nothing is stored.
         if (!string.IsNullOrEmpty(request.Website)) return Results.StatusCode(201);
         var now = DateTime.UtcNow;
-        if (await db.Set<Lead>().CountAsync(l => l.CreatedUtc > now.AddHours(-1), ct) >= GlobalHourlyCap)
-            return Problem(429, "Too many requests.");
-        // Retention is enforced here too: expired rows are removed in bounded batches on every accepted write.
-        await db.Set<Lead>().Where(l => l.ExpiresUtc <= now).Take(100).ExecuteDeleteAsync(ct);
+        if (!await TryTakeQuota(db, now, ct)) return Problem(429, "Too many requests.");
         db.Add(new Lead
         {
             CreatedUtc = now, ExpiresUtc = now.AddDays(options.RetentionDays), ContactName = name, BusinessName = business,
@@ -133,6 +142,72 @@ public static partial class LeadEndpoints
         return Results.StatusCode(201);
     }
 
-    private static LeadResponse Map(Lead l) => new(l.Id, l.CreatedUtc, l.ExpiresUtc, l.ContactName, l.BusinessName, l.Phone, l.Email, l.Notes, l.Status);
+    /// <summary>Atomic shared hourly quota: one conditional UPDATE decides, so concurrent requests and instances cannot exceed the cap.</summary>
+    public static async Task<bool> TryTakeQuota(MenuDbContext db, DateTime now, CancellationToken ct)
+    {
+        var hour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var updated = await db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE LeadQuotas SET [Count] = [Count] + 1 WHERE HourUtc = {hour} AND [Count] < {GlobalHourlyCap}", ct);
+            if (updated == 1) return true;
+            if (await db.Set<LeadQuota>().AsNoTracking().AnyAsync(q => q.HourUtc == hour, ct)) return false; // row exists, at cap
+            try
+            {
+                await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO LeadQuotas (HourUtc, [Count]) VALUES ({hour}, 1)", ct);
+                return true;
+            }
+            catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2627 or 2601) { /* lost the insert race: retry the UPDATE */ }
+        }
+        return false;
+    }
+
+    private static bool TryVersion(string? value, out byte[] version)
+    {
+        version = [];
+        if (string.IsNullOrEmpty(value) || value.Length > 64) return false;
+        try { version = Convert.FromBase64String(value); return version.Length > 0; } catch (FormatException) { return false; }
+    }
+
+    private static LeadResponse Map(Lead l) => new(l.Id, l.CreatedUtc, l.ExpiresUtc, l.ContactName, l.BusinessName, l.Phone, l.Email, l.Notes, l.Status, Convert.ToBase64String(l.RowVersion));
     private static IResult Problem(int status, string title) => Results.Problem(statusCode: status, title: title);
+}
+
+/// <summary>
+/// Independent retention purge: runs at startup (catch-up) and on a timer, whether or not intake is open or receives
+/// traffic. Deletes expired leads in bounded batches until none are left, and old quota counters.
+/// </summary>
+public sealed class LeadRetentionService(IServiceScopeFactory scopes, ILogger<LeadRetentionService> log) : BackgroundService
+{
+    public static readonly TimeSpan Interval = TimeSpan.FromMinutes(15);
+    public const int Batch = 500;
+
+    public static async Task<int> PurgeOnce(MenuDbContext db, DateTime now, CancellationToken ct)
+    {
+        var total = 0;
+        while (true)
+        {
+            var ids = await db.Set<Lead>().Where(l => l.ExpiresUtc <= now).OrderBy(l => l.ExpiresUtc).Select(l => l.Id).Take(Batch).ToListAsync(ct);
+            if (ids.Count == 0) break;
+            total += await db.Set<Lead>().Where(l => ids.Contains(l.Id)).ExecuteDeleteAsync(ct);
+        }
+        await db.Set<LeadQuota>().Where(q => q.HourUtc < now.AddDays(-2)).ExecuteDeleteAsync(ct);
+        return total;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        using var timer = new PeriodicTimer(Interval);
+        do
+        {
+            try
+            {
+                using var scope = scopes.CreateScope();
+                var removed = await PurgeOnce(scope.ServiceProvider.GetRequiredService<MenuDbContext>(), DateTime.UtcNow, stoppingToken);
+                if (removed > 0) log.LogInformation("Lead retention purge removed {Count} expired leads.", removed);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
+            catch (Exception ex) { log.LogError(ex, "Lead retention purge failed; will retry next interval."); }
+        } while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false));
+    }
 }
