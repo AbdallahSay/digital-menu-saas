@@ -1,4 +1,5 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
@@ -34,9 +35,14 @@ export function enforceBudget(label, measurement, budget = ROUTE_BUDGET_BYTES) {
 export async function coldScripts(
   browser,
   url,
-  { readySelector, expectText, timeout = 15000, prepare },
+  folder,
+  { readySelector, expectText, lang, dir, timeout = 15000, prepare },
 ) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const expectedOrigin = new URL(url).origin;
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: 'block', // no service worker or prior cache can hide requests; context is fresh
+  });
   try {
     context.setDefaultTimeout(timeout);
     const page = await context.newPage();
@@ -47,23 +53,84 @@ export async function coldScripts(
     page.on('console', (m) => m.type() === 'error' && problems.push('console: ' + m.text()));
     page.on('requestfailed', (r) => problems.push('failed: ' + r.url()));
     page.on('response', (r) => {
-      const path = new URL(r.url()).pathname;
-      if (r.status() >= 400) problems.push(`http ${r.status()}: ${path}`);
-      if (path.endsWith('.js')) {
-        if (!/javascript/.test(r.headers()['content-type'] ?? ''))
-          problems.push('bad js mime: ' + path);
-        scripts.add(path.slice(1));
-      }
+      const u = new URL(r.url());
+      if (r.status() >= 400) problems.push(`http ${r.status()}: ${u.pathname}`);
+      const executable = r.request().resourceType() === 'script' || u.pathname.endsWith('.js');
+      if (!executable) return;
+      // Every executable must be same-origin and map to a built artifact, or the run fails.
+      if (u.origin !== expectedOrigin) return problems.push('foreign script origin: ' + u.origin);
+      const file = u.pathname.slice(1);
+      if (!/^[\w.-]+\.js$/.test(file) || !existsSync(join(folder, file)))
+        return problems.push('script not a built artifact: ' + u.pathname);
+      if (!/javascript/.test(r.headers()['content-type'] ?? ''))
+        problems.push('bad js mime: ' + u.pathname);
+      scripts.add(file);
     });
     await page.goto(url, { waitUntil: 'networkidle', timeout });
+    // Hydration oracle: expected text is present (it is also in SSR HTML), AND Angular's client
+    // runtime has attached to the root (the __ngContext__ property exists only after client bootstrap), AND the
+    // expected lang/dir hold when given.
     await page.waitForFunction(
-      ([sel, text]) => (document.querySelector(sel)?.textContent ?? '').includes(text),
-      [readySelector, expectText],
+      ([sel, text, lang, dir]) =>
+        (document.querySelector(sel)?.textContent ?? '').includes(text) &&
+        '__ngContext__' in (document.querySelector('app-root') ?? {}) &&
+        (!lang || document.documentElement.lang === lang) &&
+        (!dir || document.documentElement.dir === dir),
+      [readySelector, expectText, lang ?? '', dir ?? ''],
       { timeout },
     );
+    // Stable window: let hydration and any deferred requests settle before the set is read.
+    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle', { timeout });
+    if (scripts.size === 0) problems.push('no scripts observed');
     if (problems.length) throw new Error(`cold load problems for ${url}: ${problems.join('; ')}`);
     return [...scripts].sort();
   } finally {
     await context.close();
   }
+}
+
+// Retained evidence. `gzipSourceBytes` is the default-level gzip of the exact local file bytes,
+// an estimate of what the budget gates compare. It is NOT the measured transfer size: the real
+// host may serve brotli or another gzip level, so actual encoded bytes are recorded separately
+// only where a server under test reports them (none here).
+export function writeRouteEvidence(name, folder, measurements, browserVersion = 'unknown') {
+  const git = (c) => {
+    try {
+      return execSync(c, { encoding: 'utf8' }).trim();
+    } catch {
+      return 'unknown';
+    }
+  };
+  mkdirSync('.lighthouseci', { recursive: true });
+  const routes = Object.fromEntries(
+    Object.entries(measurements).map(([route, m]) => [
+      route,
+      {
+        gzipSourceBytes: m.bytes,
+        files: m.files.map((f) => ({ file: f, gzipSourceBytes: gzipBytes(folder, [f]) })),
+      },
+    ]),
+  );
+  writeFileSync(
+    `.lighthouseci/${name}.json`,
+    JSON.stringify(
+      {
+        budgetBytes: ROUTE_BUDGET_BYTES,
+        estimate: 'gzip-default-local-source',
+        observedTransport: 'not recorded (static/local servers do not report encoded size)',
+        gitSha: git('git rev-parse HEAD'),
+        node: process.version,
+        browser: browserVersion,
+        buildCommand: 'npm run build (ng build); folder dist/digital-menu/browser',
+        cache:
+          'fresh browser context per route, service workers blocked, observation window 1000 ms + networkidle after hydration oracle',
+        protectedChunkMarkers: ADMIN_MARKERS,
+        protectedChunksFound: adminChunks(folder),
+        routes,
+      },
+      null,
+      2,
+    ),
+  );
 }

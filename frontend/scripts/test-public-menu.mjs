@@ -5,7 +5,13 @@ import { gunzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { chromium } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
-import { adminChunks, coldScripts, enforceBudget, gzipBytes } from './route-js-lib.mjs';
+import {
+  writeRouteEvidence,
+  adminChunks,
+  coldScripts,
+  enforceBudget,
+  gzipBytes,
+} from './route-js-lib.mjs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const origin = process.env.S01_ORIGIN;
 assert.ok(origin, 'Run through PublicSsrTests with real SQL fixtures.');
@@ -246,10 +252,14 @@ test('JavaScript-disabled content, hydration without duplicate API fetch, RTL/LT
 });
 test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch admin chunks', async () => {
   const folder = 'dist/digital-menu/browser';
+  assert.ok(adminChunks(folder).length >= 2, 'protected chunk marker map must be non-empty');
   const browser = await chromium.launch();
+  const measured = {};
   try {
     for (const language of ['ar', 'en']) {
-      const files = await coldScripts(browser, origin + '/r/s01-a?lang=' + language, {
+      const files = await coldScripts(browser, origin + '/r/s01-a?lang=' + language, folder, {
+        lang: language,
+        dir: language === 'ar' ? 'rtl' : 'ltr',
         readySelector: 'main',
         prepare: (page) =>
           page.route(logoUrl, (route) =>
@@ -259,6 +269,8 @@ test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch 
       });
       const measurement = { files, bytes: gzipBytes(folder, files) };
       console.log('cold JS', language, measurement.bytes, 'B gzip', files.length, 'scripts');
+      measured['/r/s01-a?lang=' + language] = measurement;
+      writeRouteEvidence('route-js-sql', folder, measured, browser.version());
       enforceBudget('/r/s01-a?lang=' + language, measurement);
       for (const f of adminChunks(folder))
         assert.ok(!files.includes(f), 'admin chunk fetched: ' + f);

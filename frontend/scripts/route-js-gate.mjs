@@ -25,6 +25,7 @@ import {
   adminChunks,
   chunksContaining,
   coldScripts,
+  writeRouteEvidence,
   enforceBudget,
   gzipBytes,
   jsFiles,
@@ -32,9 +33,14 @@ import {
 
 const SRC = 'dist/digital-menu/browser';
 const ROUTES = {
-  '/': { readySelector: 'h1.hero-headline', expectText: 'منيو مطعمك' },
-  '/privacy': { readySelector: 'app-privacy h1', expectText: 'سياسة الخصوصية' },
-  '/r/demo': { readySelector: 'main', expectText: 'مطعم' },
+  '/': { lang: 'ar', dir: 'rtl', readySelector: 'h1.hero-headline', expectText: 'منيو مطعمك' },
+  '/privacy': {
+    lang: 'ar',
+    dir: 'rtl',
+    readySelector: 'app-privacy h1',
+    expectText: 'سياسة الخصوصية',
+  },
+  '/r/demo': { lang: 'ar', dir: 'rtl', readySelector: 'main', expectText: 'مطعم' },
 };
 const MIME = {
   '.js': 'text/javascript',
@@ -80,7 +86,9 @@ function serve(folder) {
   });
 }
 
-async function measureRoutes(folder, routes = Object.keys(ROUTES)) {
+const versionOut = { browser: 'unknown' };
+
+async function measureRoutes(folder, routes = Object.keys(ROUTES), overrides = {}) {
   const server = await serve(folder);
   let browser;
   try {
@@ -89,8 +97,12 @@ async function measureRoutes(folder, routes = Object.keys(ROUTES)) {
     );
     const origin = `http://127.0.0.1:${server.address().port}`;
     const result = {};
+    versionOut.browser = browser.version();
     for (const route of routes) {
-      const files = await coldScripts(browser, origin + route, ROUTES[route]);
+      const files = await coldScripts(browser, origin + route, folder, {
+        ...ROUTES[route],
+        ...overrides,
+      });
       result[route] = { files, bytes: gzipBytes(folder, files) };
     }
     return result;
@@ -107,6 +119,7 @@ test('public routes pass the budget and never request named admin chunks', async
   for (const m of ADMIN_MARKERS)
     assert.ok(chunksContaining(SRC, [m]).length > 0, `marker ${m} matches no chunk`);
   const m = await measureRoutes(SRC);
+  writeRouteEvidence('route-js-static', SRC, m, versionOut.browser);
   for (const [route, r] of Object.entries(m)) {
     console.log(route, r.bytes, 'B gzip,', r.files.length, 'scripts');
     enforceBudget(route, r);
@@ -149,4 +162,24 @@ test('negative controls through the real gate, with cleanup', async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('a foreign-origin script fails the cold load closed', async () => {
+  await assert.rejects(
+    measureRoutes(SRC, ['/privacy'], {
+      prepare: async (page) => {
+        await page.route('https://foreign.invalid/x.js', (r) =>
+          r.fulfill({ status: 200, contentType: 'text/javascript', body: '/* x */' }),
+        );
+        await page.addInitScript(() => {
+          addEventListener('DOMContentLoaded', () => {
+            const s = document.createElement('script');
+            s.src = 'https://foreign.invalid/x.js';
+            document.head.append(s);
+          });
+        });
+      },
+    }),
+    /foreign script origin/,
+  );
 });
