@@ -1,0 +1,17 @@
+import { chromium } from '@playwright/test'; import fs from 'node:fs';
+const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+const c=await b.newContext({viewport:{width:1280,height:900},locale:'ar-EG'}); const p=await c.newPage();
+p.on('response',r=>{if(r.status()>=400&&r.url().includes('/api/'))console.log('HTTP',r.status(),r.request().method(),r.url().slice(0,100))});
+await p.goto('http://localhost:4000/admin/items'); await p.waitForTimeout(2500); console.log('guest ->',p.url());
+await p.goto('http://localhost:4000/login'); await p.fill('#login-email','admin@example.test'); await p.fill('#login-password',fs.readFileSync('/tmp/admin.pw','utf8').trim());
+await p.click('button[type=submit]'); await p.waitForTimeout(3000); console.log('admin after login ->',p.url());
+if(!p.url().includes('/platform')) await p.goto('http://localhost:4000/platform'); await p.waitForTimeout(2500);
+await p.screenshot({path:'/downloads/menu-shots/12-platform-before.png'});
+await p.fill('#p-name','مطعم ثاني للتجربة'); await p.fill('#p-slug','second-test'); await p.fill('#p-owner','owner2@example.test');
+await p.click('button:has-text("إنشاء المطعم")'); await p.waitForTimeout(3500);
+console.log('MSG',(await p.locator('[role=status]').allInnerTexts()).join(' / '));
+console.log('ROWS',(await p.$$eval('tbody tr',r=>r.map(x=>x.innerText.replace(/\s+/g,' ')))));
+await p.locator('tr',{hasText:'second-test'}).locator('button:has-text("نشر")').click(); await p.waitForTimeout(2500);
+console.log('ROWS after publish',(await p.$$eval('tbody tr',r=>r.map(x=>x.innerText.replace(/\s+/g,' ')))));
+await p.screenshot({path:'/downloads/menu-shots/13-platform-after.png'});
+await b.close();

@@ -13,7 +13,7 @@
     "test:design": "node --test scripts/test-design-alignment.mjs",
     "test:e2e": "playwright test",
     "test:lighthouse": "node scripts/lighthouse-ci.mjs",
-    "test:security": "node --test scripts/test-security.mjs scripts/test-static-assets.mjs",
+    "test:security": "node --test scripts/test-security.mjs scripts/test-static-assets.mjs scripts/test-admin-routes.mjs",
     "test:router": "node --test scripts/test-api-router.mjs",
     "test:vercel": "node --test scripts/test-vercel-output.mjs",
     "test:vercel:wiring": "node --test scripts/test-vercel-wiring.mjs"

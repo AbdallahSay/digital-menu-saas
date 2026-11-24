@@ -49,7 +49,7 @@ export const routes: Routes = [
     path: 'platform',
     canMatch: [platformGuard],
     loadComponent: () =>
-      import('./admin/platform-stub.component').then((m) => m.PlatformStubComponent),
+      import('./admin/platform-console.component').then((m) => m.PlatformConsoleComponent),
   },
   {
     path: 'r/:slug/unavailable',
