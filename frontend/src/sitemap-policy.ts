@@ -1,15 +1,16 @@
 // Default-off sitemap policy. Pure functions, no imports, no I/O. Enabling is an owner decision (opt-in
 // authority and canonical origin); nothing here enables indexing by itself.
-export type SitemapConfig =
-  | { enabled: false; reason: string }
-  | { enabled: true; origin: string };
+export type SitemapConfig = { enabled: false; reason: string } | { enabled: true; origin: string };
 
 // Supported cap: ONE backend page (1000 entries). More pages or truncation fail closed (no partial sitemap).
 export const MAX_ENTRIES = 1000;
 export const MAX_BODY_BYTES = 1_000_000;
 const RESERVED_DEMO = 'demo';
 export function xmlEscape(value: string): string {
-  return value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!);
+  return value.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!,
+  );
 }
 // Strict ISO-8601 UTC timestamp only (string, with Z or offset), and the calendar fields must round-trip,
 // so Feb 31 or 0/null/true can never normalize into a date.
@@ -18,9 +19,24 @@ export function parseStrictDate(value: unknown): Date | null {
   if (typeof value !== 'string') return null;
   const m = ISO.exec(value);
   if (!m) return null;
-  const [y, mo, d, h, mi, se] = m.slice(1, 7).map(Number) as [number, number, number, number, number, number];
+  const [y, mo, d, h, mi, se] = m.slice(1, 7).map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
   const check = new Date(Date.UTC(y, mo - 1, d, h, mi, se));
-  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d || h > 23 || mi > 59 || se > 59) return null;
+  if (
+    check.getUTCFullYear() !== y ||
+    check.getUTCMonth() !== mo - 1 ||
+    check.getUTCDate() !== d ||
+    h > 23 ||
+    mi > 59 ||
+    se > 59
+  )
+    return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -110,7 +126,12 @@ export async function sitemapResponse(
 ): Promise<SitemapResult> {
   if (!config.enabled)
     return { status: 404, type: 'text/plain', body: 'Not found', headers: NO_STORE };
-  const fail: SitemapResult = { status: 503, type: 'text/plain', body: 'Sitemap unavailable', headers: NO_STORE };
+  const fail: SitemapResult = {
+    status: 503,
+    type: 'text/plain',
+    body: 'Sitemap unavailable',
+    headers: NO_STORE,
+  };
   const controller = new AbortController();
   const open: { cancel(): Promise<void> }[] = [];
   let expired = false;
@@ -142,7 +163,9 @@ export async function sitemapResponse(
       const text = await readBounded(response, MAX_BODY_BYTES, open, () => expired);
       if (text === null) return fail;
       const xml = renderSitemap(config, JSON.parse(text));
-      return xml === null ? fail : { status: 200, type: 'application/xml', body: xml, headers: NO_STORE };
+      return xml === null
+        ? fail
+        : { status: 200, type: 'application/xml', body: xml, headers: NO_STORE };
     } catch {
       return fail;
     }

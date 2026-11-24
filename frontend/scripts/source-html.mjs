@@ -167,7 +167,13 @@ test('with sitemap disabled (default) robots has no Sitemap line and a forged Ho
   const configured = 'https://menu.example.test';
   const port = await freePort();
   const child = spawn(process.execPath, ['dist/digital-menu/server/server.mjs'], {
-    env: { ...process.env, F01_LOCAL_ONLY: '1', PORT: String(port), PUBLIC_ORIGIN: configured, SITEMAP_ENABLED: '' },
+    env: {
+      ...process.env,
+      F01_LOCAL_ONLY: '1',
+      PORT: String(port),
+      PUBLIC_ORIGIN: configured,
+      SITEMAP_ENABLED: '',
+    },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   const exited = new Promise((resolve) => child.once('exit', resolve));
