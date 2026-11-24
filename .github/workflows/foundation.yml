@@ -41,6 +41,7 @@ jobs:
           npm run lint
           npm test -- --watch=false
           npm run test:router
+          npm run test:sitemap
           npm run build
           node ../scripts/build-vercel.mjs # also writes dist/digital-menu/build-manifest.json
           npm run test:vercel:wiring

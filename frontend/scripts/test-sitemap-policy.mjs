@@ -82,3 +82,50 @@ test('destination and origin are fixed inputs: request-controlled values cannot 
   assert.ok(!('cookie' in (seen.init.headers ?? {})) && !('authorization' in (seen.init.headers ?? {})));
   assert.ok(r.body.includes('https://menu.example/r/cafe-1'));
 });
+
+test('XML safety: hostile-but-URL-valid origin is escaped and the output parses', () => {
+  const c = readSitemapConfig({ SITEMAP_ENABLED: 'true', SITEMAP_ORIGIN: 'https://a&b.example' });
+  assert.equal(c.enabled, false); // host policy rejects it
+  // escaping is independent of the policy: force an enabled config to prove loc is escaped
+  const xml = renderSitemap({ enabled: true, origin: 'https://a&b.example' }, page());
+  assert.ok(xml.includes('a&amp;b.example') && !xml.includes('a&b'));
+});
+
+test('strict dates: null, 0, true, numbers, impossible calendar dates, date-only and pre-2000 are rejected', () => {
+  const c = readSitemapConfig(on);
+  for (const d of [null, 0, true, 1700000000000, '2026-02-31T00:00:00Z', '2026-13-01T00:00:00Z', '2026-01-01', '2026-01-01T25:00:00Z', '1970-01-01T00:00:00Z', '2026-01-01T00:00:00'])
+    assert.equal(renderSitemap(c, page({ entries: [{ slug: 'ok', lastModifiedUtc: d }] })), null, String(d));
+});
+
+const stream = (chunks, { hang = false } = {}) => {
+  let i = 0, cancelled = false;
+  const body = new ReadableStream({
+    pull(ctl) { if (i < chunks.length) ctl.enqueue(chunks[i++]); else if (!hang) ctl.close(); else return new Promise(() => {}); },
+    cancel() { cancelled = true; },
+  });
+  return { response: new Response(body, { status: 200 }), get cancelled() { return cancelled; } };
+};
+
+test('byte cap is enforced while streaming: crossing the cap cancels the stream before EOF', async () => {
+  const enc = new TextEncoder();
+  const s = stream([enc.encode('{"x":"' + 'a'.repeat(600_000)), enc.encode('a'.repeat(600_000)), enc.encode('a'.repeat(600_000))]);
+  const r = await sitemapResponse(readSitemapConfig(on), url, async () => s.response);
+  assert.equal(r.status, 503);
+  assert.equal(s.cancelled, true);
+});
+
+test('real deadline: a body that never ends is aborted by the deadline, not buffered', async () => {
+  const s = stream([new TextEncoder().encode('{"page":')], { hang: true });
+  const t0 = Date.now();
+  const r = await sitemapResponse(readSitemapConfig(on), url, async () => s.response, 150);
+  assert.equal(r.status, 503);
+  assert.ok(Date.now() - t0 < 2000);
+  assert.equal(s.cancelled, true);
+});
+
+test('a non-OK response body is cancelled, not read', async () => {
+  const s = stream([new TextEncoder().encode('x')], { hang: true });
+  const r = await sitemapResponse(readSitemapConfig(on), url, async () => new Response(s.response.body, { status: 503 }));
+  assert.equal(r.status, 503);
+  assert.equal(s.cancelled, true);
+});
