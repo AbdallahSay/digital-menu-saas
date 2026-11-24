@@ -25,7 +25,7 @@ public sealed class MediaLeafLinkTests
     [Fact]
     public async Task Leaf_symlink_in_a_bundle_reads_as_absent_and_never_outside_content()
     {
-        if (OperatingSystem.IsWindows()) return;
+        if (OperatingSystem.IsWindows()) return; // early return, not an xUnit skip
         var root = Path.Combine(Path.GetTempPath(), "dm-media-" + Guid.NewGuid().ToString("N"));
         var outside = Path.Combine(Path.GetTempPath(), "dm-outside-" + Guid.NewGuid().ToString("N") + ".webp");
         try
@@ -63,7 +63,7 @@ public sealed class MediaStorageContractTests
     }
 
     [Fact]
-    public async Task Non_canonical_keys_and_unknown_variants_are_refused_before_any_filesystem_access()
+    public async Task Non_canonical_keys_and_unknown_variants_give_400_and_create_no_tenant_directory()
     {
         var root = NewRoot();
         try
@@ -88,7 +88,7 @@ public sealed class MediaStorageContractTests
             var good = tenant + "/" + id + ".webp";
             var v = await Assert.ThrowsAsync<MediaException>(() => s.GetAsync(good, "original", default));
             Assert.Equal(400, v.Status);
-            // A valid key that was never stored reads as absent, and nothing was created for it.
+            // Scope: a rejected or absent key creates no tenant directory in an otherwise empty root. The constructor and every read still touch the filesystem (root creation, cleanup retry); no "no filesystem access" claim.
             Assert.Null(await s.GetAsync(good, "main", default));
             Assert.False(Directory.Exists(Path.Combine(root, tenant)));
         }
@@ -96,7 +96,7 @@ public sealed class MediaStorageContractTests
     }
 
     [Fact]
-    public async Task A_bundle_with_pending_deletion_reads_as_absent()
+    public async Task A_pending_deletion_bundle_is_gone_after_the_read_triggered_cleanup_retry()
     {
         var root = NewRoot();
         try
@@ -108,22 +108,25 @@ public sealed class MediaStorageContractTests
             File.WriteAllBytes(Path.Combine(bundle, "main.webp"), new byte[] { 9 });
             Assert.Equal(new byte[] { 9 }, await s.GetAsync(tenant + "/" + id + ".webp", "main", default));
             File.WriteAllText(Path.Combine(bundle, "delete.pending"), "");
+            // Cleanup succeeds here, so this does not exercise the read guard while cleanup stays pending (deferred).
             Assert.Null(await s.GetAsync(tenant + "/" + id + ".webp", "main", default));
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
 
     [Fact]
-    public void Media_root_below_a_symlinked_directory_is_refused()
+    public void Media_root_below_a_symlinked_directory_is_refused_and_no_files_are_written_in_the_target()
     {
-        if (OperatingSystem.IsWindows()) return;
+        if (OperatingSystem.IsWindows()) return; // early return, not an xUnit skip: counts as Passed on Windows without asserting anything
         var real = NewRoot(); var link = NewRoot();
         try
         {
             Directory.CreateDirectory(real);
             Directory.CreateSymbolicLink(link, real);
             Assert.Throws<IOException>(() => Make(Path.Combine(link, "media")));
-            Assert.False(Directory.Exists(Path.Combine(real, "media")) && Directory.EnumerateFileSystemEntries(Path.Combine(real, "media")).Any());
+            // The constructor creates the root before it checks for links, so an EMPTY real/media directory may exist; only "no entries inside" is asserted.
+            var created = Path.Combine(real, "media");
+            Assert.False(Directory.Exists(created) && Directory.EnumerateFileSystemEntries(created).Any());
         }
         finally
         {
