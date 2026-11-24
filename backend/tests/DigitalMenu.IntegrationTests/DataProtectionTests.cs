@@ -120,7 +120,7 @@ public sealed class DataProtectionTests
     }
 
     [Fact]
-    public void Windows_development_does_not_require_or_use_a_key_path_and_production_without_path_still_fails_first()
+    public void Windows_development_does_not_require_a_key_path_and_production_without_path_still_fails_first()
     {
         var content = Tmp("content");
         var cfg = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>()).Build();
@@ -140,7 +140,7 @@ public sealed class DataProtectionTests
                 new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [DataProtectionConfiguration.ApplicationNameKey] = name, [DataProtectionConfiguration.KeysPathKey] = Path.Combine(Path.GetTempPath(), "x") }).Build(), isWindows: false));
     }
 
-    // Observation test: records the mode of the generated key file on Unix. Plaintext keys are protected by
+    // Checks directory mode only (not key file mode). Plaintext keys are protected by
     // filesystem permissions only, so the directory (0700) is the control; this asserts the directory stays private.
     [Fact]
     public void Generated_key_files_live_inside_a_private_directory_on_Unix()

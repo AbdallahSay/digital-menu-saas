@@ -21,8 +21,8 @@ public static class DataProtectionConfiguration
     public static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
         => Configure(services, environment, configuration, OperatingSystem.IsWindows());
 
-    // The platform is a parameter so the Windows policy can be exercised on any OS (contract tests). Behaviour is unchanged.
-    public static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration, bool isWindows)
+    // Test seam only (internal): the platform is a parameter so the Windows policy decision can be exercised on any OS. Production entry is the three-argument overload bound to the real OS. Directory preparation still reads the real OS.
+    internal static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration, bool isWindows)
     {
         var name = configuration[ApplicationNameKey];
         if (string.IsNullOrWhiteSpace(name))
