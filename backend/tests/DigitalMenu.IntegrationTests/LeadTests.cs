@@ -20,9 +20,16 @@ public sealed class LeadTests
     private static object Body(string? website = null, string? notice = "notice-test-1", bool consent = true, string phone = "+201001112222") =>
         new { contactName = "Test Person", businessName = "Test Cafe", phone, email = "t@example.test", notes = "synthetic", consent, noticeVersion = notice, website };
 
-    private static async Task<(AuthFixture Fixture, Browser Public, Browser Admin, Browser Owner)> Setup(LeadOptions? options)
+    private static async Task<(AuthFixture Fixture, Browser Public, Browser Admin, Browser Owner)> Setup(LeadOptions? options, bool withoutRetentionWorker = false)
     {
-        var fixture = await AuthFixture.Create(configure: s => s.AddSingleton(new LeadEndpoints.LeadOptionsHolder(options)));
+        var fixture = await AuthFixture.Create(configure: s =>
+        {
+            s.AddSingleton(new LeadEndpoints.LeadOptionsHolder(options));
+            // Isolation for lifecycle tests: the host's own worker would also purge and blur which instance did the work.
+            if (withoutRetentionWorker)
+                foreach (var d in s.Where(d => d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) && d.ImplementationType == typeof(LeadRetentionService)).ToList())
+                    s.Remove(d);
+        });
         using (var scope = fixture.Factory.Services.CreateScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -254,7 +261,7 @@ public sealed class LeadTests
     [SqlServerFact]
     public async Task Retention_service_lifecycle_purges_at_startup_with_intake_closed()
     {
-        var (f, _, _, _) = await Setup(null);
+        var (f, _, _, _) = await Setup(null, withoutRetentionWorker: true);
         await using var _c = f;
         using (var scope = f.Factory.Services.CreateScope())
         {
@@ -265,6 +272,8 @@ public sealed class LeadTests
         }
         var service = new LeadRetentionService(f.Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<LeadRetentionService>.Instance);
+        Assert.Empty(f.Factory.Services.GetServices<Microsoft.Extensions.Hosting.IHostedService>().OfType<LeadRetentionService>());
+        Assert.Equal(701, await Count(f)); // nothing else purged before this instance starts
         await service.StartAsync(default);
         try
         {
