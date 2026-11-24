@@ -31,18 +31,22 @@ export function enforceBudget(label, measurement, budget = ROUTE_BUDGET_BYTES) {
 
 // Shared by every cold-load probe: HTTP >= 400 is a problem, and every executable response (resource
 // type script, or a .js path) must be same-origin, a flat built artifact that exists in `folder`, and
-// served with a JavaScript MIME type. Only then is it added to the measured script set.
+// served with a JavaScript MIME type. Only then is it added to the measured script set; a response
+// that fails any of these (including HTTP >= 400 and a wrong MIME type) is reported and not measured.
 export function classifyResponse(r, expectedOrigin, folder, scripts, problems) {
   const u = new URL(r.url());
-  if (r.status() >= 400) problems.push(`http ${r.status()}: ${u.pathname}`);
   const executable = r.request().resourceType() === 'script' || u.pathname.endsWith('.js');
+  if (r.status() >= 400) {
+    problems.push(`http ${r.status()}: ${u.pathname}`);
+    return; // a failed response is never measured
+  }
   if (!executable) return;
   if (u.origin !== expectedOrigin) return problems.push('foreign script origin: ' + u.origin);
   const file = u.pathname.slice(1);
   if (!/^[\w.-]+\.js$/.test(file) || !existsSync(join(folder, file)))
     return problems.push('script not a built artifact: ' + u.pathname);
   if (!/javascript/.test(r.headers()['content-type'] ?? ''))
-    problems.push('bad js mime: ' + u.pathname);
+    return problems.push('bad js mime: ' + u.pathname);
   scripts.add(file);
 }
 
