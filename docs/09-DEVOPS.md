@@ -46,8 +46,8 @@ The SSR/Playwright tests need Playwright's own headless shell. Do not symlink a 
 Last verified locally: @playwright/test 1.64.0, Chrome Headless Shell 156.0.8078.4
 (playwright chromium-headless-shell v1248), Node 24.19.0. Record the versions again when
 either changes. 
-Status: NOT verified. With this headless shell installed (and the system-Chrome symlink removed),
-PublicSsrTests ran its first four checks green but the three-run Lighthouse check failed twice, once
-with a 503 page load and once with NO_FCP (no paint), on a 2 GB host. The same test passed earlier
-with system Google Chrome 157.0.8103.78 at the expected path. Cause not diagnosed (shell/Lighthouse
-compatibility versus host memory pressure). Do not treat this install as the passing configuration yet.
+Status: partly verified. With this headless shell and no symlink, PublicSsrTests ran five times on the
+2 GB host: 2 full passes, 3 failures, all in the three-run Lighthouse check (a 503 load, NO_FCP, and a
+'performance' score under 90). The other checks passed every time. System Google Chrome 157 passed
+earlier. Lighthouse performance scores here are load-sensitive (SQL runs on the same host), so this
+check is flaky on this host and not a stable gate. Treat a green run as evidence, not proof.

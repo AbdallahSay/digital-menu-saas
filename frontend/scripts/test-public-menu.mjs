@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { chromium } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
+import { adminChunks, coldScripts, enforceBudget, gzipBytes } from './route-js-lib.mjs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const origin = process.env.S01_ORIGIN;
 assert.ok(origin, 'Run through PublicSsrTests with real SQL fixtures.');
@@ -239,6 +240,29 @@ test('JavaScript-disabled content, hydration without duplicate API fetch, RTL/LT
         );
         await context.close();
       }
+  } finally {
+    await browser.close();
+  }
+});
+test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch admin chunks', async () => {
+  const folder = 'dist/digital-menu/browser';
+  const browser = await chromium.launch();
+  try {
+    for (const language of ['ar', 'en']) {
+      const files = await coldScripts(browser, origin + '/r/s01-a?lang=' + language, {
+        readySelector: 'main',
+        prepare: (page) =>
+          page.route(logoUrl, (route) =>
+            route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }),
+          ),
+        expectText: language === 'ar' ? 'صنف ألف' : 'Item A',
+      });
+      const measurement = { files, bytes: gzipBytes(folder, files) };
+      console.log('cold JS', language, measurement.bytes, 'B gzip', files.length, 'scripts');
+      enforceBudget('/r/s01-a?lang=' + language, measurement);
+      for (const f of adminChunks(folder))
+        assert.ok(!files.includes(f), 'admin chunk fetched: ' + f);
+    }
   } finally {
     await browser.close();
   }

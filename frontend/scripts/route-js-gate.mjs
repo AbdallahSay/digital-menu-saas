@@ -1,111 +1,152 @@
-// Cold-route JS gate. A fresh browser context loads each public route from the production build
-// output; every script actually requested is gzipped (default level, local bytes) and summed.
-// Gate: <= 180 KiB gzip per route. Chunks never requested by public routes (admin/platform) must
-// not be requested, and still count toward the aggregate gate in source-html.mjs.
-// Limits: serves the static CSR shell (no SQL/API), so /r/:slug here is the demo component and
-// real SQL-backed AR/EN menu routes are NOT measured by this script.
+// Cold-route JS gate against the production build output, served by a small static server.
+// Routes: '/', '/privacy', '/r/demo'. The only API the static pages call is
+// /api/v1/leads/status, answered with a closed status. Real SQL-backed AR/EN menu routes are
+// measured in test-public-menu.mjs (PublicSsrTests). Admin/platform chunks are named by content
+// markers (route-js-lib.mjs) and must not be requested by any public route.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import {
   cpSync,
   existsSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   appendFileSync,
+  rmSync,
+  statSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, extname } from 'node:path';
+import { join, extname, resolve, sep } from 'node:path';
 import test from 'node:test';
-import { gzipSync } from 'node:zlib';
 import { randomBytes } from 'node:crypto';
 import { chromium } from '@playwright/test';
+import {
+  ADMIN_MARKERS,
+  ROUTE_BUDGET_BYTES,
+  adminChunks,
+  chunksContaining,
+  coldScripts,
+  enforceBudget,
+  gzipBytes,
+  jsFiles,
+} from './route-js-lib.mjs';
 
-export const ROUTE_BUDGET_BYTES = 180 * 1024;
-export const PUBLIC_ROUTES = ['/', '/privacy', '/r/demo'];
 const SRC = 'dist/digital-menu/browser';
+const ROUTES = {
+  '/': { readySelector: 'h1.hero-headline', expectText: 'منيو مطعمك' },
+  '/privacy': { readySelector: 'app-privacy h1', expectText: 'سياسة الخصوصية' },
+  '/r/demo': { readySelector: 'main', expectText: 'مطعم' },
+};
+const MIME = {
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.html': 'text/html; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+  '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json',
+};
+const ROUTE_PATHS = new Set(Object.keys(ROUTES));
 
 function serve(folder) {
+  const root = resolve(folder);
   const server = createServer((req, res) => {
-    const path = new URL(req.url, 'http://x').pathname.slice(1);
-    const file = path && existsSync(join(folder, path)) && extname(path) ? path : 'index.csr.html';
-    const type =
-      extname(file) === '.js'
-        ? 'text/javascript'
-        : extname(file) === '.css'
-          ? 'text/css'
-          : 'text/html';
-    res.writeHead(200, { 'content-type': type });
-    res.end(readFileSync(join(folder, file)));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-
-export async function measureRoutes(folder, routes = PUBLIC_ROUTES) {
-  const server = await serve(folder);
-  const origin = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch(
-    process.env['CHROME_PATH'] ? { executablePath: process.env['CHROME_PATH'] } : {},
-  );
-  const result = {};
-  try {
-    for (const route of routes) {
-      const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-      const page = await context.newPage();
-      const scripts = new Set();
-      page.on('response', (r) => {
-        const p = new URL(r.url()).pathname;
-        if (p.endsWith('.js')) scripts.add(p.slice(1));
-      });
-      await page.goto(origin + route, { waitUntil: 'networkidle' });
-      await page.waitForFunction(
-        () => (document.querySelector('app-root')?.innerText ?? '').trim().length > 20,
-        null,
-        { timeout: 15000 },
-      );
-      await context.close();
-      const files = [...scripts].sort();
-      const bytes = files.reduce((t, f) => t + gzipSync(readFileSync(join(folder, f))).length, 0);
-      result[route] = { bytes, files };
+    const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+    if (path === '/api/v1/leads/status') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ open: false }));
     }
-  } finally {
-    await browser.close();
-    server.close();
-  }
-  return result;
+    if (path === '/favicon.ico' && !existsSync(join(root, 'favicon.ico'))) {
+      res.writeHead(204); // the browser asks on its own; no page resource
+      return res.end();
+    }
+    if (ROUTE_PATHS.has(path)) {
+      res.writeHead(200, { 'content-type': MIME['.html'] });
+      return res.end(readFileSync(join(root, 'index.csr.html')));
+    }
+    const file = resolve(root, '.' + path);
+    const type = MIME[extname(file)];
+    if (!file.startsWith(root + sep) || !type || !existsSync(file) || !statSync(file).isFile()) {
+      res.writeHead(404);
+      return res.end('not found');
+    }
+    res.writeHead(200, { 'content-type': type });
+    res.end(readFileSync(file));
+  });
+  return new Promise((resolveP, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => resolveP(server));
+  });
 }
 
-const allJs = (folder) => readdirSync(folder).filter((f) => f.endsWith('.js'));
+async function measureRoutes(folder, routes = Object.keys(ROUTES)) {
+  const server = await serve(folder);
+  let browser;
+  try {
+    browser = await chromium.launch(
+      process.env['CHROME_PATH'] ? { executablePath: process.env['CHROME_PATH'] } : {},
+    );
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    const result = {};
+    for (const route of routes) {
+      const files = await coldScripts(browser, origin + route, ROUTES[route]);
+      result[route] = { files, bytes: gzipBytes(folder, files) };
+    }
+    return result;
+  } finally {
+    await browser?.close();
+    await new Promise((r) => server.close(r));
+  }
+}
 
-test('public routes stay within 180 KiB gzip and never fetch admin-only chunks', async () => {
+const aggregate = (folder) => gzipBytes(folder, jsFiles(folder));
+
+test('public routes pass the budget and never request named admin chunks', async () => {
+  const named = adminChunks(SRC);
+  for (const m of ADMIN_MARKERS)
+    assert.ok(chunksContaining(SRC, [m]).length > 0, `marker ${m} matches no chunk`);
   const m = await measureRoutes(SRC);
-  const fetched = new Set(Object.values(m).flatMap((r) => r.files));
   for (const [route, r] of Object.entries(m)) {
     console.log(route, r.bytes, 'B gzip,', r.files.length, 'scripts');
-    assert.ok(r.bytes <= ROUTE_BUDGET_BYTES, `${route} ${r.bytes} B over budget`);
+    enforceBudget(route, r);
+    for (const f of named) assert.ok(!r.files.includes(f), `${route} requested admin chunk ${f}`);
   }
-  const never = allJs(SRC).filter((f) => !fetched.has(f));
-  assert.ok(never.length > 0, 'expected lazy chunks that public routes never request');
-  console.log('never fetched by public routes:', never.length, 'chunks');
 });
 
-test('negative controls: oversized public chunk fails, unfetched chunk does not inflate', async () => {
+test('enforceBudget rejects empty and oversized measurements and accepts the real one', () => {
+  assert.throws(() => enforceBudget('empty', { files: [], bytes: 0 }));
+  assert.throws(() => enforceBudget('big', { files: ['a'], bytes: ROUTE_BUDGET_BYTES + 1 }));
+  enforceBudget('ok', { files: ['a'], bytes: ROUTE_BUDGET_BYTES });
+});
+
+test('negative controls through the real gate, with cleanup', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'route-gate-'));
-  cpSync(SRC, dir, { recursive: true });
-  const base = await measureRoutes(dir, ['/privacy']);
-  const fetched = new Set(base['/privacy'].files);
-  const unfetched = allJs(dir).find((f) => !fetched.has(f));
-  appendFileSync(join(dir, unfetched), `/*${randomBytes(ROUTE_BUDGET_BYTES).toString('base64')}*/`);
-  const after = await measureRoutes(dir, ['/privacy']);
-  assert.equal(after['/privacy'].bytes, base['/privacy'].bytes, 'unfetched chunk inflated route');
-  const lazy = base['/privacy'].files.find(
-    (f) => f !== base['/privacy'].files[0] && f.startsWith('chunk-'),
-  );
-  assert.ok(lazy, 'privacy route has a lazy chunk');
-  appendFileSync(join(dir, lazy), `/*${randomBytes(ROUTE_BUDGET_BYTES).toString('base64')}*/`);
-  const over = await measureRoutes(dir, ['/privacy']);
-  assert.ok(
-    over['/privacy'].bytes > ROUTE_BUDGET_BYTES,
-    'oversized lazy public chunk must exceed gate',
-  );
+  try {
+    cpSync(SRC, dir, { recursive: true });
+    const pad = () => `\n/*${randomBytes(ROUTE_BUDGET_BYTES).toString('base64')}*/`;
+    const base = await measureRoutes(dir, ['/privacy']);
+    const baseAgg = aggregate(dir);
+    enforceBudget('privacy base', base['/privacy']);
+    // 1. padding a chunk no public route requests: route unchanged, aggregate grows.
+    const admin = adminChunks(dir)[0];
+    appendFileSync(join(dir, admin), pad());
+    const afterAdmin = await measureRoutes(dir, ['/privacy']);
+    assert.equal(afterAdmin['/privacy'].bytes, base['/privacy'].bytes);
+    enforceBudget('privacy with padded admin chunk', afterAdmin['/privacy']);
+    assert.ok(aggregate(dir) > baseAgg + ROUTE_BUDGET_BYTES / 2, 'aggregate must count it');
+    // 2. padding the privacy page's own lazy chunk (found by its heading text): the route still
+    // renders, and the real gate rejects it.
+    const [privacyChunk] = chunksContaining(dir, ['سياسة الخصوصية لطلب الخدمة']);
+    assert.ok(
+      privacyChunk && base['/privacy'].files.includes(privacyChunk),
+      'privacy chunk is requested',
+    );
+    assert.ok(privacyChunk !== base['/privacy'].files.find((f) => f.startsWith('main-')));
+    appendFileSync(join(dir, privacyChunk), pad());
+    const over = await measureRoutes(dir, ['/privacy']);
+    assert.throws(() => enforceBudget('privacy padded', over['/privacy']), /exceeds/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
