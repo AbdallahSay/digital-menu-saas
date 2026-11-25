@@ -36,6 +36,7 @@ public static class MediaEndpoints
     public static void AddMenuMedia(this IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
     {
         services.AddSingleton<ImageNormalizer>();
+        services.AddHostedService<MediaCleanupWorker>();
         services.AddSingleton<IImageStorage>(s =>
         {
             if (!LocalDiskEnabled(environment, configuration) || configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();

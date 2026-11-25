@@ -433,16 +433,22 @@ public sealed class MediaTests
         var bundle = Path.Combine(root, key.Split('/')[0], key.Split('/')[1][..32]);
         var thumbnail = Path.Combine(bundle, "thumbnail.webp");
         File.Delete(thumbnail);
-        Directory.CreateDirectory(thumbnail); // Deterministic cross-platform delete failure.
-        await Assert.ThrowsAnyAsync<Exception>(() => storage.RemoveAsync(key, default));
+        Directory.CreateDirectory(thumbnail); // A directory under a known name is an unknown entry: preserved, bundle stays hidden.
+        await storage.RemoveAsync(key, default);
         Assert.True(File.Exists(Path.Combine(bundle, "delete.pending")));
+        Assert.True(File.Exists(Path.Combine(root, LocalImageStorage.StuckDirName, key.Split('/')[0] + "_" + key.Split('/')[1][..32])));
+        Assert.Null(await storage.GetAsync(key, "main", default));
         Directory.Delete(thumbnail, false);
+        // Writes no longer trigger cleanup: the bundle stays until a worker pass (revive + sweep) runs.
         var next = key.Split('/')[0] + "/" + Guid.NewGuid().ToString("N") + ".webp";
         await storage.PutAsync(next, image, default);
-        Assert.False(Directory.Exists(bundle));
+        Assert.True(Directory.Exists(bundle));
         await storage.RemoveAsync(next, default);
-        Directory.Delete(Path.Combine(root, key.Split('/')[0]), false);
-        Directory.Delete(root, false);
+        storage.UtcNow = () => DateTime.UtcNow.AddHours(25);
+        Assert.Equal(1, storage.ReviveStuck(10, TimeSpan.FromHours(24), default));
+        Assert.Equal(1, storage.Sweep(10, TimeSpan.FromSeconds(5), TimeSpan.Zero, default).Deleted);
+        Assert.False(Directory.Exists(bundle));
+        Directory.Delete(root, true);
     }
 
     [Fact]
