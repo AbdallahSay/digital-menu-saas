@@ -21,14 +21,14 @@ public static class DataProtectionConfiguration
     public const string ProviderKey = "DataProtection:Provider";
     public const string CertificateKey = "DataProtection:Certificate:Pfx";
     public const string CertificatePasswordKey = "DataProtection:Certificate:Password";
-    public const string PreviousCertificateKey = "DataProtection:PreviousCertificate:Pfx";
-    public const string PreviousCertificatePasswordKey = "DataProtection:PreviousCertificate:Password";
+    // Historical decrypt-only certificates: DataProtection:PreviousCertificates:0:Pfx / :Password, then 1, 2, ...
+    public const string PreviousCertificatesKey = "DataProtection:PreviousCertificates";
 
     // Database provider: key ring rows live in the application database and are encrypted with an X.509
     // certificate delivered as a base64 PFX plus a separate password in configuration (environment variables).
     // Nothing is written to the filesystem and no machine or user key store is used, so it works where the
     // application pool has no loaded user profile and file ACLs cannot be validated. Required outside Development.
-    // An optional previous certificate decrypts old rows during rotation only.
+    // Optional historical certificates decrypt old rows during rotation only.
     internal static void ConfigureDatabaseProvider(IDataProtectionBuilder builder, IHostEnvironment environment, IConfiguration configuration)
     {
         if (environment.IsDevelopment() && string.IsNullOrWhiteSpace(configuration[CertificateKey])) return;
@@ -41,8 +41,12 @@ public static class DataProtectionConfiguration
             o => o.UseSqlServer(connection, sql => sql.MigrationsHistoryTable(DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext.HistoryTable)));
         builder.PersistKeysToDbContext<DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext>();
         builder.ProtectKeysWithCertificate(current);
-        if (!string.IsNullOrWhiteSpace(configuration[PreviousCertificateKey]))
-            builder.UnprotectKeysWithAnyCertificate(LoadCertificate(configuration[PreviousCertificateKey], configuration[PreviousCertificatePasswordKey], "previous"));
+        var previous = configuration.GetSection(PreviousCertificatesKey).GetChildren()
+            .OrderBy(c => int.TryParse(c.Key, out var i) ? i : int.MaxValue)
+            .Select((c, i) => LoadCertificate(c["Pfx"], c["Password"], $"previous #{i}"))
+            .ToArray();
+        // Decrypt-only: old certificates are retained until all retained ring keys and recovery needs allow retirement.
+        if (previous.Length > 0) builder.UnprotectKeysWithAnyCertificate(previous);
     }
 
     internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? base64, string? password, string label)

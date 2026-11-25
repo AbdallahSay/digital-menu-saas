@@ -52,6 +52,13 @@ public sealed class DataProtectionDatabaseProviderTests
         withCert["ConnectionStrings:MenuDatabase"] = "Server=127.0.0.1;Database=x;User Id=u;Password=p;TrustServerCertificate=False";
         using var ok = Build(content, withCert); // registers without connecting
         Assert.NotNull(ok);
+        var (o1, p1) = NewPfx(); var (o2, p2) = NewPfx();
+        withCert[DataProtectionConfiguration.PreviousCertificatesKey + ":0:Pfx"] = o1; withCert[DataProtectionConfiguration.PreviousCertificatesKey + ":0:Password"] = p1;
+        withCert[DataProtectionConfiguration.PreviousCertificatesKey + ":1:Pfx"] = o2; withCert[DataProtectionConfiguration.PreviousCertificatesKey + ":1:Password"] = p2;
+        using var many = Build(content, withCert);
+        Assert.NotNull(many);
+        withCert[DataProtectionConfiguration.PreviousCertificatesKey + ":1:Password"] = "wrong";
+        Assert.Throws<InvalidOperationException>(() => Build(content, withCert)); // a bad historical cert fails closed
     }
 
     static ServiceProvider Build(string content, Dictionary<string, string?> cfg)
