@@ -35,51 +35,84 @@ export function normalizeSearch(value: string): string {
   template: `
     <main class="public-menu">
       @if (page.menu; as menu) {
-        <header class="hero" [style.border-bottom-color]="menu.restaurant.primaryColor">
-          <div class="hero-inner">
-            @if (menu.restaurant.logoUrl; as logoUrl) {
-              <img
-                class="restaurant-logo"
-                [src]="logoUrl"
-                [alt]="menu.restaurant.name"
-                width="96"
-                height="96"
-              />
-            }
-            <div>
-              <p class="hero-kicker">{{ english ? 'Digital menu' : 'قائمة رقمية' }}</p>
+        <div class="frame" [style.--tp]="menu.restaurant.primaryColor">
+          <header class="hero">
+            <div class="hero-inner">
+              <p class="hero-pill">{{ english ? 'Digital menu' : 'قائمة رقمية' }}</p>
               <h1>{{ menu.restaurant.name }}</h1>
+              @if (menu.restaurant.logoUrl; as logoUrl) {
+                <img
+                  class="restaurant-logo"
+                  [src]="logoUrl"
+                  [alt]="menu.restaurant.name"
+                  width="96"
+                  height="96"
+                />
+              }
+            </div>
+          </header>
+          <div class="brand-card">
+            <nav class="language" aria-label="Language">
+              <a
+                [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
+                lang="ar"
+                [attr.aria-current]="english ? null : 'true'"
+                >عربي</a
+              >
+              <a
+                [href]="'/r/' + menu.restaurant.slug + '?lang=en'"
+                lang="en"
+                [attr.aria-current]="english ? 'true' : null"
+                >EN</a
+              >
+            </nav>
+            <div class="brand-text">
+              <p class="brand-title">{{ english ? 'Menu' : 'منيو' }} {{ menu.restaurant.name }}</p>
+              <p class="brand-sub">
+                {{ english ? 'Enjoy the best dishes' : 'استمتع بأفضل الأطباق' }}
+              </p>
             </div>
           </div>
-        </header>
-        <div class="toolbar">
-          <nav class="language" aria-label="Language">
-            <a
-              [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
-              lang="ar"
-              [attr.aria-current]="english ? null : 'true'"
-              >العربية</a
-            >
-            <a
-              [href]="'/r/' + menu.restaurant.slug + '?lang=en'"
-              lang="en"
-              [attr.aria-current]="english ? 'true' : null"
-              >English</a
-            >
-          </nav>
           @if (menu.categories.length > 0) {
             <div class="search">
-              <label for="menu-search">{{ english ? 'Search the menu' : 'ابحث في المنيو' }}</label>
+              <label class="sr-only" for="menu-search">{{
+                english ? 'Search the menu' : 'ابحث في المنيو'
+              }}</label>
+              <svg
+                class="search-icon"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="6.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <path
+                  d="M16 16l4 4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
               <input
                 id="menu-search"
                 type="search"
                 autocomplete="off"
-                [placeholder]="english ? 'Search dishes' : 'ابحث عن صنف'"
+                [placeholder]="english ? 'What are you craving today?' : 'بتدور على إيه النهارده؟'"
                 [value]="query()"
                 (input)="setQuery($any($event.target).value)"
               />
             </div>
-            <div class="chips" role="group" [attr.aria-label]="english ? 'Categories' : 'الأقسام'">
+            <h2 class="section-title" id="categories-title">
+              {{ english ? 'Categories' : 'الأقسام' }}
+            </h2>
+            <div class="chips" role="group" aria-labelledby="categories-title">
               <button
                 type="button"
                 class="chip"
@@ -101,92 +134,93 @@ export function normalizeSearch(value: string): string {
             </div>
             <p class="status" role="status" aria-live="polite">{{ statusText }}</p>
           }
-        </div>
-        @if (menu.categories.length === 0) {
-          <p class="empty">
-            {{ english ? 'The menu is currently empty.' : 'المنيو فاضي حاليًا.' }}
-          </p>
-        }
-        @for (category of visibleCategories(); track category.id; let ci = $index) {
-          <section
-            [attr.aria-labelledby]="'category-' + ci"
-            [style.border-color]="menu.restaurant.primaryColor"
-          >
-            <h2 [id]="'category-' + ci">{{ category.name }}</h2>
-            @if (category.items.length === 0) {
-              <p>{{ english ? 'No available items.' : 'مفيش أصناف متاحة حاليًا.' }}</p>
-            }
-            <div class="items">
-              @for (item of category.items; track item.id) {
-                <article>
-                  @if (item.image; as image) {
-                    <img
-                      class="item-thumbnail"
-                      [src]="image.thumbnailUrl"
-                      [alt]="image.alt"
-                      [width]="image.width"
-                      [height]="image.height"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  }
-                  <div class="item-body">
-                    <h3>
-                      <button type="button" class="item-open" (click)="open(item, $event)">
-                        {{ item.name }}
-                      </button>
-                    </h3>
-                    @if (item.description) {
-                      <p class="description">{{ item.description }}</p>
-                    }
-                    <p class="item-foot">
-                      <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
-                      <span class="price">
-                        <bdi>{{ item.priceText }}</bdi>
-                        {{ english ? menu.restaurant.currency : 'جنيه مصري' }}
-                      </span>
-                    </p>
-                  </div>
-                </article>
-              }
-            </div>
-          </section>
-        }
-        <dialog
-          #detail
-          class="detail"
-          [attr.aria-label]="english ? 'Dish details' : 'تفاصيل الطبق'"
-          (close)="onDetailClosed()"
-          (click)="onDetailBackdrop($event)"
-        >
-          @if (detailItem(); as item) {
-            <div class="detail-card">
-              @if (item.image; as image) {
-                <img
-                  class="detail-image"
-                  [src]="image.url"
-                  [alt]="image.alt"
-                  [width]="image.width"
-                  [height]="image.height"
-                />
-              }
-              <h2>{{ item.name }}</h2>
-              @if (item.description) {
-                <p class="description">{{ item.description }}</p>
-              }
-              <p class="item-foot">
-                <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
-                <span class="price">
-                  <bdi>{{ item.priceText }}</bdi>
-                  {{ english ? menu.restaurant.currency : 'جنيه مصري' }}
-                </span>
-              </p>
-              <button type="button" class="btn btn-primary detail-close" (click)="closeDetail()">
-                {{ english ? 'Back to menu' : 'الرجوع للمنيو' }}
-              </button>
-            </div>
+          @if (menu.categories.length === 0) {
+            <p class="empty">
+              {{ english ? 'The menu is currently empty.' : 'المنيو فاضي حاليًا.' }}
+            </p>
           }
-        </dialog>
+          @for (category of visibleCategories(); track category.id; let ci = $index) {
+            <section [attr.aria-labelledby]="'category-' + ci">
+              <h2 class="section-title" [id]="'category-' + ci">{{ category.name }}</h2>
+              @if (category.items.length === 0) {
+                <p>{{ english ? 'No available items.' : 'مفيش أصناف متاحة حاليًا.' }}</p>
+              }
+              <div class="items">
+                @for (item of category.items; track item.id) {
+                  <article>
+                    @if (item.image; as image) {
+                      <img
+                        class="item-thumbnail"
+                        [src]="image.thumbnailUrl"
+                        [alt]="image.alt"
+                        [width]="image.width"
+                        [height]="image.height"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    }
+                    <div class="item-body">
+                      <h3>
+                        <button type="button" class="item-open" (click)="open(item, $event)">
+                          {{ item.name }}
+                        </button>
+                      </h3>
+                      @if (item.description) {
+                        <p class="description">{{ item.description }}</p>
+                      }
+                      <p class="item-foot">
+                        <span class="price">
+                          <bdi>{{ item.priceText }}</bdi>
+                          {{
+                            english
+                              ? menu.restaurant.currency
+                              : currencyAr(menu.restaurant.currency)
+                          }}
+                        </span>
+                        <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
+                      </p>
+                    </div>
+                  </article>
+                }
+              </div>
+            </section>
+          }
+          <dialog
+            #detail
+            class="detail"
+            [attr.aria-label]="english ? 'Dish details' : 'تفاصيل الطبق'"
+            (close)="onDetailClosed()"
+            (click)="onDetailBackdrop($event)"
+          >
+            @if (detailItem(); as item) {
+              <div class="detail-card">
+                @if (item.image; as image) {
+                  <img
+                    class="detail-image"
+                    [src]="image.url"
+                    [alt]="image.alt"
+                    [width]="image.width"
+                    [height]="image.height"
+                  />
+                }
+                <h2>{{ item.name }}</h2>
+                @if (item.description) {
+                  <p class="description">{{ item.description }}</p>
+                }
+                <p class="item-foot">
+                  <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
+                  <span class="price">
+                    <bdi>{{ item.priceText }}</bdi>
+                    {{ english ? menu.restaurant.currency : 'جنيه مصري' }}
+                  </span>
+                </p>
+                <button type="button" class="btn btn-primary detail-close" (click)="closeDetail()">
+                  {{ english ? 'Back to menu' : 'الرجوع للمنيو' }}
+                </button>
+              </div>
+            }
+          </dialog>
+        </div>
         <p class="display-only">
           {{
             english
@@ -210,138 +244,208 @@ export function normalizeSearch(value: string): string {
   styles: [
     `
       .public-menu {
-        max-width: 1040px;
-        margin: auto;
-        padding: 0 var(--space-4) var(--space-8);
+        margin: 0 auto;
+        padding: 0 0 var(--space-8);
         overflow-wrap: anywhere;
+        background: var(--color-bg-canvas);
+        font-family: 'Cairo', var(--font-family-current);
+      }
+      .frame {
+        --tp: #0f766e;
+        --hero: color-mix(in srgb, var(--tp) 45%, #1a1512);
+        max-width: 430px;
+        margin: 0 auto;
+        padding: 0 16px;
+        min-height: 100vh;
+        box-shadow: 0 0 0 1px var(--color-border-subtle);
+        background: var(--color-bg-canvas);
       }
       .hero {
-        background: var(--color-brand-forest);
-        color: var(--color-text-inverse);
-        border-bottom: 4px solid var(--color-brand-primary);
-        border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-        margin: 0 calc(var(--space-4) * -1) var(--space-5);
-        padding: var(--space-6) var(--space-5);
+        background: var(--hero);
+        color: #fff;
+        margin: 0 -16px;
+        padding: 20px 20px 52px;
+        border-radius: 0 0 28px 28px;
       }
       .hero-inner {
         display: flex;
-        align-items: center;
-        gap: var(--space-4);
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        min-height: 120px;
+        position: relative;
       }
-      .hero-kicker {
-        margin: 0 0 var(--space-1);
-        font-size: var(--font-size-sm);
-        color: var(--color-brand-primary-container);
+      .hero-pill {
+        order: 2;
+        margin: 0;
+        padding: 6px 16px;
+        border-radius: 999px;
+        background: rgb(0 0 0 / 0.35);
+        font-size: 12px;
+        font-weight: 700;
       }
       .hero h1 {
-        color: inherit;
-        margin: 0;
+        order: 1;
+        color: #fff;
+        margin: 28px 0 0;
+        font-size: 28px;
+        line-height: 1.3;
+      }
+      .restaurant-logo {
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline-end: 0;
+        width: 104px;
+        height: 104px;
+        object-fit: cover;
+        border-radius: 50%;
+        background: #f4e9d6;
       }
       h1,
       h2,
       h3 {
-        font-family: var(--font-family-display);
+        font-family: 'Cairo', var(--font-family-display);
         color: var(--color-brand-forest);
       }
       h3 {
-        margin: 0 0 var(--space-2);
+        margin: 0 0 4px;
+        font-size: 19px;
       }
-      .toolbar {
-        display: grid;
-        gap: var(--space-3);
+      .brand-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: -36px;
+        position: relative;
         background: var(--color-surface-card);
         border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-xl);
-        padding: var(--space-4);
+        border-radius: 18px;
+        padding: 14px 16px;
         box-shadow: var(--shadow-sm);
+      }
+      .brand-title {
+        margin: 0;
+        font-family: 'Cairo', var(--font-family-display);
+        font-weight: 700;
+        font-size: 22px;
+        color: var(--color-brand-forest);
+      }
+      .brand-sub {
+        margin: 2px 0 0;
+        font-size: 13px;
+        color: var(--color-text-secondary);
       }
       .language {
         display: flex;
-        gap: var(--space-2);
+        flex: none;
+        background: var(--color-surface-muted);
+        border-radius: 999px;
+        padding: 2px;
+        direction: ltr;
       }
       .language a {
         display: inline-flex;
         align-items: center;
-        min-height: 44px;
-        padding: 0 var(--space-4);
+        min-height: 40px;
+        min-width: 44px;
+        justify-content: center;
+        padding: 0 10px;
         border-radius: 999px;
-        background: var(--color-surface-muted);
         color: var(--color-brand-forest);
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 700;
         text-decoration: none;
       }
       .language a[aria-current='true'] {
-        background: var(--color-brand-primary);
-        color: var(--color-brand-on-primary);
+        background: var(--tp);
+        color: #fff;
       }
-      .search label {
-        display: block;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        margin-bottom: var(--space-1);
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      .search {
+        position: relative;
+        margin-top: 16px;
       }
       .search input {
         box-sizing: border-box;
         width: 100%;
-        min-height: 44px;
-        padding: 0 var(--space-4);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-xl);
+        min-height: 50px;
+        padding-block: 0;
+        padding-inline: 44px 16px;
+        border: 1px solid var(--color-border-subtle);
+        border-radius: 14px;
+        background: #fff;
         font: inherit;
+        font-size: 14px;
+      }
+      .search-icon {
+        position: absolute;
+        inset-inline-end: 16px;
+        top: 15px;
+        color: var(--tp);
+        pointer-events: none;
+      }
+      .search input {
+        padding-inline: 16px 44px;
+      }
+      .section-title {
+        margin: 22px 0 12px;
+        font-size: 22px;
       }
       .chips {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--space-2);
+        gap: 8px;
       }
       .chip {
-        min-height: 44px;
-        padding: 0 var(--space-4);
-        border: 1px solid var(--color-border-strong);
+        min-height: 34px;
+        padding: 0 16px;
+        border: 0;
+        position: relative;
         border-radius: 999px;
         background: var(--color-surface-muted);
         color: var(--color-brand-forest);
         font: inherit;
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 700;
         cursor: pointer;
       }
+      .chip::after {
+        content: '';
+        position: absolute;
+        inset-block: -5px;
+        inset-inline: 0;
+      }
       .chip[aria-pressed='true'] {
-        background: var(--color-brand-primary);
-        border-color: var(--color-brand-primary);
-        color: var(--color-brand-on-primary);
+        background: var(--tp);
+        color: #fff;
       }
       .status {
-        margin: 0;
+        margin: 8px 0 0;
         font-size: var(--font-size-sm);
       }
       section {
-        border-block-start: 2px solid;
-        margin-block: var(--space-6);
+        margin-block: 0 8px;
       }
       .items {
         display: grid;
-        gap: var(--space-4);
-      }
-      @media (min-width: 768px) {
-        .items {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .public-menu {
-          padding-inline: var(--space-6);
-        }
-        .hero {
-          margin-inline: calc(var(--space-6) * -1);
-          padding-inline: var(--space-8);
-        }
+        gap: 12px;
       }
       article {
         position: relative;
         display: flex;
-        gap: var(--space-4);
+        gap: 12px;
         background: var(--color-surface-card);
         border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-xl);
-        padding: var(--space-4);
+        border-radius: 20px;
+        padding: 10px;
         box-shadow: var(--shadow-sm);
       }
       .item-body {
@@ -349,11 +453,12 @@ export function normalizeSearch(value: string): string {
         min-width: 0;
         display: flex;
         flex-direction: column;
+        padding-block: 4px;
       }
       .item-open {
         all: unset;
         cursor: pointer;
-        min-height: 44px;
+        min-height: 24px;
       }
       .item-open::after {
         content: '';
@@ -361,44 +466,44 @@ export function normalizeSearch(value: string): string {
         inset: 0;
       }
       :focus-visible {
-        outline: 3px solid var(--color-brand-primary);
+        outline: 3px solid var(--tp, var(--color-brand-primary));
         outline-offset: 2px;
-      }
-      .restaurant-logo {
-        width: 72px;
-        height: 72px;
-        object-fit: contain;
-        border-radius: var(--radius-xl);
       }
       .item-thumbnail {
         flex: none;
-        width: 96px;
-        height: 96px;
+        width: 132px;
+        height: 132px;
         object-fit: cover;
-        border-radius: var(--radius-xl);
+        border-radius: 14px;
       }
       .description {
-        margin: 0 0 var(--space-2);
-        white-space: pre-wrap;
+        margin: 0 0 8px;
+        font-size: 12px;
+        line-height: 1.6;
         color: var(--color-text-secondary);
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
       .item-foot {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: var(--space-2);
+        gap: 8px;
         margin: auto 0 0;
       }
       .pill {
-        padding: var(--space-1) var(--space-3);
+        padding: 6px 14px;
         border-radius: 999px;
         background: var(--color-brand-primary-container);
         color: var(--color-brand-on-primary-container);
-        font-size: var(--font-size-sm);
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 700;
       }
       .price {
         font-weight: 700;
+        font-size: 22px;
         color: var(--color-brand-primary);
       }
       .detail {
@@ -506,6 +611,10 @@ export class PublicMenuComponent {
   get page(): PublicPage {
     return this.data()['menu'] as PublicPage;
   }
+  currencyAr(code: string): string {
+    return code === 'EGP' ? 'ج.م' : code;
+  }
+
   get english() {
     return this.page.language === 'en';
   }
