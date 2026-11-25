@@ -148,6 +148,9 @@ export class SettingsStateService {
           if (e.status === 413) return 'too-large';
           if (e.status === 400 || e.status === 415) return 'unsupported';
         }
+        // Ambiguous outcome (network drop or 5xx): the upload may have committed
+        // and changed rowVersion, so refetch before the next versioned save.
+        this.needsReconciliation = true;
         return 'error';
       }
     });

@@ -119,6 +119,19 @@ describe('ItemModalComponent', () => {
     expect(calls[0].file).toBe(file);
   });
 
+  it('emits isFeatured from the checkbox and seeds it from the existing item', async () => {
+    const calls: ItemModalResult[] = [];
+    const fixture = await create(item({ isFeatured: true }), async (r) => {
+      calls.push(r);
+      return 'ok';
+    });
+    const box = fixture.nativeElement.querySelector('#item-featured') as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    fixture.componentInstance.form.patchValue({ isFeatured: false });
+    await fixture.componentInstance.save();
+    expect(calls[0].input.isFeatured).toBe(false);
+  });
+
   it('keeps the existing position and publish state in edit mode', async () => {
     const calls: ItemModalResult[] = [];
     const fixture = await create(item({ sortOrder: 7, isPublished: false }), async (r) => {

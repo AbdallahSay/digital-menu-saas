@@ -184,6 +184,39 @@ describe('Public menu design', () => {
     expect(status).toContain('1');
   });
 
+  it('classic featured picks show only on the unfiltered view, not while filtering or searching', async () => {
+    const m = menu();
+    m.categories[0].items[0].featured = true;
+    const f = await create(m);
+    const featured = () =>
+      [...el(f).querySelectorAll('.featured article h3')].map((h) => h.textContent?.trim());
+    expect(el(f).querySelector('#featured-title')?.textContent).toContain('اختيارات مميزة');
+    expect(featured()).toEqual(['كباب لحم']);
+    const chips = [...el(f).querySelectorAll<HTMLButtonElement>('.chip')];
+    chips[2].click();
+    f.detectChanges();
+    expect(el(f).querySelector('.featured')).toBeNull();
+    chips[0].click();
+    const input = el(f).querySelector<HTMLInputElement>('#menu-search')!;
+    input.value = 'حمص';
+    input.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    expect(el(f).querySelector('.featured')).toBeNull();
+  });
+
+  it('cafe featured items follow the selected category and are not repeated in the list', async () => {
+    const m = menu();
+    m.restaurant.theme = 'cafe';
+    m.categories[0].items[0].featured = true;
+    const f = await create(m);
+    const featured = [...el(f).querySelectorAll('.featured article h3')].map((h) =>
+      h.textContent?.trim(),
+    );
+    expect(el(f).querySelector('#featured-title')?.textContent).toContain('القهوة المفضلة');
+    expect(featured).toEqual(['كباب لحم']);
+    expect(names(f).filter((n) => n === 'كباب لحم').length).toBe(1);
+  });
+
   it('opens a detail dialog with the main image and restores focus on close', async () => {
     const f = await create(menu());
     document.body.appendChild(el(f));

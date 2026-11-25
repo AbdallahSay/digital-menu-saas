@@ -403,4 +403,35 @@ describe('SettingsStateService', () => {
     put.flush(settings({ theme: 'cafe' }));
     expect(await save).toBe('ok');
   });
+
+  it('maps hero upload rejections and reconciles after an ambiguous upload failure', async () => {
+    store.settings.set(settings());
+    const file = new File(['x'], 'h.png', { type: 'image/png' });
+    const big = store.uploadHero(file);
+    await tick();
+    http.expectOne('/api/v1/admin/settings/hero').flush({}, { status: 413, statusText: '' });
+    expect(await big).toBe('too-large');
+    const bad = store.uploadHero(file);
+    await tick();
+    http.expectOne('/api/v1/admin/settings/hero').flush({}, { status: 415, statusText: '' });
+    expect(await bad).toBe('unsupported');
+    // A rejected upload committed nothing, so the next save needs no refetch.
+    const ok = store.savePresentation({ theme: 'cafe' });
+    await tick();
+    http.expectOne('/api/v1/admin/settings').flush(settings({ theme: 'cafe' }));
+    expect(await ok).toBe('ok');
+    // A dropped connection is ambiguous: the next save refetches the token first.
+    const lost = store.uploadHero(file);
+    await tick();
+    http.expectOne('/api/v1/admin/settings/hero').error(new ProgressEvent('error'));
+    expect(await lost).toBe('error');
+    const next = store.savePresentation({ theme: 'classic' });
+    await tick();
+    http.expectOne('/api/v1/admin/settings').flush(settings({ rowVersion: 'DDDDDDDDDDD=' }));
+    await tick();
+    const put = http.expectOne('/api/v1/admin/settings');
+    expect(put.request.body.rowVersion).toBe('DDDDDDDDDDD=');
+    put.flush(settings({ theme: 'classic' }));
+    expect(await next).toBe('ok');
+  });
 });
