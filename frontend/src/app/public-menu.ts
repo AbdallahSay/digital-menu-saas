@@ -66,7 +66,10 @@ export function normalizeSearch(value: string): string {
             </div>
           } @else {
             <header class="hero">
-              <div class="hero-inner" [class.has-art]="!!(menu.restaurant.heroUrl ?? menu.restaurant.logoUrl)">
+              <div
+                class="hero-inner"
+                [class.has-art]="!!(menu.restaurant.heroUrl ?? menu.restaurant.logoUrl)"
+              >
                 @if (menu.restaurant.brandLabel) {
                   <p class="hero-brand">{{ menu.restaurant.brandLabel }}</p>
                 }
