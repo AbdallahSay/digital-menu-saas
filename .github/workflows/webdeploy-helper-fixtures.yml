@@ -1,0 +1,38 @@
+# Credential-free fixtures for the capped process runner. No secret, no network, no msdeploy.
+name: WebDeploy helper fixtures (synthetic)
+on:
+  push:
+    branches: [preflight/webdeploy-windows]
+    paths: [.github/workflows/webdeploy-helper-fixtures.yml, scripts/webdeploy/CappedRunner.cs]
+permissions:
+  contents: read
+jobs:
+  fixtures:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -TypeDefinition (Get-Content -Raw scripts/webdeploy/CappedRunner.cs)
+          $raw = Join-Path $env:RUNNER_TEMP 'fx.raw'
+          $ps = (Get-Process -Id $PID).Path
+          function T($name,$code,$cap,$to,$expect) {
+            $r = [CappedRunner]::Run($ps, [string[]]@('-NoProfile','-Command',$code), $raw, $cap, $to)
+            $size = (Get-Item $raw).Length
+            $ok = ($r.Status -eq $expect)
+            "fixture=$name status=$($r.Status) expect=$expect exit=$($r.ExitCode) out=$($r.StdoutBytes) err=$($r.StderrBytes) lines=$($r.Lines) file=$size secs=$($r.Seconds) pass=$ok"
+            if (-not $ok) { $script:fail++ }
+          }
+          $script:fail = 0
+          T 'ok_small' "'a'; [Console]::Error.WriteLine('b')" 4096 20000 'OK'
+          T 'nonzero' "'x'; exit 3" 4096 20000 'NONZERO'
+          T 'timeout' "Start-Sleep 30" 4096 3000 'TIMEOUT'
+          T 'huge_single_line' "[Console]::Out.Write(('A' * 3000000))" 100000 20000 'CAP_EXCEEDED'
+          T 'dual_stream_flood' "1..200000 | ForEach-Object { [Console]::Out.WriteLine('o'*50); [Console]::Error.WriteLine('e'*50) }" 200000 60000 'CAP_EXCEEDED'
+          $r = [CappedRunner]::Run('C:\definitely\missing.exe', [string[]]@(), $raw, 100, 1000); "fixture=start_error status=$($r.Status) pass=$($r.Status -eq 'START_ERROR')"; if ($r.Status -ne 'START_ERROR') { $script:fail++ }
+          Remove-Item $raw -Force; "raw_removed=$(-not (Test-Path $raw))"
+          "failures=$script:fail"
+          if ($script:fail -ne 0) { exit 1 }
