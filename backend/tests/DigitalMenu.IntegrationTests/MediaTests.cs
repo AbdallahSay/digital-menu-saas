@@ -345,8 +345,14 @@ public sealed class MediaTests
         Assert.Equal(HttpStatusCode.NoContent, (await f.A.Send(HttpMethod.Delete, Route(f.ItemA.Id) + "/" + image.Id)).StatusCode);
         Assert.False(Directory.Exists(bundle));
         Assert.False(await db.Set<MenuItemImage>().AsNoTracking().AnyAsync(i => i.Id == image.Id));
-        Directory.Delete(Path.Combine(root, key.Split('/')[0]), false);
-        Directory.Delete(root, false);
+        // Allowed residue after a delete: the now-empty tenant directory and the empty durable-intent index directory.
+        // Nothing else may remain at either level; each is checked empty before the recursive disposal below.
+        var tenantDir = Path.Combine(root, key.Split('/')[0]);
+        var indexDir = Path.Combine(root, LocalImageStorage.PendingDirName);
+        Assert.Equal(new[] { indexDir, tenantDir }.OrderBy(d => d, StringComparer.Ordinal), Directory.EnumerateFileSystemEntries(root).OrderBy(d => d, StringComparer.Ordinal));
+        Assert.Empty(Directory.EnumerateFileSystemEntries(tenantDir));
+        Assert.Empty(Directory.EnumerateFileSystemEntries(indexDir));
+        Directory.Delete(root, true);
     }
 
     [SqlServerFact]
