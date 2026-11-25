@@ -89,9 +89,7 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
     assert.ok(doc.querySelectorAll('h3')[0].textContent.includes('صنف أول'));
     assert.ok(doc.querySelector('main').textContent.includes('9999999999999999.99'));
     assert.ok(doc.querySelector('main').textContent.includes('12.50'));
-    assert.ok(
-      doc.querySelector('main').textContent.includes(language === 'en' ? 'EGP' : 'ج.م'),
-    );
+    assert.ok(doc.querySelector('main').textContent.includes(language === 'en' ? 'EGP' : 'ج.م'));
     assert.ok(
       doc.querySelector('main').textContent.includes(language === 'ar' ? 'صنف ألف' : 'Item A'),
     );
