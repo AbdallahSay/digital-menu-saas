@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.X509Certificates;
 
 namespace DigitalMenu.Api;
 
@@ -19,55 +20,84 @@ public static class DataProtectionConfiguration
     public const string KeysPathKey = "DataProtection:KeysPath";
     public const string ApplicationNameKey = "DataProtection:ApplicationName";
     public const string ProviderKey = "DataProtection:Provider";
-    public const string CertificateKey = "DataProtection:Certificate:Pfx";
-    public const string CertificatePasswordKey = "DataProtection:Certificate:Password";
-    // Historical decrypt-only certificates: DataProtection:PreviousCertificates:0:Pfx / :Password, then 1, 2, ...
+    public const string CertificateKey = "DataProtection:Certificate:Pem";
+    public const string CertificateKeyKey = "DataProtection:Certificate:KeyPem";
+    // Historical decrypt-only certificates: DataProtection:PreviousCertificates:0:Pem / :KeyPem, then 1, 2, ...
     public const string PreviousCertificatesKey = "DataProtection:PreviousCertificates";
 
-    // Database provider: key ring rows live in the application database and are encrypted with an X.509
-    // certificate delivered as a base64 PFX plus a separate password in configuration (environment variables).
-    // Nothing is written to the filesystem and no machine or user key store is used, so it works where the
-    // application pool has no loaded user profile and file ACLs cannot be validated. Required outside Development.
-    // Optional historical certificates decrypt old rows during rotation only.
-    internal static void ConfigureDatabaseProvider(IDataProtectionBuilder builder, IHostEnvironment environment, IConfiguration configuration)
+    // Database provider: key ring rows live in the application database and are wrapped with an RSA X.509
+    // certificate supplied as PEM text (certificate) and PKCS#8 PEM text (private key) in configuration.
+    // A PFX is deliberately not used: on the target IIS host PFX import fails except into the persistent machine
+    // key store, while the PEM route builds the key in memory (CopyWithPrivateKey). In-memory import does not itself
+    // write the key to an OS key store, but panel/IIS configuration may still persist the secret text; its
+    // confidentiality is that of the host configuration. Explicit selection never falls back to the filesystem or
+    // a plaintext ring: a missing or invalid value throws at startup in every environment. Startup does not contact
+    // the database, so an unreachable database surfaces on first key use, not at startup.
+    internal static void ConfigureDatabaseProvider(IDataProtectionBuilder builder, IConfiguration configuration)
     {
-        if (environment.IsDevelopment() && string.IsNullOrWhiteSpace(configuration[CertificateKey])) return;
-        var current = LoadCertificate(configuration[CertificateKey], configuration[CertificatePasswordKey], "current");
-        var connection = configuration.GetConnectionString("MenuDatabase");
-        if (string.IsNullOrWhiteSpace(connection))
-            throw new InvalidOperationException("ConnectionStrings:MenuDatabase is required for the Database data-protection provider.");
-        // Dedicated context: no tenant filters or auth dependency; own migration history table. No fallback if SQL fails.
-        builder.Services.AddDbContext<DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext>(
-            o => o.UseSqlServer(connection, sql => sql.MigrationsHistoryTable(DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext.HistoryTable)));
-        builder.PersistKeysToDbContext<DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext>();
-        builder.ProtectKeysWithCertificate(current);
-        var previous = configuration.GetSection(PreviousCertificatesKey).GetChildren()
-            .OrderBy(c => int.TryParse(c.Key, out var i) ? i : int.MaxValue)
-            .Select((c, i) => LoadCertificate(c["Pfx"], c["Password"], $"previous #{i}"))
-            .ToArray();
-        // Decrypt-only: old certificates are retained until all retained ring keys and recovery needs allow retirement.
-        if (previous.Length > 0) builder.UnprotectKeysWithAnyCertificate(previous);
-    }
-
-    internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? base64, string? password, string label)
-    {
-        if (string.IsNullOrWhiteSpace(base64) || string.IsNullOrEmpty(password))
-            throw new InvalidOperationException($"DataProtection {label} certificate and password are required for the Database provider.");
-        byte[] bytes;
-        try { bytes = Convert.FromBase64String(base64.Trim()); }
-        catch (FormatException) { throw new InvalidOperationException($"DataProtection {label} certificate is not valid base64."); }
+        var owned = new List<System.Security.Cryptography.X509Certificates.X509Certificate2>();
         try
         {
-            // In-memory only: no persisted private key, no user or machine store.
-            var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12(
-                bytes, password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeySet);
-            if (!cert.HasPrivateKey) throw new InvalidOperationException($"DataProtection {label} certificate has no private key.");
-            return cert;
+            var current = LoadCertificate(configuration[CertificateKey], configuration[CertificateKeyKey], "current");
+            owned.Add(current);
+            var previous = new List<System.Security.Cryptography.X509Certificates.X509Certificate2>();
+            foreach (var child in configuration.GetSection(PreviousCertificatesKey).GetChildren().OrderBy(c => int.TryParse(c.Key, out var i) ? i : int.MaxValue))
+            {
+                // Strict: a previous entry with only one half, or neither, is an error and never silently ignored.
+                var cert = LoadCertificate(child["Pem"], child["KeyPem"], $"previous #{child.Key}");
+                owned.Add(cert); previous.Add(cert);
+            }
+            var connection = configuration.GetConnectionString("MenuDatabase");
+            if (string.IsNullOrWhiteSpace(connection))
+                throw new InvalidOperationException("ConnectionStrings:MenuDatabase is required for the Database data-protection provider.");
+            builder.Services.AddDbContext<DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext>(
+                o => o.UseSqlServer(connection, sql => sql.MigrationsHistoryTable(DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext.HistoryTable)));
+            builder.PersistKeysToDbContext<DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext>();
+            builder.ProtectKeysWithCertificate(current);
+            // Decrypt-only: old certificates are kept until all retained ring keys and recovery needs allow retirement.
+            if (previous.Count > 0) builder.UnprotectKeysWithAnyCertificate(previous.ToArray());
+            builder.Services.AddSingleton(new CertificateOwner(owned)); // disposed with the container, after Data Protection use
         }
-        catch (System.Security.Cryptography.CryptographicException)
+        catch { foreach (var c in owned) c.Dispose(); throw; }
+    }
+
+    sealed class CertificateOwner(IEnumerable<System.Security.Cryptography.X509Certificates.X509Certificate2> certs) : IDisposable
+    {
+        public void Dispose() { foreach (var c in certs) c.Dispose(); }
+    }
+
+    // Accepts real newlines or literal \n sequences (single-line environment values).
+    static string NormalizePem(string value) => value.Trim().Replace("\\r", "").Replace("\\n", "\n");
+
+    internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? certPem, string? keyPem, string label)
+    {
+        if (string.IsNullOrWhiteSpace(certPem) || string.IsNullOrWhiteSpace(keyPem))
+            throw new InvalidOperationException($"DataProtection {label} certificate and private key (PEM) are both required for the Database provider.");
+        System.Security.Cryptography.X509Certificates.X509Certificate2? pub = null;
+        System.Security.Cryptography.RSA? priv = null;
+        try
         {
-            throw new InvalidOperationException($"DataProtection {label} certificate could not be loaded (wrong password or invalid PFX).");
+            pub = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(NormalizePem(certPem));
+            using var pubKey = pub.GetRSAPublicKey() ?? throw new InvalidOperationException($"DataProtection {label} certificate must contain an RSA key.");
+            priv = System.Security.Cryptography.RSA.Create();
+            priv.ImportFromPem(NormalizePem(keyPem));
+            if (!pubKey.ExportParameters(false).Modulus!.AsSpan().SequenceEqual(priv.ExportParameters(false).Modulus!))
+                throw new InvalidOperationException($"DataProtection {label} private key does not match the certificate.");
+            var withKey = pub.CopyWithPrivateKey(priv);
+            // Prove the pair is usable for wrapping and unwrapping now, not at first login.
+            using (var rsa = withKey.GetRSAPrivateKey() ?? throw new InvalidOperationException($"DataProtection {label} private key is not usable."))
+            {
+                var probe = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+                if (!rsa.Decrypt(rsa.Encrypt(probe, System.Security.Cryptography.RSAEncryptionPadding.OaepSHA256), System.Security.Cryptography.RSAEncryptionPadding.OaepSHA256).AsSpan().SequenceEqual(probe))
+                    throw new InvalidOperationException($"DataProtection {label} certificate key pair failed a wrap/unwrap check.");
+            }
+            return withKey;
         }
+        catch (Exception e) when (e is System.Security.Cryptography.CryptographicException or ArgumentException or FormatException)
+        {
+            throw new InvalidOperationException($"DataProtection {label} certificate or private key could not be loaded (must be RSA certificate PEM plus unencrypted PKCS#8 RSA key PEM).");
+        }
+        finally { priv?.Dispose(); pub?.Dispose(); }
     }
 
     public static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
@@ -86,7 +116,7 @@ public static class DataProtectionConfiguration
         var builder = services.AddDataProtection().SetApplicationName(name.Trim());
         if (string.Equals(configuration[ProviderKey], "Database", StringComparison.OrdinalIgnoreCase))
         {
-            ConfigureDatabaseProvider(builder, environment, configuration);
+            ConfigureDatabaseProvider(builder, configuration);
             return;
         }
         var path = configuration[KeysPathKey];
