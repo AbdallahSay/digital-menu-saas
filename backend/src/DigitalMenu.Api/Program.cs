@@ -29,6 +29,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(opt
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
 builder.Services.AddMenuMedia(builder.Environment, builder.Configuration);
+DigitalMenu.Api.DataProtectionConfiguration.Configure(builder.Services, builder.Environment, builder.Configuration);
 builder.Services.AddPublicMenus();
 builder.Services.AddLeadIntake(builder.Configuration);
 builder.Services.AddDevelopmentOnboarding(builder.Environment, builder.Configuration);

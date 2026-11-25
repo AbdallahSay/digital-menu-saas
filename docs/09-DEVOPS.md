@@ -51,3 +51,16 @@ Status: partly verified. With this headless shell and no symlink, PublicSsrTests
 'performance' score under 90). The other checks passed every time. System Google Chrome 157 passed
 earlier. Lighthouse performance scores here are load-sensitive (SQL runs on the same host), so this
 check is flaky on this host and not a stable gate. Treat a green run as evidence, not proof.
+
+## Data Protection keys (operational requirement)
+
+Outside Development the API refuses to start unless `DataProtection__KeysPath` names an explicit, absolute, dedicated directory. The keys sign auth cookies, antiforgery tokens and one-time identity tokens (owner setup links), so losing them signs out every owner and voids unused links.
+
+Enforced in code (Linux/macOS): the path must not be a filesystem root, its parent must already exist, it must not be a symlink, and after symlink resolution it must not contain or sit inside the application, content or media directories. A missing directory is created atomically with mode 0700. An existing directory must already be mode 0700 and is never chmod'ed.
+
+Not enforced, so these are open acceptance items, not done:
+- Directory ownership (must be the service account), shared or multi-instance readability, durable volume and backup of the key directory.
+- Windows: ACLs are not validated, so Windows is refused outside Development until a verified ACL or protected-store policy exists on the real target host.
+- Keys are plaintext XML at rest. No key encryption is configured; confidentiality relies on filesystem permissions and host isolation. Decide on a protected key store or encryption before real use.
+- Race-prone writable ancestors of the key directory are not checked.
+- Rotation is automatic (90 days); keep old keys. TLS termination and request/response log redaction are still open.
