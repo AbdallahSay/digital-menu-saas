@@ -118,6 +118,7 @@ export function describePlatformError(
         } @else {
           <div
             class="table-scroll"
+            (focusin)="revealFocused($event)"
             role="region"
             tabindex="0"
             aria-label="جدول المطاعم، استخدم الأسهم للتمرير أفقيا"
@@ -294,6 +295,14 @@ export function describePlatformError(
   ],
 })
 export class PlatformConsoleComponent implements OnDestroy {
+  /** Browsers leave a partly clipped focused control hidden inside a horizontal scroller; bring it fully into view. */
+  revealFocused(event: FocusEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (target && target !== event.currentTarget) {
+      target.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+  }
+
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AdminAuthService);
   private readonly router = inject(Router);

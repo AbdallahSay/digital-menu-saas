@@ -46,6 +46,7 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
       } @else {
         <div
           class="table-scroll"
+          (focusin)="revealFocused($event)"
           role="region"
           tabindex="0"
           aria-label="جدول طلبات الخدمة، استخدم الأسهم للتمرير أفقيا"
@@ -165,6 +166,14 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
   ],
 })
 export class LeadsPanelComponent {
+  /** Browsers leave a partly clipped focused control hidden inside a horizontal scroller; bring it fully into view. */
+  revealFocused(event: FocusEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (target && target !== event.currentTarget) {
+      target.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+  }
+
   private readonly http = inject(HttpClient);
   readonly statuses: LeadStatusName[] = ['New', 'Contacted', 'Closed'];
   readonly rows = signal<PlatformLead[]>([]);
