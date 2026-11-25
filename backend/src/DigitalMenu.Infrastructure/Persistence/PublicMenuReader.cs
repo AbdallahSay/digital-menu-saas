@@ -22,7 +22,7 @@ public sealed class PublicMenuReader(MenuDbContext db, PublicMenuProjectionCache
     public const int MaxItems = 1000;
 
     private sealed record Probe(Guid Id, string Name, string Slug, string PublicCode, long PublishedMenuVersion,
-        string Color, string? Logo, string Theme, string? BrandLabel, string? TaglineAr, string? TaglineEn);
+        string Color, string? Logo, string Theme, string? BrandLabel, string? TaglineAr, string? TaglineEn, string? Cover);
 
     public async Task<PublicMenu?> ReadAsync(string identifier, bool bySlug, string language, CancellationToken ct)
     {
@@ -61,7 +61,7 @@ public sealed class PublicMenuReader(MenuDbContext db, PublicMenuProjectionCache
                select new Probe(r.Id, r.Name, r.Slug, r.PublicCode, r.PublishedMenuVersion,
                    s == null ? "#0F766E" : s.PrimaryColor, s == null ? null : s.LogoObjectKey,
                    s == null ? "classic" : s.Theme, s == null ? null : s.BrandLabel,
-                   s == null ? null : s.TaglineAr, s == null ? null : s.TaglineEn))
+                   s == null ? null : s.TaglineAr, s == null ? null : s.TaglineEn, s == null ? null : s.CoverObjectKey))
             .SingleOrDefaultAsync(ct);
 
     private async Task<PublicMenu> LoadAsync(Probe probe, string language, CancellationToken ct)
@@ -102,7 +102,8 @@ public sealed class PublicMenuReader(MenuDbContext db, PublicMenuProjectionCache
             }).ToArray());
         return new PublicMenu(new(probe.Name, probe.Slug, probe.Color, "EGP",
             probe.Logo is null ? null : $"/api/v1/public/media/logo/{probe.PublicCode}",
-            probe.Theme, probe.BrandLabel, language == "en" && !string.IsNullOrWhiteSpace(probe.TaglineEn) ? probe.TaglineEn : probe.TaglineAr), language,
+            probe.Theme, probe.BrandLabel, language == "en" && !string.IsNullOrWhiteSpace(probe.TaglineEn) ? probe.TaglineEn : probe.TaglineAr,
+            probe.Cover is null ? null : $"/api/v1/public/media/hero/{probe.PublicCode}"), language,
             probe.PublishedMenuVersion, categories.Select(c => new PublicCategory(c.Id, Localize(c.NameAr, c.NameEn, language),
                 grouped.GetValueOrDefault(c.Id) ?? Array.Empty<PublicItem>())).ToArray());
     }

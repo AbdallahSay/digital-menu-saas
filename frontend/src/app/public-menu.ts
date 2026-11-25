@@ -60,7 +60,7 @@ export function normalizeSearch(value: string): string {
               @if (menu.restaurant.tagline) {
                 <p class="hero-tagline">{{ menu.restaurant.tagline }}</p>
               }
-              @if (menu.restaurant.logoUrl; as logoUrl) {
+              @if (menu.restaurant.heroUrl ?? menu.restaurant.logoUrl; as logoUrl) {
                 <img
                   class="restaurant-logo"
                   [src]="logoUrl"
@@ -73,7 +73,7 @@ export function normalizeSearch(value: string): string {
             <div class="cafe-title">
               <h1>{{ menu.restaurant.name }}</h1>
               <p class="brand-sub">
-                {{ english ? 'Enjoy the best dishes' : 'استمتع بأفضل الأطباق' }}
+                {{ subtitle(menu.restaurant.theme) }}
               </p>
             </div>
           } @else {
@@ -87,7 +87,7 @@ export function normalizeSearch(value: string): string {
                   <p class="hero-tagline">{{ menu.restaurant.tagline }}</p>
                 }
                 <p class="hero-pill">{{ english ? 'Digital menu' : 'قائمة رقمية' }}</p>
-                @if (menu.restaurant.logoUrl; as logoUrl) {
+                @if (menu.restaurant.heroUrl ?? menu.restaurant.logoUrl; as logoUrl) {
                   <img
                     class="restaurant-logo"
                     [src]="logoUrl"
@@ -99,6 +99,12 @@ export function normalizeSearch(value: string): string {
               </div>
             </header>
             <div class="brand-card">
+              <div class="brand-text">
+                <p class="brand-title">
+                  {{ english ? 'Menu' : 'منيو' }} {{ menu.restaurant.name }}
+                </p>
+                <p class="brand-sub">{{ subtitle(menu.restaurant.theme) }}</p>
+              </div>
               <nav class="language" aria-label="Language">
                 <a
                   [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
@@ -113,14 +119,6 @@ export function normalizeSearch(value: string): string {
                   >EN</a
                 >
               </nav>
-              <div class="brand-text">
-                <p class="brand-title">
-                  {{ english ? 'Menu' : 'منيو' }} {{ menu.restaurant.name }}
-                </p>
-                <p class="brand-sub">
-                  {{ english ? 'Enjoy the best dishes' : 'استمتع بأفضل الأطباق' }}
-                </p>
-              </div>
             </div>
           }
           @if (menu.categories.length > 0) {
@@ -154,7 +152,7 @@ export function normalizeSearch(value: string): string {
                 id="menu-search"
                 type="search"
                 autocomplete="off"
-                [placeholder]="english ? 'What are you craving today?' : 'بتدور على إيه النهارده؟'"
+                [placeholder]="searchPlaceholder(menu.restaurant.theme)"
                 [value]="query()"
                 (input)="setQuery($any($event.target).value)"
               />
@@ -344,7 +342,7 @@ export function normalizeSearch(value: string): string {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
-        min-height: 150px;
+        min-height: 188px;
         position: relative;
       }
       .hero-brand {
@@ -369,9 +367,11 @@ export function normalizeSearch(value: string): string {
         padding-bottom: 28px;
       }
       .hero-cafe .hero-lang {
-        align-self: stretch;
-        display: flex;
-        justify-content: flex-start;
+        position: absolute;
+        inset-block-start: 12px;
+        inset-inline-start: 12px;
+        transform: scale(0.85);
+        transform-origin: top left;
       }
       .hero-cafe .hero-lang .language {
         background: rgb(255 255 255 / 0.14);
@@ -381,9 +381,9 @@ export function normalizeSearch(value: string): string {
       }
       .hero-cafe .restaurant-logo {
         position: static;
-        width: 160px;
-        height: 160px;
-        margin-top: 12px;
+        width: 120px;
+        height: 120px;
+        margin-top: 6px;
       }
       .hero-cafe .hero-brand {
         color: #fff;
@@ -391,10 +391,16 @@ export function normalizeSearch(value: string): string {
         letter-spacing: 0.04em;
       }
       .hero-cafe {
-        min-height: 250px;
+        position: relative;
+        min-height: 280px;
+        padding-top: 30px;
+        padding-bottom: 32px;
       }
       .cafe-title {
-        padding: 20px 4px 0;
+        padding: 34px 4px 0;
+      }
+      .cafe-title .brand-sub {
+        margin-top: 8px;
       }
       .cafe-title h1 {
         margin: 0;
@@ -428,12 +434,12 @@ export function normalizeSearch(value: string): string {
         position: absolute;
         inset-block-start: 0;
         inset-inline-end: 0;
-        width: 140px;
-        height: 84px;
+        width: 130px;
+        height: 62px;
         object-fit: cover;
         border-radius: 50%;
         background: #f4e9d6;
-        inset-block-start: 36px;
+        inset-block-start: 62px;
       }
       h1,
       h2,
@@ -535,8 +541,27 @@ export function normalizeSearch(value: string): string {
       }
       .chips {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 8px;
+        overflow-x: auto;
+        padding-block: 4px;
+        scrollbar-width: none;
+      }
+      .chips::-webkit-scrollbar {
+        display: none;
+      }
+      .chip {
+        flex: none;
+        white-space: nowrap;
+      }
+      .cafe-title + .search {
+        margin-top: 28px;
+      }
+      .cafe-title + .search input {
+        min-height: 54px;
+      }
+      .cafe-title ~ .chips {
+        margin-top: 30px;
       }
       .chip {
         min-height: 34px;
@@ -616,7 +641,7 @@ export function normalizeSearch(value: string): string {
         line-height: 1.6;
         color: var(--color-text-secondary);
         display: -webkit-box;
-        -webkit-line-clamp: 3;
+        -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
@@ -699,6 +724,18 @@ export class PublicMenuComponent {
     if (!menu || this.query().trim() !== '' || this.selected() !== null) return [];
     return menu.categories.flatMap((c) => c.items.filter((i) => i.featured));
   });
+
+  searchPlaceholder(theme: 'classic' | 'cafe'): string {
+    if (theme === 'cafe')
+      return this.english ? 'Search drinks or desserts' : 'ابحث عن مشروب أو حلوى';
+    return this.english ? 'What are you craving today?' : 'بتدور على إيه النهارده؟';
+  }
+
+  subtitle(theme: 'classic' | 'cafe'): string {
+    if (theme === 'cafe')
+      return this.english ? 'A curated menu of coffee and sweets' : 'منيو مختار للقهوة والحلويات';
+    return this.english ? 'Enjoy the best dishes' : 'استمتع بأفضل الأطباق';
+  }
 
   featuredTitle(theme: 'classic' | 'cafe'): string {
     if (theme === 'cafe') return this.english ? 'Favorite coffee' : 'القهوة المفضلة';

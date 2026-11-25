@@ -81,6 +81,30 @@ public static class MediaReadEndpoints
             })
             .AllowAnonymous().RequireRateLimiting("public-menu").WithMetadata(new PublicMenuMetadata());
 
+        // Public restaurant hero image, addressed by the already-public code.
+        app.MapGet("/api/v1/public/media/hero/{publicCode}",
+            async (string publicCode, HttpContext context,
+                MenuDbContext db, IImageStorage storage, CancellationToken ct) =>
+            {
+                if (publicCode.Length != 20 || !publicCode.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'))
+                    throw new MediaException(400);
+                var key = await db.Set<Restaurant>().AsNoTracking()
+                    .Where(r => r.PublicCode == publicCode && r.Status == "Active" && r.IsPublished)
+                    .Join(db.Set<RestaurantSettings>().AsNoTracking(),
+                        r => r.Id, s => s.RestaurantId, (r, s) => s.CoverObjectKey)
+                    .SingleOrDefaultAsync(ct);
+                if (key is null) throw new MediaException(404);
+                var bytes = await storage.GetAsync(key, "main", ct);
+                if (bytes is null) throw new MediaException(404);
+                // The hero image is replaceable under this stable URL, so it is NOT
+                // immutable-cacheable; the accepted stale window after a logo
+                // change is five minutes.
+                context.Response.Headers.CacheControl = "public, max-age=300";
+                context.Response.Headers.XContentTypeOptions = "nosniff";
+                return Results.File(bytes, "image/webp");
+            })
+            .AllowAnonymous().RequireRateLimiting("public-menu").WithMetadata(new PublicMenuMetadata());
+
         // Authenticated owner read for catalog thumbnails of unpublished items.
         app.MapGet("/api/v1/admin/media/items/{imageId:guid}/{variant}",
             async (Guid imageId, string variant, HttpContext context,

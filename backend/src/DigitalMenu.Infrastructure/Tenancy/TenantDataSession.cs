@@ -184,6 +184,7 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
                 .SelectMany(e => e.Properties)
                 .Any(p => (p.Metadata.Name == nameof(RestaurantSettings.PrimaryColor) ||
                     p.Metadata.Name == nameof(RestaurantSettings.LogoObjectKey) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.CoverObjectKey) ||
                     p.Metadata.Name == nameof(RestaurantSettings.Theme) ||
                     p.Metadata.Name == nameof(RestaurantSettings.BrandLabel) ||
                     p.Metadata.Name == nameof(RestaurantSettings.TaglineAr) ||

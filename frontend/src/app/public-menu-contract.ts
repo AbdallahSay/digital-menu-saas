@@ -26,6 +26,7 @@ export interface PublicMenu {
     primaryColor: string;
     currency: string;
     logoUrl: string | null;
+    heroUrl: string | null;
     theme: 'classic' | 'cafe';
     brandLabel: string | null;
     tagline: string | null;
@@ -121,6 +122,13 @@ export function decodeMenu(
       throw Error('Invalid public menu');
     return result;
   };
+  const heroUrl = (value: unknown): string | null => {
+    if (value === undefined || value === null) return null;
+    const result = string(value, 60);
+    if (!/^\/api\/v1\/public\/media\/hero\/[a-f0-9]{20}$/.test(result))
+      throw Error('Invalid public menu');
+    return result;
+  };
   const image = (value: unknown): PublicItemImage | null => {
     if (value === null) return null;
     const candidate = value as PublicItemImage;
@@ -208,6 +216,7 @@ export function decodeMenu(
       primaryColor: raw.restaurant.primaryColor,
       currency: 'EGP',
       logoUrl: logoUrl(raw.restaurant.logoUrl),
+      heroUrl: heroUrl(raw.restaurant.heroUrl),
       theme: raw.restaurant.theme === 'cafe' ? 'cafe' : 'classic',
       brandLabel: optional(raw.restaurant.brandLabel, 40),
       tagline: optional(raw.restaurant.tagline, 120),
