@@ -170,19 +170,24 @@ export function normalizeSearch(value: string): string {
               {{ english ? 'Categories' : 'الأقسام' }}
             </h2>
             <div class="chips" role="group" aria-labelledby="categories-title">
-              <button
-                type="button"
-                class="chip"
-                [attr.aria-pressed]="selected() === null"
-                (click)="select(null)"
-              >
-                {{ english ? 'All' : 'الكل' }}
-              </button>
+              @if (menu.restaurant.theme !== 'cafe') {
+                <button
+                  type="button"
+                  class="chip"
+                  [attr.aria-pressed]="selected() === null"
+                  (click)="select(null)"
+                >
+                  {{ english ? 'All' : 'الكل' }}
+                </button>
+              }
               @for (category of menu.categories; track category.id) {
                 <button
                   type="button"
                   class="chip"
-                  [attr.aria-pressed]="selected() === category.id"
+                  [attr.aria-pressed]="
+                    selected() === category.id ||
+                    (menu.restaurant.theme === 'cafe' && selected() === null && $first)
+                  "
                   (click)="select(category.id)"
                 >
                   {{ category.name }}
@@ -428,7 +433,7 @@ export function normalizeSearch(value: string): string {
         background: var(--hero);
         color: #fff;
         margin: 0 -16px;
-        padding: 20px 20px 52px;
+        padding: 20px 20px 88px;
         border-radius: 0 0 28px 28px;
       }
       .hero-inner {
@@ -486,7 +491,7 @@ export function normalizeSearch(value: string): string {
       }
       .hero-cafe {
         position: relative;
-        min-height: 280px;
+        min-height: 256px;
         padding-top: 30px;
         padding-bottom: 32px;
       }
@@ -550,7 +555,7 @@ export function normalizeSearch(value: string): string {
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        margin-top: -36px;
+        margin-top: -72px;
         position: relative;
         background: var(--color-surface-card);
         border: 1px solid var(--color-border-subtle);
