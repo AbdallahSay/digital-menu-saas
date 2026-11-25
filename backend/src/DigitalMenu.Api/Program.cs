@@ -45,6 +45,11 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+if (args.Contains("--bootstrap-admin=production", StringComparer.Ordinal))
+{
+    await ProductionBootstrap.RunAsync(app.Services, app.Environment, app.Configuration);
+    return;
+}
 if (args.Contains("--bootstrap-admin=true", StringComparer.Ordinal))
 {
     await DevelopmentBootstrap.RunAsync(app.Services, app.Environment, app.Configuration);
