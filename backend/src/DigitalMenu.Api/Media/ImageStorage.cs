@@ -80,7 +80,11 @@ public sealed class LocalImageStorage : IImageStorage
         if (File.Exists(Path.Combine(bundle, "delete.pending"))) return null;
         try
         {
-            return await File.ReadAllBytesAsync(Path.Combine(bundle, variant + ".webp"), ct);
+            var file = Path.Combine(bundle, variant + ".webp");
+            // Leaf links are never followed: a replaced symlink/reparse file reads as absent, not as outside content.
+            var info = new FileInfo(file);
+            if (info.Exists && (info.Attributes.HasFlag(FileAttributes.ReparsePoint) || info.LinkTarget is not null)) return null;
+            return await File.ReadAllBytesAsync(file, ct);
         }
         catch (FileNotFoundException) { return null; }
         catch (DirectoryNotFoundException) { return null; }

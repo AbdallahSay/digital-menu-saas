@@ -65,3 +65,7 @@ Not solved, so these are open acceptance items, not done:
 - Windows: ACLs are not validated, so Windows is refused outside Development until a verified ACL or protected-store policy exists on the real target host. Tests that need a non-Development key path are marked as Skipped on Windows (never passed), and explicit policy tests assert the Windows refusal. None of this has been executed on Windows.
 - Keys are plaintext XML at rest. No key encryption is configured; confidentiality relies on filesystem permissions and host isolation. Decide on a protected key store or encryption before real use.
 - Rotation is automatic (90 days); keep old keys. TLS termination and request/response log redaction are still open.
+
+## Media storage (production)
+
+Images are files, not SQL rows. In Development the local adapter is on. Elsewhere set `Media__AllowLocalDisk=true` and `Media__LocalRoot` to an absolute, persistent, private directory outside the application directory, or media endpoints answer 503. Setting the flag asserts: the volume survives redeploys, only the service account can read or write it, and it is backed up together with the database (restoring one without the other leaves broken images). The adapter already rejects symlink/reparse paths, validates server-generated keys only, never overwrites, and serves images only through authenticated or public-menu endpoints; uploads are re-encoded by the image normalizer. Not verified for any real host: disk quota, backup, Windows ACLs, multi-instance sharing (a single instance only).

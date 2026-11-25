@@ -10,12 +10,19 @@ public sealed record ImageResponse(Guid Id, Guid MenuItemId, int Width, int Heig
 public static class MediaEndpoints
 {
     public const long BodyLimit = ImageNormalizer.MaxBytes + 65536;
+    /// <summary>
+    /// Local disk is enabled in Development, or elsewhere only when Media:AllowLocalDisk=true is set explicitly.
+    /// That flag asserts the operator provides a persistent, private, backed-up volume outside the app directory
+    /// (uploads are not in SQL and are lost with the disk). Anything else serves 503 for media.
+    /// </summary>
+    public static bool LocalDiskEnabled(IHostEnvironment environment, IConfiguration configuration) =>
+        environment.IsDevelopment() || string.Equals(configuration["Media:AllowLocalDisk"], "true", StringComparison.OrdinalIgnoreCase);
     public static void AddMenuMedia(this IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
     {
         services.AddSingleton<ImageNormalizer>();
         services.AddSingleton<IImageStorage>(s =>
         {
-            if (!environment.IsDevelopment() || configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();
+            if (!LocalDiskEnabled(environment, configuration) || configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();
             var full = Path.GetFullPath(root);
             foreach (var protectedRoot in new[] { environment.ContentRootPath, AppContext.BaseDirectory })
                 if (full.StartsWith(Path.GetFullPath(protectedRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
