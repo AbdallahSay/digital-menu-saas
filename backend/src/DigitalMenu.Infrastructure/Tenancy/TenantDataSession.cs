@@ -61,6 +61,22 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
         }
         catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
     }
+    public async Task<IReadOnlyList<(Guid ItemId, Guid ImageId)>> ReadFirstImagesAsync(IReadOnlyCollection<Guid> itemIds, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await BindAsync(cancellationToken);
+            if (itemIds.Count > 100) throw new TenantBoundaryException(TenantFailure.InvalidRequest);
+            var ids = itemIds.ToArray();
+            var images = Owned<MenuItemImage>().AsNoTracking();
+            var rows = await images.Where(i => ids.Contains(i.MenuItemId) &&
+                    !images.Any(o => o.MenuItemId == i.MenuItemId &&
+                        (o.SortOrder < i.SortOrder || (o.SortOrder == i.SortOrder && o.Id.CompareTo(i.Id) < 0))))
+                .Select(i => new { i.MenuItemId, i.Id }).ToListAsync(cancellationToken);
+            return rows.Select(r => (r.MenuItemId, r.Id)).ToArray();
+        }
+        catch (TenantBoundaryException) { db.ChangeTracker.Clear(); await DeniedAsync(); throw; }
+    }
     public async Task<IReadOnlyList<TResult>> ReadCategoriesAsync<TResult>(Expression<Func<Category, TResult>> projection,
         int page, int pageSize, CancellationToken cancellationToken = default)
     {
@@ -159,7 +175,30 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
                     await Owned<MenuItem>().AnyAsync(i => i.CategoryId == entry.Entity.Id && !i.IsDeleted, cancellationToken))
                     throw new TenantBoundaryException(TenantFailure.Conflict);
             }
-            if (categories.Length > 0 || db.ChangeTracker.Entries<MenuItem>().Any(e => e.State != EntityState.Unchanged) ||
+            // The public menu projection includes the brand color and logo, so
+            // a real change to either is a publication like any catalog change.
+            // Assigning the same value leaves the property unmodified and
+            // never churns the version.
+            var brandingChanged = db.ChangeTracker.Entries<RestaurantSettings>()
+                .Where(e => e.State == EntityState.Modified)
+                .SelectMany(e => e.Properties)
+                .Any(p => (p.Metadata.Name == nameof(RestaurantSettings.PrimaryColor) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.LogoObjectKey) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.CoverObjectKey) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.Theme) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.BrandLabel) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.TaglineAr) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.TaglineEn)) && p.IsModified);
+            // The public projection also includes the restaurant Name and Slug,
+            // so editing either through this session must bump the version: the
+            // version-keyed cache contract is that every projected change bumps.
+            var identityChanged = db.ChangeTracker.Entries<Restaurant>()
+                .Where(e => e.State == EntityState.Modified)
+                .SelectMany(e => e.Properties)
+                .Any(p => (p.Metadata.Name == nameof(Restaurant.Name) ||
+                    p.Metadata.Name == nameof(Restaurant.Slug)) && p.IsModified);
+            if (categories.Length > 0 || brandingChanged || identityChanged ||
+                db.ChangeTracker.Entries<MenuItem>().Any(e => e.State != EntityState.Unchanged) ||
                 db.ChangeTracker.Entries<MenuItemImage>().Any(e => e.State != EntityState.Unchanged))
             {
                 var restaurant = await Owned<Restaurant>().SingleAsync(cancellationToken);

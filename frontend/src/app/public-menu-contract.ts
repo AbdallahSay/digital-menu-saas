@@ -1,9 +1,19 @@
 // F09 wire DTOs. Prices are JSON numbers backed by SQL decimal(18,2).
+export interface PublicItemImage {
+  url: string;
+  thumbnailUrl: string;
+  alt: string;
+  width: number;
+  height: number;
+}
 export interface PublicItem {
   id: string;
   name: string;
   description: string;
   price: number;
+  image: PublicItemImage | null;
+  featured: boolean;
+  available: boolean;
 }
 export interface PublicCategory {
   id: string;
@@ -11,7 +21,17 @@ export interface PublicCategory {
   items: PublicItem[];
 }
 export interface PublicMenu {
-  restaurant: { name: string; slug: string; primaryColor: string; currency: string };
+  restaurant: {
+    name: string;
+    slug: string;
+    primaryColor: string;
+    currency: string;
+    logoUrl: string | null;
+    heroUrl: string | null;
+    theme: 'classic' | 'cafe';
+    brandLabel: string | null;
+    tagline: string | null;
+  };
   language: 'ar' | 'en';
   publishedMenuVersion: number;
   categories: PublicCategory[];
@@ -83,11 +103,64 @@ export function decodeMenu(
       throw Error('Invalid public menu');
     return value;
   };
+  // Optional presentation text: absent or null from an older API means none.
+  const optional = (value: unknown, max: number): string | null =>
+    value === undefined || value === null ? null : string(value, max);
   const id = (value: unknown) => {
     const result = string(value, 36);
     if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(result))
       throw Error('Invalid public menu');
     return result;
+  };
+  // Media URLs are server-built relative paths under the opaque public media
+  // origin only - anything else (absolute URLs, other paths) is rejected so a
+  // compromised or buggy upstream can never turn the menu into an image
+  // request to an arbitrary host.
+  const logoUrl = (value: unknown): string | null => {
+    if (value === null) return null;
+    const result = string(value, 60);
+    if (!/^\/api\/v1\/public\/media\/logo\/[a-f0-9]{20}$/.test(result))
+      throw Error('Invalid public menu');
+    return result;
+  };
+  const heroUrl = (value: unknown): string | null => {
+    if (value === undefined || value === null) return null;
+    const result = string(value, 60);
+    if (!/^\/api\/v1\/public\/media\/hero\/[a-f0-9]{20}$/.test(result))
+      throw Error('Invalid public menu');
+    return result;
+  };
+  const image = (value: unknown): PublicItemImage | null => {
+    if (value === null) return null;
+    const candidate = value as PublicItemImage;
+    const pattern =
+      /^\/api\/v1\/public\/media\/items\/([a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})\/(main|thumbnail)$/;
+    const url = typeof candidate?.url === 'string' ? pattern.exec(candidate.url) : null;
+    const thumbnail =
+      typeof candidate?.thumbnailUrl === 'string' ? pattern.exec(candidate.thumbnailUrl) : null;
+    if (
+      !url ||
+      url[2] !== 'main' ||
+      !thumbnail ||
+      thumbnail[2] !== 'thumbnail' ||
+      url[1] !== thumbnail[1] ||
+      typeof candidate.alt !== 'string' ||
+      candidate.alt.length > 300 ||
+      !Number.isSafeInteger(candidate.width) ||
+      candidate.width < 1 ||
+      candidate.width > 4096 ||
+      !Number.isSafeInteger(candidate.height) ||
+      candidate.height < 1 ||
+      candidate.height > 4096
+    )
+      throw Error('Invalid public menu');
+    return {
+      url: candidate.url,
+      thumbnailUrl: candidate.thumbnailUrl,
+      alt: candidate.alt,
+      width: candidate.width,
+      height: candidate.height,
+    };
   };
   if (
     !raw ||
@@ -130,7 +203,10 @@ export function decodeMenu(
           name: string(item.name, 150),
           description: string(item.description, 2000, true),
           price: item.price,
-          priceText: whole + '.' + fraction.padEnd(2, '0'),
+          priceText: /^0*$/.test(fraction) ? whole : whole + '.' + fraction.padEnd(2, '0'),
+          image: image(item.image),
+          featured: item.featured === true,
+          available: item.available !== false,
         };
       }),
     };
@@ -141,6 +217,11 @@ export function decodeMenu(
       slug,
       primaryColor: raw.restaurant.primaryColor,
       currency: 'EGP',
+      logoUrl: logoUrl(raw.restaurant.logoUrl),
+      heroUrl: heroUrl(raw.restaurant.heroUrl),
+      theme: raw.restaurant.theme === 'cafe' ? 'cafe' : 'classic',
+      brandLabel: optional(raw.restaurant.brandLabel, 40),
+      tagline: optional(raw.restaurant.tagline, 120),
     },
     language,
     publishedMenuVersion: raw.publishedMenuVersion,

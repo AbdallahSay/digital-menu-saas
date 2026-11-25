@@ -10,3 +10,6 @@ frontend/test-results/
 frontend/playwright-report/
 .env
 *.user
+
+# Repository-root hosting output
+/.vercel/

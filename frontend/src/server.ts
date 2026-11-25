@@ -6,11 +6,11 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
-import { request } from 'node:http';
-import { request as secureRequest } from 'node:https';
 import { gzipSync } from 'node:zlib';
+import { apiProxy } from './api-proxy';
 import { secureAssets } from './secure-assets';
 import { publicPage, publicOrigin, publicApiOrigin } from './public-menu-server';
+import { readSitemapConfig, robotsTxt, sitemapResponse } from './sitemap-policy';
 
 // F01 only: this is a reversible local router, never a production hosting decision.
 const app = express();
@@ -22,49 +22,24 @@ app.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
-app.use('/api', (req, res) => {
-  // Configured trusted upstream; never derive an origin from Host or forward credentials.
-  const upstreamUrl = new URL(publicApiOrigin + req.originalUrl);
-  const upstream = (upstreamUrl.protocol === 'https:' ? secureRequest : request)(
-    upstreamUrl,
-    {
-      method: req.method,
-      headers: { accept: req.headers.accept ?? '*/*' },
-    },
-    (response) => {
-      res.status(response.statusCode ?? 502);
-      if (response.headers['content-type'])
-        res.setHeader('Content-Type', response.headers['content-type']);
-      response.pipe(res);
-    },
-  );
-  upstream.setTimeout(5000, () => upstream.destroy());
-  upstream.on('error', () => {
-    if (!res.headersSent)
-      res
-        .status(502)
-        .type('application/problem+json')
-        .send({ title: 'API unavailable', status: 502 });
-    else res.destroy();
-  });
-  req.pipe(upstream);
-});
+// Same-origin /api router: identity paths (auth/admin/platform) preserve
+// cookie/CSRF protections end to end; public paths stay identity-free.
+app.use('/api', apiProxy(publicApiOrigin));
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.get('/m/demo-code', (_req, res) => res.redirect(302, '/r/demo'));
-app.get('/robots.txt', (_req, res) =>
-  res
-    .type('text/plain')
-    .send(
-      'User-agent: *\nDisallow: /admin\nDisallow: /api/\nSitemap: http://localhost:4000/sitemap.xml\n',
-    ),
-);
-app.get('/sitemap.xml', (_req, res) =>
-  res
-    .type('application/xml')
-    .send(
-      '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://localhost:4000/r/demo</loc></url></urlset>',
-    ),
-);
+const sitemapConfig = readSitemapConfig(process.env);
+if (process.env['SITEMAP_ENABLED'] === 'true' && !sitemapConfig.enabled)
+  console.error('Sitemap disabled: ' + sitemapConfig.reason); // fixed reason strings only, never the raw value
+app.get('/robots.txt', (_req, res) => res.type('text/plain').send(robotsTxt(sitemapConfig)));
+app.get('/sitemap.xml', async (_req, res) => {
+  const result = await sitemapResponse(
+    sitemapConfig,
+    publicApiOrigin + '/api/v1/public/sitemap?page=1',
+    fetch,
+  );
+  for (const [key, value] of Object.entries(result.headers)) res.setHeader(key, value);
+  res.status(result.status).type(result.type).send(result.body);
+});
 
 app.use(secureAssets(join(import.meta.dirname, '../browser'), isMainModule(import.meta.url)));
 

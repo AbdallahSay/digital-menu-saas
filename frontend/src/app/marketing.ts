@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, afterNextRender, inject, signal } from '@angular/core';
 import { Title, Meta } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
+import { LeadIntakeService, LeadResult, LeadStatus } from './leads';
 
 interface ServiceRequestForm {
   contactName: string;
@@ -9,6 +10,8 @@ interface ServiceRequestForm {
   whatsapp: string;
   businessType: string;
   message: string;
+  website: string;
+  consent: boolean;
 }
 
 @Component({
@@ -128,9 +131,60 @@ interface ServiceRequestForm {
               <a routerLink="/r/demo" class="btn btn-secondary btn-lg">شوف المنيو بنفسك</a>
             </div>
             <div class="hero-trust-list">
-              <span class="trust-item">⚡ تصفح سريع بدون تحميل أي تطبيق</span>
-              <span class="trust-item">✎ تعديل فوري للأسعار في ثوانٍ</span>
-              <span class="trust-item">📱 متوافق مع كل الموبايلات</span>
+              <span class="trust-item"
+                ><svg
+                  class="trust-check"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                تصفح سريع بدون تحميل أي تطبيق</span
+              >
+              <span class="trust-item"
+                ><svg
+                  class="trust-check"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                تعديل فوري للأسعار في ثوانٍ</span
+              >
+              <span class="trust-item"
+                ><svg
+                  class="trust-check"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                متوافق مع كل الموبايلات</span
+              >
             </div>
           </div>
 
@@ -603,16 +657,27 @@ interface ServiceRequestForm {
           </div>
 
           <div class="request-form-card">
-            <div class="lead-api-notice" role="note">
-              <span class="notice-icon">ℹ️</span>
-              <div class="notice-text">
-                <strong>إشعار فني:</strong> نموذج إبداء الاهتمام في مرحلة التحقق الأولي (Frontend
-                Pre-flight). سيتم تفعيل الإرسال المباشر فور اعتماد واجهة استقبال الطلبات الرسمية
-                (Lead API).
+            @if (leadState() === 'closed') {
+              <div class="lead-api-notice" role="note" data-testid="lead-closed">
+                <span class="notice-icon">ℹ️</span>
+                <div class="notice-text">
+                  استقبال الطلبات من الموقع مش مفتوح دلوقتي. جرّب تاني قريب.
+                </div>
               </div>
-            </div>
+            }
+            @if (leadState() === 'done') {
+              <div class="lead-api-notice" role="status" data-testid="lead-done">
+                <span class="notice-icon">✅</span>
+                <div class="notice-text">وصلنا طلبك. هنتواصل معاك على الرقم اللي كتبته.</div>
+              </div>
+            }
 
-            <form class="service-form" (ngSubmit)="onFormSubmit()" #form="ngForm">
+            <form
+              class="service-form"
+              (ngSubmit)="onFormSubmit(form)"
+              #form="ngForm"
+              [hidden]="leadState() === 'done'"
+            >
               <div class="form-group">
                 <label for="contactName" class="form-label"
                   >اسم المسؤول <span class="required">*</span></label
@@ -708,17 +773,54 @@ interface ServiceRequestForm {
                 ></textarea>
               </div>
 
+              <div class="hp-field" aria-hidden="true">
+                <label for="website">Website</label>
+                <input
+                  type="text"
+                  id="website"
+                  name="website"
+                  tabindex="-1"
+                  autocomplete="off"
+                  [(ngModel)]="formData.website"
+                />
+              </div>
+
+              @if (leadState() === 'open') {
+                <div class="form-group">
+                  <label class="form-label consent-row">
+                    <input
+                      type="checkbox"
+                      id="consent"
+                      name="consent"
+                      required
+                      [(ngModel)]="formData.consent"
+                    />
+                    <span>
+                      وافقت إن
+                      {{ leadStatus()?.controllerName }}
+                      يحتفظ باسمي ورقمي وبيانات النشاط للتواصل معايا بخصوص المنيو، لمدة
+                      {{ leadStatus()?.retentionDays }} يوم، وقريت
+                      <a routerLink="/privacy" target="_blank">سياسة الخصوصية</a>.
+                    </span>
+                  </label>
+                </div>
+              }
+
+              @if (leadError()) {
+                <p class="form-error" role="alert" data-testid="lead-error">{{ leadError() }}</p>
+              }
+
               <div class="form-submit-row">
                 <button
                   type="submit"
-                  class="btn btn-primary btn-block btn-disabled"
-                  disabled
-                  title="نموذج الطلب بانتظار تفعيل واجهة الـ API الرسمية"
+                  class="btn btn-primary btn-block"
+                  [class.btn-disabled]="leadState() !== 'open' || leadBusy()"
+                  [disabled]="leadState() !== 'open' || leadBusy() || !form.valid"
                 >
                   ابدأ طلب الخدمة ↗
                 </button>
                 <span class="form-hint">
-                  🔒 بياناتك في أمان تام؛ لن يتم استخدام رقمك إلا للتواصل بشأن إعداد المنيو.
+                  🔒 رقمك بيتحفظ للتواصل بخصوص إعداد المنيو بس، ومبنبعوش لأي جهة تانية.
                 </span>
               </div>
             </form>
@@ -782,7 +884,15 @@ export class Marketing {
     whatsapp: '',
     businessType: 'cafe',
     message: '',
+    website: '',
+    consent: false,
   };
+
+  private readonly leads = inject(LeadIntakeService);
+  readonly leadStatus = signal<LeadStatus | null>(null);
+  readonly leadState = signal<'loading' | 'open' | 'closed' | 'done'>('loading');
+  readonly leadBusy = signal(false);
+  readonly leadError = signal<string | null>(null);
 
   constructor() {
     inject(Title).setTitle('القائمة الرقمية — منيو مطعمك، على مزاجك.');
@@ -792,6 +902,13 @@ export class Marketing {
         'خلّي زوارك يشوفوا الأطباق والأسعار بمجرد مسح QR، وأنت تعدّل قائمة مطعمك في أي لحظة من غير ما تطبع منيو جديد.',
     });
     inject(Meta).updateTag({ name: 'robots', content: 'index,follow' });
+    afterNextRender(() => void this.loadLeadStatus());
+  }
+
+  private async loadLeadStatus(): Promise<void> {
+    const status = await this.leads.status();
+    this.leadStatus.set(status);
+    this.leadState.set(status?.open ? 'open' : 'closed');
   }
 
   toggleMobileNav(): void {
@@ -802,10 +919,50 @@ export class Marketing {
     this.mobileNavOpen.set(false);
   }
 
-  onFormSubmit(): void {
-    // Lead Submission API Handoff Invariant:
-    // When POST /api/v1/leads is approved and implemented, this handler will submit
-    // the validated payload. Currently transmission is intentionally disabled to avoid
-    // fake success or unapproved data persistence.
+  async onFormSubmit(form?: NgForm): Promise<void> {
+    const status = this.leadStatus();
+    if (this.leadBusy() || this.leadState() !== 'open' || !status?.noticeVersion) return;
+    if (!this.formData.consent) return;
+    this.leadBusy.set(true);
+    this.leadError.set(null);
+    const type = this.businessTypeLabel(this.formData.businessType);
+    const message = this.formData.message.trim();
+    const result: LeadResult = await this.leads.submit({
+      contactName: this.formData.contactName.trim(),
+      businessName: this.formData.restaurantName.trim(),
+      phone: this.formData.whatsapp.trim(),
+      notes: message ? `نوع النشاط: ${type}\n${message}` : `نوع النشاط: ${type}`,
+      consent: true,
+      noticeVersion: status.noticeVersion,
+      website: this.formData.website,
+    });
+    this.leadBusy.set(false);
+    if (result === 'created') {
+      this.formData.contactName = this.formData.restaurantName = this.formData.whatsapp = '';
+      this.formData.message = '';
+      this.formData.consent = false;
+      form?.resetForm(this.formData);
+      this.leadState.set('done');
+      return;
+    }
+    this.leadError.set(
+      result === 'rate'
+        ? 'محاولات كتير. استنى شوية وجرّب تاني.'
+        : result === 'invalid'
+          ? 'راجع البيانات (الاسم والرقم) وجرّب تاني.'
+          : result === 'closed'
+            ? 'استقبال الطلبات مش مفتوح دلوقتي.'
+            : result === 'unconfirmed'
+              ? 'ما قدرناش نتأكد إن الطلب وصل. جرّب تاني أو كلمنا مباشرة.'
+              : 'حصل خطأ. جرّب تاني بعد شوية.',
+    );
+  }
+
+  private businessTypeLabel(value: string): string {
+    return (
+      { cafe: 'كافيه', restaurant: 'مطعم', sweets: 'حلويات', foodtruck: 'عربة طعام', other: 'آخر' }[
+        value
+      ] ?? 'آخر'
+    );
   }
 }

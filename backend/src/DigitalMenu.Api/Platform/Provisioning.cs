@@ -27,6 +27,42 @@ public sealed class UnconfiguredOwnerOnboardingDelivery : IOwnerOnboardingDelive
         => throw new InvalidOperationException("Owner onboarding delivery is not configured.");
 }
 
+/// <summary>
+/// No-vendor production onboarding: the platform operator receives a one-time setup link in the
+/// authenticated HTTPS response and hands it to the verified owner out of band. Nothing is sent,
+/// stored or logged. The token rides in the URL fragment, base64url-wrapped so no router or browser re-encodes it, so servers, proxies and referrers never see it.
+/// </summary>
+public sealed class OwnerSetupLinks(Uri publicOrigin)
+{
+    public static OwnerSetupLinks? FromConfiguration(IConfiguration configuration, IHostEnvironment environment)
+    {
+        if (!configuration.GetValue<bool>("Onboarding:OperatorHandoff:Enabled")) return null;
+        var raw = configuration["Onboarding:PublicOrigin"];
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var origin) || origin.PathAndQuery != "/" || !string.IsNullOrEmpty(origin.Query) ||
+            !string.IsNullOrEmpty(origin.Fragment) || !string.IsNullOrEmpty(origin.UserInfo) || raw!.EndsWith("//") ||
+            !(origin.Scheme == Uri.UriSchemeHttps || (environment.IsDevelopment() && origin.Scheme == Uri.UriSchemeHttp && origin.IsLoopback)))
+            throw new InvalidOperationException("Onboarding:PublicOrigin must be a bare https origin when operator handoff is enabled.");
+        return new OwnerSetupLinks(origin);
+    }
+    public string Build(Guid userId, string token)
+        => new Uri(publicOrigin, "/owner-setup").AbsoluteUri + "#u=" + userId.ToString("N") + "&t=" + Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(token));
+}
+
+public sealed class OperatorHandoffDelivery(OwnerSetupLinks links) : IOwnerOnboardingDelivery
+{
+    public bool IsAvailable => true;
+    public string? Url { get; private set; }
+    public Task StageAsync(Guid userId, string email, string token, CancellationToken cancellationToken)
+    {
+        Url = links.Build(userId, token);
+        return Task.CompletedTask;
+    }
+    public void Abort(Guid userId) => Url = null;
+}
+
+/// <summary>Always registered so endpoints bind it as a service; Links is null unless handoff is configured.</summary>
+public sealed record OwnerSetupLinkOptions(OwnerSetupLinks? Links);
+
 public interface IRestaurantPublicCodeGenerator
 {
     string Generate();
@@ -46,6 +82,10 @@ public sealed record RestaurantPublicationRequest(bool? IsPublished, string? Row
 public sealed record CompleteOnboardingRequest(Guid UserId, string? Token, string? Password);
 public sealed record RestaurantResponse(Guid Id, string Name, string Slug, string PublicCode,
     string Status, bool IsPublished, long PublishedMenuVersion, string RowVersion);
+public sealed record ProvisionedRestaurantResponse(Guid Id, string Name, string Slug, string PublicCode,
+    string Status, bool IsPublished, long PublishedMenuVersion, string RowVersion,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? OwnerSetupUrl);
+public sealed record OwnerSetupLinkResponse(string OwnerSetupUrl, DateTime IssuedAtUtc);
 public sealed record RestaurantPageResponse(int Page, int PageSize, int Total, IReadOnlyList<RestaurantResponse> Items);
 
 public static partial class Provisioning
@@ -91,6 +131,8 @@ public static partial class Provisioning
                 ? Task.FromResult(Problem(400, "IsPublished is required."))
                 : Change(id, null, request.IsPublished, request.RowVersion, db, context, ct))
             .Produces<RestaurantResponse>().ProducesProblem(400).ProducesProblem(404).ProducesProblem(412);
+        group.MapPost("/{id:guid}/owner-setup-link", IssueOwnerSetupLink).RequireRateLimiting("auth")
+            .Produces<OwnerSetupLinkResponse>().ProducesProblem(404).ProducesProblem(409).ProducesProblem(503);
         app.MapPost("/api/v1/auth/onboarding", CompleteOnboarding).AllowAnonymous().RequireRateLimiting("auth")
             .Produces(204).ProducesProblem(400).ProducesProblem(409).ProducesProblem(429);
     }
@@ -107,8 +149,8 @@ public static partial class Provisioning
             string.IsNullOrEmpty(email) || email.Length > 256 || !new EmailAddressAttribute().IsValid(email))
             return Problem(400, "Invalid restaurant or owner fields.");
         // Explicit local/test boundary. A production delivery/outbox requires a separate reviewed increment.
-        if (!environment.IsDevelopment() || !delivery.IsAvailable)
-            return Problem(503, "Owner onboarding delivery is not configured for local testing.");
+        if (!delivery.IsAvailable)
+            return Problem(503, "Owner onboarding delivery is not configured.");
         var stagedOwner = Guid.Empty;
         try
         {
@@ -130,7 +172,11 @@ public static partial class Provisioning
             catch (Exception ex) when (ex is not OperationCanceledException) { throw new OnboardingDeliveryException(); }
             await transaction.CommitAsync(ct);
             delivery.Confirm(owner.Id);
-            return Results.Created($"/api/v1/platform/restaurants/{restaurant.Id}", Response(restaurant));
+            context.Response.Headers.CacheControl = "no-store";
+            var r = Response(restaurant);
+            var handoffUrl = (delivery as OperatorHandoffDelivery)?.Url;
+            return Results.Created($"/api/v1/platform/restaurants/{restaurant.Id}", handoffUrl is null ? r
+                : new ProvisionedRestaurantResponse(r.Id, r.Name, r.Slug, r.PublicCode, r.Status, r.IsPublished, r.PublishedMenuVersion, r.RowVersion, handoffUrl));
         }
         catch (Exception ex) when (IsConflict(ex)) { return Problem(409, "Provisioning conflicts with another request."); }
         catch (OnboardingDeliveryException) { return Problem(503, "Owner onboarding delivery failed."); }
@@ -160,6 +206,31 @@ public static partial class Provisioning
         return Results.Ok(Response(restaurant));
     }
 
+    // Issues a fresh one-time owner setup/reset link. Rotating the security stamp first revokes every earlier
+    // link and signs the owner out everywhere. The token is returned once to the authenticated platform admin
+    // and is never logged, audited or persisted.
+    private static async Task<IResult> IssueOwnerSetupLink(Guid id, MenuDbContext db, UserManager<ApplicationUser> users,
+        [Microsoft.AspNetCore.Mvc.FromServices] OwnerSetupLinkOptions options, HttpContext context, CancellationToken ct)
+    {
+        var links = options.Links;
+        if (links is null) return Problem(503, "Operator link handoff is not enabled.");
+        var restaurant = await db.Set<Restaurant>().AsNoTracking().SingleOrDefaultAsync(r => r.Id == id, ct);
+        if (restaurant is null) return Problem(404, "Restaurant not found.");
+        var ownerId = await db.Set<RestaurantUser>().Where(m => m.RestaurantId == id && m.IsActive && m.Role == "Owner")
+            .OrderBy(m => m.UserId).Select(m => m.UserId).FirstOrDefaultAsync(ct);
+        var owner = ownerId == Guid.Empty ? null : await users.FindByIdAsync(ownerId.ToString());
+        if (owner is null || restaurant.Status != "Active" || owner.TwoFactorEnabled || await users.IsInRoleAsync(owner, "PlatformAdmin"))
+            return Problem(409, "This owner cannot receive a setup link.");
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        if (!(await users.UpdateSecurityStampAsync(owner)).Succeeded) return Problem(503, "Could not revoke earlier links.");
+        var token = await users.GeneratePasswordResetTokenAsync(owner);
+        db.Add(Audit(context, id, "OwnerSetupLinkIssued"));
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        context.Response.Headers.CacheControl = "no-store";
+        return Results.Ok(new OwnerSetupLinkResponse(links.Build(owner.Id, token), DateTime.UtcNow));
+    }
+
     private static async Task<IResult> CompleteOnboarding(CompleteOnboardingRequest request, MenuDbContext db,
         UserManager<ApplicationUser> users, HttpContext context, CancellationToken ct)
     {
@@ -169,7 +240,7 @@ public static partial class Provisioning
         if (context.User.Identity?.IsAuthenticated == true) return Problem(409, "Sign out before onboarding.");
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var owner = await users.FindByIdAsync(request.UserId.ToString());
-        if (owner is null || await users.HasPasswordAsync(owner) || owner.TwoFactorEnabled || await users.IsLockedOutAsync(owner) ||
+        if (owner is null || owner.TwoFactorEnabled || await users.IsLockedOutAsync(owner) ||
             await users.IsInRoleAsync(owner, "PlatformAdmin") ||
             !await (from m in db.Set<RestaurantUser>()
                     join r in db.Set<Restaurant>() on m.RestaurantId equals r.Id

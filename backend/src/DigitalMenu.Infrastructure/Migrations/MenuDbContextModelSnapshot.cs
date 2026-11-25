@@ -116,6 +116,89 @@ namespace DigitalMenu.Infrastructure.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("DigitalMenu.Domain.Lead", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BusinessName")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("ContactName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("ExpiresUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("NoticeFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("NoticeVersion")
+                        .IsRequired()
+                        .HasMaxLength(48)
+                        .HasColumnType("nvarchar(48)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedUtc");
+
+                    b.HasIndex("ExpiresUtc");
+
+                    b.ToTable("Leads", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Leads_Status", "[Status] IN ('New','Contacted','Closed')");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("DigitalMenu.Domain.LeadQuota", b =>
+                {
+                    b.Property<DateTime>("HourUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.HasKey("HourUtc");
+
+                    b.ToTable("LeadQuotas", (string)null);
+                });
+
             modelBuilder.Entity("DigitalMenu.Domain.MenuItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -146,6 +229,9 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFeatured")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsPublished")
@@ -267,6 +353,11 @@ namespace DigitalMenu.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsIndexable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsPublished")
                         .HasColumnType("bit");
 
@@ -331,6 +422,10 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("BrandLabel")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
                     b.Property<string>("ContactPhoneOptional")
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
@@ -366,6 +461,21 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<string>("TaglineAr")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("TaglineEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .HasDefaultValue("classic");
+
                     b.HasKey("RestaurantId");
 
                     b.ToTable("RestaurantSettings", null, t =>
@@ -375,6 +485,8 @@ namespace DigitalMenu.Infrastructure.Migrations
                             t.HasCheckConstraint("CK_Settings_Contacts", "[PublishedContactDetailsFlags] BETWEEN 0 AND 3");
 
                             t.HasCheckConstraint("CK_Settings_Locale", "[DefaultLocale] IN ('ar','en')");
+
+                            t.HasCheckConstraint("CK_Settings_Theme", "[Theme] IN ('classic','cafe')");
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);

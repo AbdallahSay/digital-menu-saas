@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Builder;
 using DigitalMenu.Api.Auth;
 using DigitalMenu.Domain;
 using DigitalMenu.Infrastructure.Persistence;
@@ -78,6 +79,20 @@ public sealed class AuthenticationTests
         await browser.Csrf();
         Assert.Equal(HttpStatusCode.NoContent, (await browser.Send(HttpMethod.Post, "/logout")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await replay.Send(HttpMethod.Get, "/me")).StatusCode);
+    }
+
+    [SqlServerFact]
+    public async Task Session_probe_is_not_throttled_by_the_credential_limit_but_csrf_still_is()
+    {
+        await using var fixture = await AuthFixture.Create();
+        var browser = new Browser(fixture.Factory);
+        await browser.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await browser.Login(fixture.Password)).StatusCode);
+        for (var i = 0; i < 30; i++)
+            Assert.Equal(HttpStatusCode.OK, (await browser.Send(HttpMethod.Get, "/me")).StatusCode);
+        HttpResponseMessage? limited = null;
+        for (var i = 0; i < 12; i++) limited = await browser.Send(HttpMethod.Get, "/csrf");
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited!.StatusCode);
     }
 
     [SqlServerFact]
@@ -211,13 +226,53 @@ public sealed class AuthenticationTests
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.Login(fixture.Password)).StatusCode);
     }
 
-    [Fact]
+    [UnixOnlyFact]
     public async Task Bootstrap_refuses_production_before_any_database_access()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment("Production"));
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment("Production").UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()).UseSetting("DataProtection:ApplicationName", "test-prod"));
         await Assert.ThrowsAsync<InvalidOperationException>(() => DevelopmentBootstrap.RunAsync(factory.Services,
             factory.Services.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>(),
             factory.Services.GetRequiredService<IConfiguration>()));
+    }
+
+    [SqlServerFact]
+    public async Task Forwarded_for_is_ignored_from_an_untrusted_peer()
+    {
+        // No Proxy:TrustedProxies configured: a client-controlled X-Forwarded-For
+        // must never repartition the auth rate limiter. Every forged value lands
+        // in the real peer's single bucket.
+        await using var fixture = await AuthFixture.Create(
+            configure: s => s.AddSingleton<Microsoft.AspNetCore.Hosting.IStartupFilter>(
+                new SetRemoteIpStartupFilter(IPAddress.Parse("192.0.2.1"))));
+        var browser = new Browser(fixture.Factory);
+        await browser.Csrf();
+        for (var i = 0; i < 10; i++)
+        {
+            browser.ForwardedFor = $"198.51.100.{i}";
+            await browser.Login("wrong-password-1");
+        }
+        browser.ForwardedFor = "203.0.113.99";
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await browser.Login("wrong-password-1")).StatusCode);
+    }
+
+    [SqlServerFact]
+    public async Task Forwarded_for_partitions_per_client_when_the_peer_is_trusted()
+    {
+        // The Node SSR router overwrites X-Forwarded-For with its socket peer;
+        // with that peer configured as trusted, each real client keeps its own
+        // auth-limiter bucket instead of sharing one proxy bucket.
+        await using var fixture = await AuthFixture.Create(
+            trustedProxies: ["192.0.2.1"],
+            configure: s => s.AddSingleton<Microsoft.AspNetCore.Hosting.IStartupFilter>(
+                new SetRemoteIpStartupFilter(IPAddress.Parse("192.0.2.1"))));
+        var a = new Browser(fixture.Factory) { ForwardedFor = "198.51.100.1" };
+        var b = new Browser(fixture.Factory) { ForwardedFor = "198.51.100.2" };
+        await a.Csrf();
+        for (var i = 0; i < 10; i++)
+            await a.Login("wrong-password-1");
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await a.Login("wrong-password-1")).StatusCode);
+        await b.Csrf();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await b.Login("wrong-password-1")).StatusCode);
     }
 
     [Fact]
@@ -231,11 +286,27 @@ public sealed class AuthenticationTests
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.Send(HttpMethod.Get, "/me")).StatusCode);
     }
 
+    // Simulates a same-host reverse proxy: sets the socket peer so the
+    // forwarded-headers middleware can be exercised for trusted/untrusted peers.
+    private sealed class SetRemoteIpStartupFilter(IPAddress address) : Microsoft.AspNetCore.Hosting.IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use(async (context, follow) =>
+            {
+                context.Connection.RemoteIpAddress = address;
+                await follow();
+            });
+            next(app);
+        };
+    }
+
     internal sealed class Browser
     {
         public HttpClient Client { get; }
         public Dictionary<string, string> Cookies { get; } = [];
         public string? Token { get; set; }
+        public string? ForwardedFor { get; set; }
         public Browser(WebApplicationFactory<Program> factory) => Client = factory.CreateClient(new()
         { BaseAddress = new Uri("https://localhost"), HandleCookies = false, AllowAutoRedirect = false });
         public Task<HttpResponseMessage> Login(string password, string email = "owner@example.test")
@@ -250,6 +321,7 @@ public sealed class AuthenticationTests
             using var request = new HttpRequestMessage(method, path.StartsWith("/api/", StringComparison.Ordinal) ? path : "/api/v1/auth" + path);
             if (Cookies.Count > 0) request.Headers.Add("Cookie", string.Join("; ", Cookies.Select(x => x.Key + "=" + x.Value)));
             if (Token is not null) request.Headers.Add("X-XSRF-TOKEN", Token);
+            if (ForwardedFor is not null) request.Headers.Add("X-Forwarded-For", ForwardedFor);
             if (body is not null) request.Content = JsonContent.Create(body);
             var response = await Client.SendAsync(request);
             if (response.Headers.TryGetValues("Set-Cookie", out var cookies))
@@ -268,7 +340,7 @@ public sealed class AuthenticationTests
         public string Connection { get; private set; } = "";
         public TestClock Clock { get; } = new();
         public string Password { get; } = "F03!" + Guid.NewGuid().ToString("N");
-        public static async Task<AuthFixture> Create(bool empty = false, Action<IServiceCollection>? configure = null, string? onboardingPipe = null)
+        public static async Task<AuthFixture> Create(bool empty = false, Action<IServiceCollection>? configure = null, string? onboardingPipe = null, string[]? trustedProxies = null, string? publicCodeA = null)
         {
             var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("F02_SQL_CONNECTION"));
             if (connection.DataSource != "(localdb)\\DigitalMenuF02" && connection.DataSource != "localhost,1433")
@@ -277,11 +349,16 @@ public sealed class AuthenticationTests
             SqlTestStorage.Configure(connection);
             var fixture = new AuthFixture { Connection = connection.ConnectionString };
             fixture.Factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
+            {
                 b.UseEnvironment("Development").UseSetting("ConnectionStrings:MenuDatabase", connection.ConnectionString)
                  .UseSetting("DevelopmentOnboarding:Enabled", onboardingPipe is null ? "false" : "true")
-                 .UseSetting("DevelopmentOnboarding:PipeName", onboardingPipe ?? "DigitalMenu.Onboarding")
-                 .ConfigureServices(s => s.Configure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme,
-                     o => o.TimeProvider = fixture.Clock)).ConfigureServices(s => configure?.Invoke(s)));
+                 .UseSetting("DevelopmentOnboarding:PipeName", onboardingPipe ?? "DigitalMenu.Onboarding");
+                if (trustedProxies is not null)
+                    for (var i = 0; i < trustedProxies.Length; i++)
+                        b.UseSetting($"Proxy:TrustedProxies:{i}", trustedProxies[i]);
+                b.ConfigureServices(s => s.Configure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme,
+                    o => o.TimeProvider = fixture.Clock)).ConfigureServices(s => configure?.Invoke(s));
+            });
             using var scope = fixture.Factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
             await db.Database.MigrateAsync();
@@ -289,7 +366,7 @@ public sealed class AuthenticationTests
             var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var user = new ApplicationUser { Id = Guid.NewGuid(), Email = "owner@example.test", UserName = "owner@example.test" };
             Assert.True((await users.CreateAsync(user, fixture.Password)).Succeeded);
-            var a = new Restaurant { Name = "Restaurant A", Slug = "a", PublicCode = "code-a" };
+            var a = new Restaurant { Name = "Restaurant A", Slug = "a", PublicCode = publicCodeA ?? "code-a" };
             var b = new Restaurant { Name = "Restaurant B", Slug = "b", PublicCode = "code-b" };
             db.AddRange(a, b, new RestaurantUser { RestaurantId = a.Id, UserId = user.Id });
             await db.SaveChangesAsync();

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
@@ -322,6 +323,248 @@ public sealed class ProvisioningTests(Xunit.Abstractions.ITestOutputHelper outpu
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         Assert.False(await users.HasPasswordAsync((await users.FindByIdAsync(invitation.UserId.ToString()))!));
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.Login(fixture.Password, "expired@example.test")).StatusCode);
+    }
+
+    private static (Guid UserId, string Token) ParseLink(string url)
+    {
+        var uri = new Uri(url);
+        Assert.Equal("https://menu.example/owner-setup", uri.GetLeftPart(UriPartial.Path));
+        Assert.Equal("", uri.Query);
+        var parts = uri.Fragment.TrimStart('#').Split('&').Select(p => p.Split('=', 2)).ToDictionary(p => p[0], p => p[1]);
+        return (Guid.ParseExact(parts["u"], "N"), System.Text.Encoding.UTF8.GetString(Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlDecode(parts["t"])));
+    }
+
+    // The 10/min credential limiter is per IP and shared by a fixture, so each scenario stays under it on purpose.
+    private static Task<(AuthFixture Fixture, Browser Admin, TestDelivery Delivery)> HandoffSetup() => Setup(s =>
+    {
+        var links = new OwnerSetupLinks(new Uri("https://menu.example"));
+        s.AddSingleton(new OwnerSetupLinkOptions(links));
+        s.AddScoped<IOwnerOnboardingDelivery>(_ => new OperatorHandoffDelivery(links));
+    });
+    private static async Task<(Guid RestaurantId, (Guid UserId, string Token) Link)> ProvisionWithLink(Browser admin, string slug)
+    {
+        var created = await admin.Send(HttpMethod.Post, Route, Request(slug));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal("no-store", created.Headers.CacheControl!.ToString());
+        var body = await created.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        return (body.GetProperty("id").GetGuid(), ParseLink(body.GetProperty("ownerSetupUrl").GetString()!));
+    }
+    private static async Task<(Guid UserId, string Token)> Reissue(Browser admin, Guid restaurantId)
+    {
+        var response = await admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl!.ToString());
+        return ParseLink((await response.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl);
+    }
+
+    [SqlServerFact]
+    public async Task Operator_handoff_first_link_is_single_use_and_owners_cannot_mint_links()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "handoff");
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password + "x9!"))).StatusCode);
+        var owner = new Browser(fixture.Factory);
+        await owner.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "handoff@example.test")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link")).StatusCode);
+    }
+
+    [SqlServerFact]
+    public async Task Operator_handoff_reissue_revokes_earlier_links_and_unknown_restaurants_are_404()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, _) = await ProvisionWithLink(admin, "reissue");
+        var a = await Reissue(admin, restaurantId);
+        var b = await Reissue(admin, restaurantId);
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(a.UserId, a.Token, fixture.Password))).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(b.UserId, b.Token, fixture.Password))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(b.UserId, b.Token, fixture.Password))).StatusCode);
+        using var scope = fixture.Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+        Assert.Equal(2, await db.Set<AuditEntry>().CountAsync(x => x.Action == "OwnerSetupLinkIssued"));
+        Assert.DoesNotContain(await db.Set<AuditEntry>().Select(x => x.Action + x.ResourceType).ToListAsync(), v => v.Contains(a.Token));
+    }
+
+    [SqlServerFact]
+    public async Task Minting_a_link_signs_the_owner_out_immediately_before_the_link_is_used()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "midsession");
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
+        var owner = new Browser(fixture.Factory);
+        await owner.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "midsession@example.test")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+        await Reissue(admin, restaurantId);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+    }
+
+    [SqlServerFact]
+    public async Task Concurrent_consumption_of_a_reissued_link_succeeds_exactly_once()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, _) = await ProvisionWithLink(admin, "raceissue");
+        var link = await Reissue(admin, restaurantId);
+        var one = new Browser(fixture.Factory);
+        var two = new Browser(fixture.Factory);
+        await one.Csrf();
+        await two.Csrf();
+        var payload = new CompleteOnboardingRequest(link.UserId, link.Token, fixture.Password);
+        var results = await Task.WhenAll(one.Send(HttpMethod.Post, "/onboarding", payload), two.Send(HttpMethod.Post, "/onboarding", payload));
+        Assert.Single(results, r => r.StatusCode == HttpStatusCode.NoContent);
+        Assert.Single(results, r => r.StatusCode == HttpStatusCode.BadRequest);
+    }
+
+    // Reads validity against the CURRENT persisted security stamp without consuming the token
+    // (VerifyUserToken does not rotate the stamp, unlike a password reset).
+    private static async Task<bool> TokenIsValid(AuthFixture fixture, (Guid UserId, string Token) link)
+    {
+        using var scope = fixture.Factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await users.FindByIdAsync(link.UserId.ToString());
+        return user is not null && await users.VerifyUserTokenAsync(user, users.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", link.Token);
+    }
+
+    // SMOKE coverage, not a controlled interleaving: overlapping HTTP requests with no barrier inside the
+    // handler. Four concurrent mints were used when this test first failed ("accepted 0, expected 1" with
+    // the earlier sequential-consumption oracle); that failure's cause was never isolated and is UNRESOLVED.
+    [SqlServerFact]
+    public async Task Concurrent_minting_smoke_validity_is_checked_against_the_final_state_before_any_consumption()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "racemint");
+        var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link")));
+        var statuses = string.Join(",", responses.Select(r => (int)r.StatusCode));
+        // Contention on the security stamp is the documented fail-closed 503 (nothing minted); any other status is a defect.
+        Assert.All(responses, r => Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable, "mint statuses " + statuses));
+        var links = new List<(Guid UserId, string Token)>();
+        foreach (var r in responses.Where(r => r.StatusCode == HttpStatusCode.OK))
+            links.Add(ParseLink((await r.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl));
+        Assert.NotEmpty(links);
+        Assert.False(await TokenIsValid(fixture, first), "pre-existing link survived; mint statuses " + statuses);
+        var validity = new List<bool>();
+        foreach (var l in links) validity.Add(await TokenIsValid(fixture, l));
+        Assert.True(validity.Count(v => v) == 1, "valid links " + string.Join(",", validity) + "; mint statuses " + statuses);
+        // Now consume the valid one over HTTP (budgeted: guest csrf + 2 onboarding requests), then prove replay fails.
+        var valid = links[validity.IndexOf(true)];
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        var consumed = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(valid.UserId, valid.Token, fixture.Password));
+        Assert.True(consumed.StatusCode == HttpStatusCode.NoContent, "consume " + (int)consumed.StatusCode + "; mint statuses " + statuses);
+        var replay = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(valid.UserId, valid.Token, fixture.Password));
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+        // The links that validated false are dead for the same reason (stamp rotated); check each without HTTP.
+        foreach (var l in links) Assert.False(await TokenIsValid(fixture, l));
+    }
+
+    // SMOKE coverage of a mint racing a consume of the previous link (no barrier). Distinct passwords show which
+    // operation set the final one.
+    [SqlServerFact]
+    public async Task Minting_racing_with_consumption_smoke_old_token_dead_new_link_usable_once_with_distinct_passwords()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "raceconsume");
+        var oldPassword = fixture.Password;
+        var newPassword = fixture.Password + "N7#q";
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        var consume = guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, oldPassword));
+        var mint = admin.Send(HttpMethod.Post, Route + "/" + restaurantId + "/owner-setup-link");
+        await Task.WhenAll(consume, mint);
+        var outcome = "consume " + (int)consume.Result.StatusCode + ", mint " + (int)mint.Result.StatusCode;
+        Assert.True(consume.Result.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.BadRequest, outcome);
+        Assert.True(mint.Result.StatusCode == HttpStatusCode.OK, outcome);
+        var fresh = ParseLink((await mint.Result.Content.ReadFromJsonAsync<OwnerSetupLinkResponse>())!.OwnerSetupUrl);
+        Assert.False(await TokenIsValid(fixture, first), "old token still valid; " + outcome);
+        // Whichever side won, the link the operator was handed must be usable. (If consume committed after
+        // the mint's stamp read, the stamp rotates and the handed-out link is dead: that would be a real finding.)
+        Assert.True(await TokenIsValid(fixture, fresh), "freshly minted link is not valid after the race; " + outcome);
+        var set = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(fresh.UserId, fresh.Token, newPassword));
+        Assert.True(set.StatusCode == HttpStatusCode.NoContent, "set new password " + (int)set.StatusCode + "; " + outcome);
+        var replay = await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(fresh.UserId, fresh.Token, newPassword));
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+        // Request budget on the 10/min "auth" limiter (csrf, login, onboarding and the mint all count): setup 3,
+        // guest csrf 1, consume 1, mint 1, set 1, replay 1, login 1 = 9. The old-password check therefore uses
+        // UserManager instead of another HTTP login, to stay under the limit.
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Login(newPassword, "raceconsume@example.test")).StatusCode);
+        using var scope = fixture.Factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = (await users.FindByIdAsync(fresh.UserId.ToString()))!;
+        Assert.True(await users.CheckPasswordAsync(user, newPassword));
+        Assert.False(await users.CheckPasswordAsync(user, oldPassword));
+    }
+
+    [SqlServerFact]
+    public async Task Operator_handoff_reset_replaces_the_password_and_signs_the_owner_out()
+    {
+        var (fixture, admin, _) = await HandoffSetup();
+        await using var cleanup = fixture;
+        var (restaurantId, first) = await ProvisionWithLink(admin, "reset");
+        var guest = new Browser(fixture.Factory);
+        await guest.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(first.UserId, first.Token, fixture.Password))).StatusCode);
+        var owner = new Browser(fixture.Factory);
+        await owner.Csrf();
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Login(fixture.Password, "reset@example.test")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+        var link = await Reissue(admin, restaurantId);
+        var newPassword = fixture.Password + "x9!";
+        Assert.Equal(HttpStatusCode.NoContent, (await guest.Send(HttpMethod.Post, "/onboarding", new CompleteOnboardingRequest(link.UserId, link.Token, newPassword))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await owner.Send(HttpMethod.Get, "/me")).StatusCode);
+        using var scope = fixture.Factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = (await users.FindByIdAsync(link.UserId.ToString()))!;
+        Assert.True(await users.CheckPasswordAsync(user, newPassword));
+        Assert.False(await users.CheckPasswordAsync(user, fixture.Password));
+    }
+
+    [Theory]
+    [InlineData("https://menu.example", "Production", true)]
+    [InlineData("http://127.0.0.1:4000", "Development", true)]
+    [InlineData("http://127.0.0.1:4000", "Production", false)]
+    [InlineData("http://menu.example", "Development", false)]
+    [InlineData("https://user:pw@menu.example", "Production", false)]
+    [InlineData("https://menu.example/app", "Production", false)]
+    [InlineData("https://menu.example/?x=1", "Production", false)]
+    [InlineData("https://menu.example/#f", "Production", false)]
+    [InlineData("ftp://127.0.0.1", "Development", false)]
+    [InlineData("", "Production", false)]
+    public void Public_origin_is_validated_from_configuration_only(string origin, string environment, bool accepted)
+    {
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        { ["Onboarding:OperatorHandoff:Enabled"] = "true", ["Onboarding:PublicOrigin"] = origin }).Build();
+        var env = new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = environment };
+        if (accepted) Assert.NotNull(OwnerSetupLinks.FromConfiguration(config, env));
+        else Assert.Throws<InvalidOperationException>((Action)(() => _ = OwnerSetupLinks.FromConfiguration(config, env)));
+    }
+
+    [Fact]
+    public void Handoff_disabled_yields_no_links()
+    {
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
+        Assert.Null(OwnerSetupLinks.FromConfiguration(config, new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Production" }));
+    }
+
+    [SqlServerFact]
+    public async Task Without_handoff_or_pipe_production_provisioning_fails_closed_and_links_are_unavailable()
+    {
+        var (f2, admin, _) = await Setup(s => s.AddSingleton<IOwnerOnboardingDelivery, UnconfiguredOwnerOnboardingDelivery>()); // default host: OwnerSetupLinkOptions comes from the real registration
+        await using var cleanup2 = f2;
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await admin.Send(HttpMethod.Post, Route, Request("nolink"))).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await admin.Send(HttpMethod.Post, Route + "/" + Guid.NewGuid() + "/owner-setup-link")).StatusCode);
     }
 
     [SqlServerFact]

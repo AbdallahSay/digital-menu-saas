@@ -6,8 +6,10 @@ using DigitalMenu.Api.Platform;
 using DigitalMenu.Application;
 using DigitalMenu.Domain;
 using DigitalMenu.Infrastructure.Persistence;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using static DigitalMenu.IntegrationTests.AuthenticationTests;
@@ -25,6 +27,46 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             InterceptionResult<DbDataReader> result, CancellationToken ct = default)
         { Interlocked.Increment(ref count); return ValueTask.FromResult(result); }
     }
+    // Deterministic mid-read races: flips the version (or visibility) on a
+    // separate connection exactly when a fresh load attempt starts its content
+    // queries. The standalone categories query (the one that does not also mention
+    // MenuItems; the items query joins Categories and would match too) opens the
+    // content phase of every attempt, so each attempt can be flipped at most once.
+    // One instance is shared by every scope of its fixture (Bind once, counter
+    // persists across requests), and it connects with the fixture's original
+    // connection string: an already-open connection strips credentials when
+    // Persist Security Info=false, which CI (SQL auth) relies on.
+    private sealed class MidReadFlipper(int maxFlips, bool unpublish) : DbCommandInterceptor
+    {
+        private string? connectionString;
+        private Guid restaurantId;
+        private int flips;
+        private int rowsAffected;
+        public int Flips => flips;
+        public int RowsAffected => rowsAffected;
+        public void Bind(string connection, Guid restaurant)
+        { connectionString = connection; restaurantId = restaurant; }
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData data,
+            InterceptionResult<DbDataReader> result, CancellationToken ct = default)
+        {
+            if (connectionString is not null && flips < maxFlips &&
+                command.CommandText.Contains("FROM [Categories]", StringComparison.Ordinal) &&
+                !command.CommandText.Contains("[MenuItems]", StringComparison.Ordinal))
+            {
+                flips++;
+                using var connection = new SqlConnection(connectionString);
+                connection.Open();
+                using var flip = connection.CreateCommand();
+                flip.CommandText = unpublish
+                    ? "UPDATE Restaurants SET IsPublished = 0 WHERE Id = @id"
+                    : "UPDATE Restaurants SET PublishedMenuVersion = PublishedMenuVersion + 1 WHERE Id = @id; " +
+                        "UPDATE MenuItems SET NameAr = N'flipped-" + flips + "' WHERE RestaurantId = @id";
+                flip.Parameters.Add(new SqlParameter("@id", restaurantId));
+                rowsAffected += flip.ExecuteNonQuery();
+            }
+            return ValueTask.FromResult(result);
+        }
+    }
     private sealed class Fixture : IAsyncDisposable
     {
         public AuthFixture Auth { get; private set; } = null!;
@@ -34,25 +76,34 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         public Category CategoryA { get; } = new() { NameAr = "طعام", NameEn = "Food", IsPublished = true };
         public Category CategoryB { get; } = new() { NameAr = "قسم B", IsPublished = true };
         public MenuItem ItemA { get; } = new() { NameAr = "قهوة", NameEn = "Coffee", DescriptionAr = "وصف", DescriptionEn = " ", Price = 12.50m, IsPublished = true };
+        public MenuItemImage ImageA { get; } = new() { AltAr = "صورة قهوة", AltEn = "Coffee photo", Width = 20, Height = 10 };
         public Guid Owner { get; private set; }
-        public static async Task<Fixture> Create()
+        public static async Task<Fixture> Create(MidReadFlipper? flipper = null)
         {
             var f = new Fixture();
-            f.Auth = await AuthFixture.Create(empty: true, configure: s => s.AddDbContext<MenuDbContext>(o => o.AddInterceptors(f.Queries)));
+            f.Auth = await AuthFixture.Create(empty: true, configure: s => s.AddDbContext<MenuDbContext>(o =>
+            {
+                o.AddInterceptors(f.Queries);
+                if (flipper is not null) o.AddInterceptors(flipper); // same instance in every scope
+            }));
             using var scope = f.Auth.Factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
             var users = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
             var user = new ApplicationUser { Id = Guid.NewGuid(), Email = "public-owner-private@example.test", UserName = "public-owner-private@example.test" };
             Assert.True((await users.CreateAsync(user, f.Auth.Password)).Succeeded);
             f.Owner = user.Id;
-            f.CategoryA.RestaurantId = f.ItemA.RestaurantId = f.A.Id;
+            f.CategoryA.RestaurantId = f.ItemA.RestaurantId = f.ImageA.RestaurantId = f.A.Id;
             f.CategoryB.RestaurantId = f.B.Id;
             f.ItemA.CategoryId = f.CategoryA.Id;
-            db.AddRange(f.A, f.B, f.CategoryA, f.CategoryB, f.ItemA,
+            f.ImageA.MenuItemId = f.ItemA.Id;
+            f.ImageA.ObjectKey = f.A.Id + "/private-image.webp";
+            db.AddRange(f.A, f.B, f.CategoryA, f.CategoryB, f.ItemA, f.ImageA,
                 new RestaurantUser { RestaurantId = f.A.Id, UserId = user.Id },
-                new RestaurantSettings { RestaurantId = f.A.Id, PrimaryColor = "#123456", ContactPhoneOptional = "private-phone", AddressOptional = "private-address", PublishedContactDetailsFlags = 3, LogoObjectKey = f.A.Id + "/private.webp" },
-                new MenuItemImage { RestaurantId = f.A.Id, MenuItemId = f.ItemA.Id, ObjectKey = f.A.Id + "/private-image.webp", Width = 20, Height = 10 });
+                new RestaurantSettings { RestaurantId = f.A.Id, PrimaryColor = "#123456", ContactPhoneOptional = "private-phone", AddressOptional = "private-address", PublishedContactDetailsFlags = 3, LogoObjectKey = f.A.Id + "/private.webp" });
             await db.SaveChangesAsync();
+            // Arm the race hook only now: the seed's own insert batches can contain
+            // SELECT ... FROM [Categories] and would otherwise consume the flip before any row exists.
+            flipper?.Bind(f.Auth.Connection, f.A.Id);
             f.Queries.Reset();
             return f;
         }
@@ -66,6 +117,21 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             return browser;
         }
         public async ValueTask DisposeAsync() => await Auth.DisposeAsync();
+        // Runs an action inside a request-like scope authenticated as the owner.
+        public async Task Run(Browser browser, Func<IServiceProvider, DefaultHttpContext, Task> action)
+        {
+            using var scope = Auth.Factory.Services.CreateScope();
+            var http = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+            http.Request.Scheme = "https";
+            http.Request.Host = new HostString("localhost");
+            http.Response.Body = new MemoryStream();
+            http.Request.Headers.Cookie = string.Join("; ", browser.Cookies.Select(c => c.Key + "=" + c.Value));
+            var accessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
+            var previous = accessor.HttpContext;
+            accessor.HttpContext = http;
+            try { await action(scope.ServiceProvider, http); }
+            finally { accessor.HttpContext = previous; }
+        }
     }
     private static string Code(Restaurant r, string? lang = null) => "/api/v1/public/menus/" + r.PublicCode + (lang is null ? "" : "?lang=" + lang);
     private static string Slug(Restaurant r) => "/api/v1/public/restaurants/by-slug/" + r.Slug;
@@ -73,29 +139,48 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     {
         var response = await client.GetAsync(route);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.True(response.Headers.CacheControl!.NoStore);
+        // Version-keyed revalidation contract: stored copies must revalidate.
+        Assert.True(response.Headers.CacheControl!.NoCache);
+        Assert.False(response.Headers.CacheControl!.NoStore);
+        Assert.NotNull(response.Headers.ETag);
         Assert.False(response.Headers.Contains("Set-Cookie"));
         return (await response.Content.ReadFromJsonAsync<PublicMenu>())!;
     }
 
     [SqlServerFact]
-    public async Task Code_and_slug_return_public_allowlists_locale_fallback_and_no_media_or_private_data()
+    public async Task Code_and_slug_return_public_allowlists_with_opaque_media_urls_and_no_private_data()
     {
         await using var f = await Fixture.Create();
         using var client = f.Client;
         var arabic = await Menu(client, Code(f.A));
-        Assert.Equal(3, f.Queries.Count);
+        Assert.Equal(5, f.Queries.Count); // Miss: live probe, 3 content queries, confirm probe.
         Assert.Equal("ar", arabic.Language);
         Assert.Equal("#123456", arabic.Restaurant.PrimaryColor);
-        Assert.Equal("قهوة", Assert.Single(Assert.Single(arabic.Categories).Items).Name);
+        // Media projects only through opaque public URLs: the image's own random
+        // id and the already-public code - never the restaurant Guid or object key.
+        Assert.Equal("/api/v1/public/media/logo/" + f.A.PublicCode, arabic.Restaurant.LogoUrl);
+        var item = Assert.Single(Assert.Single(arabic.Categories).Items);
+        Assert.Equal("قهوة", item.Name);
+        Assert.NotNull(item.Image);
+        var image = item.Image!;
+        Assert.Equal("/api/v1/public/media/items/" + f.ImageA.Id + "/main", image.Url);
+        Assert.Equal("/api/v1/public/media/items/" + f.ImageA.Id + "/thumbnail", image.ThumbnailUrl);
+        Assert.Equal("صورة قهوة", image.Alt);
+        Assert.Equal(20, image.Width);
+        Assert.Equal(10, image.Height);
         var english = await Menu(client, Code(f.A, "en"));
         Assert.Equal("Food", Assert.Single(english.Categories).Name);
-        Assert.Equal("Coffee", Assert.Single(Assert.Single(english.Categories).Items).Name);
-        Assert.Equal("وصف", Assert.Single(Assert.Single(english.Categories).Items).Description);
+        var englishItem = Assert.Single(Assert.Single(english.Categories).Items);
+        Assert.Equal("Coffee", englishItem.Name);
+        Assert.Equal("وصف", englishItem.Description);
+        Assert.NotNull(englishItem.Image);
+        Assert.Equal("Coffee photo", englishItem.Image!.Alt);
         var slug = await Menu(client, Slug(f.A));
         Assert.Equal(arabic.Restaurant, slug.Restaurant);
         var body = await (await client.GetAsync(Code(f.A))).Content.ReadAsStringAsync();
-        foreach (var forbidden in new[] { "private", f.A.Id.ToString(), f.B.Id.ToString(), f.Owner.ToString(), "restaurantId", "userId", "objectKey", "rowVersion", "isPublished", "isAvailable", "imageUrl", "logoUrl", "token", "email", "status" })
+        // The seeded object keys literally contain "private" and the restaurant
+        // Guid: any leak of a key or id into the payload fails this.
+        foreach (var forbidden in new[] { "private", f.A.Id.ToString(), f.B.Id.ToString(), f.Owner.ToString(), "restaurantId", "userId", "objectKey", "rowVersion", "isPublished", "isAvailable", "token", "email", "status" })
             Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
         var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(body);
         Assert.Equal(new[] { "categories", "language", "publishedMenuVersion", "restaurant" }, json.EnumerateObject().Select(p => p.Name).Order());
@@ -124,6 +209,9 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         Assert.Empty(menu.Categories[1].Items);
         Assert.Empty(Assert.Single((await Menu(client, Code(f.B))).Categories).Items);
         (await db.Set<Category>().SingleAsync(c => c.Id == f.CategoryB.Id)).IsPublished = false;
+        // Direct DbContext writes bypass CommitAsync, so mirror its contract:
+        // every projected change bumps the version transactionally.
+        (await db.Set<Restaurant>().SingleAsync(r => r.Id == f.B.Id)).PublishedMenuVersion++;
         await db.SaveChangesAsync();
         Assert.Empty((await Menu(client, Code(f.B))).Categories);
     }
@@ -171,7 +259,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         var response = await owner.Client.SendAsync(request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.False(response.Headers.Contains("Set-Cookie"));
-        Assert.Equal(3, f.Queries.Count); // No Identity/security-stamp/membership queries.
+        Assert.Equal(5, f.Queries.Count); // Cold-cache miss; no Identity/security-stamp/membership queries.
         var menu = (await response.Content.ReadFromJsonAsync<PublicMenu>())!;
         Assert.Equal(f.B.Name, menu.Restaurant.Name);
         Assert.Equal(f.CategoryB.Id, Assert.Single(menu.Categories).Id);
@@ -235,7 +323,7 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
     }
 
     [SqlServerFact]
-    public async Task Large_menu_has_three_queries_and_parallel_A_B_requests_do_not_mix_results()
+    public async Task Large_menu_has_four_queries_and_parallel_A_B_requests_do_not_mix_results()
     {
         await using var f = await Fixture.Create();
         using (var scope = f.Auth.Factory.Services.CreateScope())
@@ -254,7 +342,9 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
         using var client = f.Client;
         f.Queries.Reset();
         Assert.Equal(200, Assert.Single((await Menu(client, Code(f.A))).Categories).Items.Count);
-        Assert.Equal(3, f.Queries.Count);
+        Assert.Equal(5, f.Queries.Count); // Miss: live probe, 3 content queries, confirm probe.
+        await Menu(client, Code(f.B, "en")); // Warm the B/en entry so the parallel phase is all hits.
+        f.Queries.Reset();
         var elapsed = await Task.WhenAll(Enumerable.Range(0, 20).Select(async i =>
         {
             using var browser = f.Client;
@@ -265,8 +355,8 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             return timer.Elapsed.TotalMilliseconds;
         }));
         Array.Sort(elapsed);
-        Assert.Equal(63, f.Queries.Count);
-        output.WriteLine($"Local TestServer + LocalDB, 20 parallel A/B GETs, A=200 items/B=empty, 3 SELECT/request: p50={elapsed[9]:F1}ms p95={elapsed[18]:F1}ms max={elapsed[19]:F1}ms, zero errors. No shared cache; not production evidence.");
+        Assert.Equal(20, f.Queries.Count); // One live probe per cached request, zero content queries.
+        output.WriteLine($"Local TestServer + LocalDB, 20 parallel A/B GETs, A=200 items/B=empty, 1 probe/request on cache hit: p50={elapsed[9]:F1}ms p95={elapsed[18]:F1}ms max={elapsed[19]:F1}ms, zero errors. Version-keyed cache; not production evidence.");
     }
 
     [SqlServerFact]
@@ -287,6 +377,143 @@ public sealed class PublicMenuTests(Xunit.Abstractions.ITestOutputHelper output)
             Assert.DoesNotContain(restaurant.Name, body);
             Assert.True(response.Headers.CacheControl!.NoStore);
         }
+    }
+
+    [SqlServerFact]
+    public async Task Cached_repeat_reads_pay_only_the_live_probe_until_the_version_moves()
+    {
+        await using var f = await Fixture.Create();
+        using var client = f.Client;
+        var first = await Menu(client, Code(f.A));
+        f.Queries.Reset();
+        var second = await Menu(client, Code(f.A));
+        Assert.Equal(1, f.Queries.Count); // Live probe only; content comes from the version-keyed entry.
+        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(first), System.Text.Json.JsonSerializer.Serialize(second));
+        // The slug route shares the same (restaurant, language, version) entry.
+        var viaSlug = await Menu(client, Slug(f.A));
+        Assert.Equal(2, f.Queries.Count);
+        Assert.Equal(first.Restaurant, viaSlug.Restaurant);
+        // A real owner edit bumps the version transactionally: the next read re-reads content.
+        var owner = await f.Login();
+        Assert.Equal(HttpStatusCode.OK, (await owner.Send(HttpMethod.Put, "/api/v1/admin/items/" + f.ItemA.Id,
+            new UpdateItemRequest(f.CategoryA.Id, "new-name", null, null, null, 12.50m, "EGP", 1, true, true, Convert.ToBase64String(f.ItemA.RowVersion)))).StatusCode);
+        f.Queries.Reset();
+        var after = await Menu(client, Code(f.A));
+        Assert.Equal(5, f.Queries.Count);
+        Assert.Equal(first.PublishedMenuVersion + 1, after.PublishedMenuVersion);
+        Assert.Equal("new-name", Assert.Single(Assert.Single(after.Categories).Items).Name);
+    }
+
+    [SqlServerFact]
+    public async Task ETag_revalidates_against_the_live_version_and_returns_304_until_it_moves()
+    {
+        await using var f = await Fixture.Create();
+        using var client = f.Client;
+        var response = await client.GetAsync(Code(f.A));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl!.NoCache);
+        Assert.False(response.Headers.CacheControl!.NoStore);
+        Assert.NotNull(response.Headers.ETag);
+        var etag = response.Headers.ETag!.ToString();
+        Assert.Equal("\"" + 1 + ":ar\"", etag);
+        using var revalidate = new HttpRequestMessage(HttpMethod.Get, Code(f.A));
+        revalidate.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        var notModified = await client.SendAsync(revalidate);
+        Assert.Equal(HttpStatusCode.NotModified, notModified.StatusCode);
+        Assert.Equal(etag, notModified.Headers.ETag?.ToString());
+        Assert.Empty(await notModified.Content.ReadAsStringAsync());
+        // Typed If-None-Match semantics: comma-separated lists, weak tags and *
+        // match the current validator; a non-matching tag gets a fresh 200.
+        async Task<HttpStatusCode> Revalidate(string header)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, Code(f.A));
+            request.Headers.TryAddWithoutValidation("If-None-Match", header);
+            return (await client.SendAsync(request)).StatusCode;
+        }
+        Assert.Equal(HttpStatusCode.NotModified, await Revalidate("\"999:ar\", " + etag));
+        Assert.Equal(HttpStatusCode.NotModified, await Revalidate("W/" + etag));
+        Assert.Equal(HttpStatusCode.NotModified, await Revalidate("*"));
+        Assert.Equal(HttpStatusCode.OK, await Revalidate("\"999:ar\""));
+        // A version-moving owner edit makes the same validator stale: fresh 200.
+        var owner = await f.Login();
+        Assert.Equal(HttpStatusCode.OK, (await owner.Send(HttpMethod.Put, "/api/v1/admin/items/" + f.ItemA.Id,
+            new UpdateItemRequest(f.CategoryA.Id, "new-name", null, null, null, 12.50m, "EGP", 1, true, true, Convert.ToBase64String(f.ItemA.RowVersion)))).StatusCode);
+        using var again = new HttpRequestMessage(HttpMethod.Get, Code(f.A));
+        again.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        var fresh = await client.SendAsync(again);
+        Assert.Equal(HttpStatusCode.OK, fresh.StatusCode);
+        Assert.NotEqual(etag, fresh.Headers.ETag?.ToString());
+    }
+
+    [SqlServerFact]
+    public async Task A_name_edit_through_the_tenant_session_bumps_the_publication_version()
+    {
+        await using var f = await Fixture.Create();
+        var owner = await f.Login();
+        using var client = f.Client;
+        var before = await Menu(client, Code(f.A));
+        await f.Run(owner, async (services, _) =>
+        {
+            var session = services.GetRequiredService<ITenantDataSession>();
+            (await session.EditAsync<Restaurant>(f.A.Id)).Name = "Renamed";
+            await session.CommitAsync();
+        });
+        var after = await Menu(client, Code(f.A));
+        Assert.Equal(before.PublishedMenuVersion + 1, after.PublishedMenuVersion);
+        Assert.Equal("Renamed", after.Restaurant.Name);
+    }
+
+    [SqlServerFact]
+    public async Task A_version_flip_during_a_cold_load_retries_and_serves_the_new_consistent_projection()
+    {
+        var flipper = new MidReadFlipper(maxFlips: 1, unpublish: false);
+        await using var f = await Fixture.Create(flipper);
+        using var client = f.Client;
+        var menu = await Menu(client, Code(f.A));
+        // The hook must really have changed rows (2 statements: restaurant + item), or the test proves nothing.
+        Assert.Equal(1, flipper.Flips);
+        Assert.Equal(2, flipper.RowsAffected);
+        Assert.Equal(2, menu.PublishedMenuVersion);
+        Assert.Equal("flipped-1", Assert.Single(Assert.Single(menu.Categories).Items).Name);
+    }
+
+    [SqlServerFact]
+    public async Task Two_version_flips_during_a_cold_load_fail_closed_with_503()
+    {
+        var flipper = new MidReadFlipper(maxFlips: 2, unpublish: false);
+        await using var f = await Fixture.Create(flipper);
+        using var client = f.Client;
+        var response = await client.GetAsync(Code(f.A));
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(2, flipper.Flips);
+        Assert.Equal(4, flipper.RowsAffected);
+    }
+
+    [SqlServerFact]
+    public async Task Unpublish_during_a_cold_load_returns_404_and_caches_nothing()
+    {
+        var flipper = new MidReadFlipper(maxFlips: 1, unpublish: true);
+        await using var f = await Fixture.Create(flipper);
+        using var client = f.Client;
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(Code(f.A))).StatusCode);
+        Assert.Equal(1, flipper.Flips);
+        Assert.Equal(1, flipper.RowsAffected);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(Code(f.A))).StatusCode);
+        // While unpublished, change item data directly WITHOUT bumping the version
+        // (test-only bypass), then republish out of band. The live probe must serve
+        // a fresh read; a leaked mid-flight cache entry would serve the old name.
+        await using (var direct = new SqlConnection(f.Auth.Connection))
+        {
+            await direct.OpenAsync();
+            await using var change = direct.CreateCommand();
+            change.CommandText = "UPDATE MenuItems SET NameAr = N'renamed-offline' WHERE RestaurantId = @id; " +
+                "UPDATE Restaurants SET IsPublished = 1 WHERE Id = @id";
+            change.Parameters.Add(new SqlParameter("@id", f.A.Id));
+            await change.ExecuteNonQueryAsync();
+        }
+        var menu = await Menu(client, Code(f.A));
+        Assert.Equal(1, menu.PublishedMenuVersion); // No version bump happened.
+        Assert.Equal("renamed-offline", Assert.Single(Assert.Single(menu.Categories).Items).Name);
     }
 
     [Fact]

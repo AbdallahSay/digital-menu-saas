@@ -213,10 +213,12 @@ describe('Static Asset Delivery — gzip middleware must still serve real assets
     assert.ok((r.headers.get('content-type') ?? '').includes('text/plain'));
   });
 
-  it('/sitemap.xml returns 200 XML', async () => {
+  it('/sitemap.xml is disabled by default: 404, no-store, noindex, no URLs', async () => {
     const r = await get('/sitemap.xml');
-    assert.equal(r.status, 200);
-    assert.ok((r.headers.get('content-type') ?? '').includes('xml'));
+    assert.equal(r.status, 404);
+    assert.equal(r.headers.get('cache-control'), 'no-store');
+    assert.equal(r.headers.get('x-robots-tag'), 'noindex');
+    assert.doesNotMatch(await r.text(), /<url/);
   });
 
   it('/favicon.ico returns 204 no content', async () => {

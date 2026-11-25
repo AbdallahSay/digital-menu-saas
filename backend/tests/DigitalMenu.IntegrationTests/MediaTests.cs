@@ -55,6 +55,10 @@ public sealed class MediaTests
             Assert.True(Objects.TryAdd(key, image));
             if (AfterPut is not null) await AfterPut();
         }
+        public Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct) =>
+            Task.FromResult(Objects.TryGetValue(key, out var image)
+                ? (variant == "thumbnail" ? image.Thumbnail : image.Main)
+                : null);
         public Task RemoveAsync(string key, CancellationToken ct)
         {
             Removals++;
@@ -341,8 +345,14 @@ public sealed class MediaTests
         Assert.Equal(HttpStatusCode.NoContent, (await f.A.Send(HttpMethod.Delete, Route(f.ItemA.Id) + "/" + image.Id)).StatusCode);
         Assert.False(Directory.Exists(bundle));
         Assert.False(await db.Set<MenuItemImage>().AsNoTracking().AnyAsync(i => i.Id == image.Id));
-        Directory.Delete(Path.Combine(root, key.Split('/')[0]), false);
-        Directory.Delete(root, false);
+        // Allowed residue after a delete: the now-empty tenant directory and the empty durable-intent index directory.
+        // Nothing else may remain at either level; each is checked empty before the recursive disposal below.
+        var tenantDir = Path.Combine(root, key.Split('/')[0]);
+        var indexDir = Path.Combine(root, LocalImageStorage.PendingDirName);
+        Assert.Equal(new[] { indexDir, tenantDir }.OrderBy(d => d, StringComparer.Ordinal), Directory.EnumerateFileSystemEntries(root).OrderBy(d => d, StringComparer.Ordinal));
+        Assert.Empty(Directory.EnumerateFileSystemEntries(tenantDir));
+        Assert.Empty(Directory.EnumerateFileSystemEntries(indexDir));
+        Directory.Delete(root, true);
     }
 
     [SqlServerFact]
@@ -429,16 +439,22 @@ public sealed class MediaTests
         var bundle = Path.Combine(root, key.Split('/')[0], key.Split('/')[1][..32]);
         var thumbnail = Path.Combine(bundle, "thumbnail.webp");
         File.Delete(thumbnail);
-        Directory.CreateDirectory(thumbnail); // Deterministic cross-platform delete failure.
-        await Assert.ThrowsAnyAsync<Exception>(() => storage.RemoveAsync(key, default));
+        Directory.CreateDirectory(thumbnail); // A directory under a known name is an unknown entry: preserved, bundle stays hidden.
+        await storage.RemoveAsync(key, default);
         Assert.True(File.Exists(Path.Combine(bundle, "delete.pending")));
+        Assert.True(File.Exists(Path.Combine(root, LocalImageStorage.StuckDirName, key.Split('/')[0] + "_" + key.Split('/')[1][..32])));
+        Assert.Null(await storage.GetAsync(key, "main", default));
         Directory.Delete(thumbnail, false);
+        // Writes no longer trigger cleanup: the bundle stays until a worker pass runs.
         var next = key.Split('/')[0] + "/" + Guid.NewGuid().ToString("N") + ".webp";
         await storage.PutAsync(next, image, default);
-        Assert.False(Directory.Exists(bundle));
+        Assert.True(Directory.Exists(bundle));
         await storage.RemoveAsync(next, default);
-        Directory.Delete(Path.Combine(root, key.Split('/')[0]), false);
-        Directory.Delete(root, false);
+        storage.UtcNow = () => DateTime.UtcNow.AddHours(25);
+        for (var i = 0; i < 6 && Directory.Exists(bundle); i++)
+            storage.RunPass(10, TimeSpan.FromSeconds(5), TimeSpan.Zero, TimeSpan.FromHours(24), TimeSpan.FromHours(1), default);
+        Assert.False(Directory.Exists(bundle));
+        Directory.Delete(root, true);
     }
 
     [Fact]

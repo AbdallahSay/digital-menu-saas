@@ -40,8 +40,15 @@ jobs:
           npm audit --audit-level=high
           npm run lint
           npm test -- --watch=false
+          npm run test:router
+          npm run test:sitemap
           npm run build
+          node ../scripts/build-vercel.mjs # also writes dist/digital-menu/build-manifest.json
+          npm run test:sitemap:server
+          npm run test:vercel:wiring
+          npm run test:vercel
           npx playwright install --with-deps chromium
+          npm run test:routes
       - name: Raw HTTP, browser and Lighthouse gates against local production build
         shell: bash
         run: |
@@ -60,7 +67,74 @@ jobs:
           export F02_SQL_CONNECTION="Server=localhost,1433;User ID=sa;Password=$SQL_PASSWORD;Encrypt=false"
           export S01_FRONTEND_GATES=1
           export CHROME_PATH="$(cd frontend && node -e "console.log(require('@playwright/test').chromium.executablePath())")"
-          dotnet test backend/DigitalMenu.slnx -c Release --no-build --filter FullyQualifiedName~PublicSsrTests --logger trx --logger 'console;verbosity=detailed'
+          # Keep running the nine and three SQL facts even if the SSR gate fails; the step still fails at the end.
+          ssr_rc=0
+          dotnet test backend/DigitalMenu.slnx -c Release --no-build --filter FullyQualifiedName~PublicSsrTests --logger trx --logger 'console;verbosity=detailed' || ssr_rc=$?
+
+          rm -rf backend/tests/DigitalMenu.IntegrationTests/TestResults/presentation-sql
+          # Results go into the existing uploaded backend TestResults tree.
+          dotnet test backend/tests/DigitalMenu.IntegrationTests/DigitalMenu.IntegrationTests.csproj \
+            -c Release --no-build \
+            --filter 'FullyQualifiedName~DigitalMenu.IntegrationTests.HeroFeaturedTests|FullyQualifiedName~DigitalMenu.IntegrationTests.PresentationTests' \
+            --results-directory backend/tests/DigitalMenu.IntegrationTests/TestResults/presentation-sql \
+            --logger 'trx;LogFileName=presentation-sql.trx' \
+            --logger 'console;verbosity=detailed'
+
+          # A zero exit alone is insufficient: xUnit skips and empty selection can exit 0.
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          path = Path('backend/tests/DigitalMenu.IntegrationTests/TestResults/presentation-sql/presentation-sql.trx')
+          root = ET.parse(path).getroot()
+          ns = {'t': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
+          expected = {
+              'HeroFeaturedTests.Hero_upload_replace_and_delete_keep_storage_settings_and_public_menu_consistent',
+              'HeroFeaturedTests.Hero_is_tenant_isolated_and_invalid_or_failed_uploads_change_nothing',
+              'HeroFeaturedTests.Featured_flag_defaults_false_toggles_both_ways_and_each_toggle_bumps_the_public_version',
+              'PresentationTests.Defaults_are_classic_with_no_texts_and_no_hero',
+              'PresentationTests.Put_sets_presentation_fields_and_projects_them_to_the_public_menu_with_a_version_bump',
+              'PresentationTests.Put_without_presentation_fields_leaves_them_unchanged_and_empty_clears',
+              'PresentationTests.Put_rejects_an_unknown_theme_overlong_text_and_a_stale_row_version',
+              'PresentationTests.Another_tenant_sees_nothing_of_the_first_tenants_presentation',
+              'PresentationTests.Hero_routes_require_a_login_and_the_public_hero_is_404_without_an_upload',
+          }
+          results = root.findall('./t:Results/t:UnitTestResult', ns)
+          seen = []
+          for result in results:
+              name = result.attrib.get('testName', '')
+              prefix = 'DigitalMenu.IntegrationTests.'
+              short = name.removeprefix(prefix)
+              outcome = result.attrib.get('outcome', '')
+              if short not in expected:
+                  raise SystemExit(f'Unexpected SQL fact selected: {name}')
+              if outcome != 'Passed':
+                  raise SystemExit(f'SQL fact did not execute and pass: {name}: {outcome}')
+              seen.append(short)
+          if len(seen) != len(expected) or set(seen) != expected:
+              raise SystemExit(f'Expected exactly nine distinct passing SQL facts; got {len(seen)}. Missing: {sorted(expected - set(seen))}')
+          print('PASS: all nine expected hero/featured/presentation SQL facts executed and passed')
+          PY
+
+          # Production operator bootstrap SQL fact must execute and pass, not skip.
+          rm -rf backend/tests/DigitalMenu.IntegrationTests/TestResults/bootstrap-sql
+          dotnet test backend/tests/DigitalMenu.IntegrationTests/DigitalMenu.IntegrationTests.csproj \
+            -c Release --no-build \
+            --filter 'FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Creates_first_platform_admin_once_and_refuses_when_users_exist|FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing|FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Refuses_when_intended_server_differs_from_the_resolved_server_with_the_same_catalog_and_writes_nothing' \
+            --results-directory backend/tests/DigitalMenu.IntegrationTests/TestResults/bootstrap-sql \
+            --logger 'trx;LogFileName=bootstrap-sql.trx'
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root = ET.parse(Path('backend/tests/DigitalMenu.IntegrationTests/TestResults/bootstrap-sql/bootstrap-sql.trx')).getroot()
+          ns = {'t': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
+          res = [(r.attrib.get('testName', ''), r.attrib.get('outcome', '')) for r in root.findall('./t:Results/t:UnitTestResult', ns)]
+          want = sorted(('DigitalMenu.IntegrationTests.ProductionBootstrapTests.' + n, 'Passed') for n in ('Creates_first_platform_admin_once_and_refuses_when_users_exist', 'Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing', 'Refuses_when_intended_server_differs_from_the_resolved_server_with_the_same_catalog_and_writes_nothing'))
+          if sorted(res) != want:
+              raise SystemExit(f'Bootstrap SQL facts did not execute and pass: {res}')
+          print('PASS: all three production bootstrap SQL facts executed and passed')
+          PY
+          if [ "$ssr_rc" -ne 0 ]; then echo "PublicSsrTests failed with exit code $ssr_rc"; exit "$ssr_rc"; fi
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

@@ -17,4 +17,7 @@
     <ProjectReference Include="..\DigitalMenu.Infrastructure\DigitalMenu.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="DigitalMenu.IntegrationTests" />
+  </ItemGroup>
 </Project>

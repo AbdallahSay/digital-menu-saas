@@ -29,6 +29,7 @@ public sealed class RestaurantConfiguration : IEntityTypeConfiguration<Restauran
         b.Property(x => x.Slug).HasMaxLength(100).IsRequired();
         b.Property(x => x.PublicCode).HasMaxLength(20).IsRequired();
         b.Property(x => x.Status).HasMaxLength(16).IsRequired();
+        b.Property(x => x.IsIndexable).HasDefaultValue(false);
         b.HasIndex(x => x.Slug).IsUnique();
         b.HasIndex(x => x.PublicCode).IsUnique();
         b.Property(x => x.PublicCode).Metadata.SetAfterSaveBehavior(Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Throw);
@@ -123,6 +124,7 @@ public sealed class SettingsConfiguration : IEntityTypeConfiguration<RestaurantS
             t.HasCheckConstraint("CK_Settings_Locale", "[DefaultLocale] IN ('ar','en')");
             t.HasCheckConstraint("CK_Settings_Color", "LEN([PrimaryColor]) = 7 AND LEFT([PrimaryColor],1) = '#' AND SUBSTRING([PrimaryColor],2,6) COLLATE Latin1_General_100_BIN2 NOT LIKE '%[^0-9A-Fa-f]%'");
             t.HasCheckConstraint("CK_Settings_Contacts", "[PublishedContactDetailsFlags] BETWEEN 0 AND 3");
+            t.HasCheckConstraint("CK_Settings_Theme", "[Theme] IN ('classic','cafe')");
         });
         b.HasKey(x => x.RestaurantId);
         b.HasOne<Restaurant>().WithOne().HasForeignKey<RestaurantSettings>(x => x.RestaurantId);
@@ -132,6 +134,10 @@ public sealed class SettingsConfiguration : IEntityTypeConfiguration<RestaurantS
         b.Property(x => x.ContactPhoneOptional).HasMaxLength(32);
         b.Property(x => x.AddressOptional).HasMaxLength(500);
         b.Property(x => x.Description).HasMaxLength(2000);
+        b.Property(x => x.Theme).HasMaxLength(16).HasDefaultValue("classic");
+        b.Property(x => x.BrandLabel).HasMaxLength(40);
+        b.Property(x => x.TaglineAr).HasMaxLength(120);
+        b.Property(x => x.TaglineEn).HasMaxLength(120);
         b.Property(x => x.DefaultLocale).HasMaxLength(2);
         b.Property(x => x.RowVersion).IsRowVersion();
     }
@@ -149,5 +155,39 @@ public sealed class AuditConfiguration : IEntityTypeConfiguration<AuditEntry>
         b.Property(x => x.ResourceType).HasMaxLength(100);
         b.Property(x => x.CorrelationId).HasMaxLength(100);
         b.HasIndex(x => new { x.RestaurantId, x.TimestampUtc });
+    }
+}
+
+public sealed class LeadConfiguration : IEntityTypeConfiguration<Lead>
+{
+    public void Configure(EntityTypeBuilder<Lead> b)
+    {
+        b.ToTable("Leads", t =>
+        {
+            t.UseSqlOutputClause(false);
+            t.HasCheckConstraint("CK_Leads_Status", "[Status] IN ('New','Contacted','Closed')");
+        });
+        b.HasKey(x => x.Id);
+        b.Property(x => x.ContactName).HasMaxLength(120);
+        b.Property(x => x.BusinessName).HasMaxLength(160);
+        b.Property(x => x.Phone).HasMaxLength(24);
+        b.Property(x => x.Email).HasMaxLength(256);
+        b.Property(x => x.Notes).HasMaxLength(1000);
+        b.Property(x => x.NoticeVersion).HasMaxLength(48);
+        b.Property(x => x.NoticeFingerprint).HasMaxLength(64);
+        b.Property(x => x.Status).HasMaxLength(16);
+        b.HasIndex(x => x.CreatedUtc);
+        b.HasIndex(x => x.ExpiresUtc);
+        b.Property(x => x.RowVersion).IsRowVersion();
+    }
+}
+
+public sealed class LeadQuotaConfiguration : IEntityTypeConfiguration<LeadQuota>
+{
+    public void Configure(EntityTypeBuilder<LeadQuota> b)
+    {
+        b.ToTable("LeadQuotas");
+        b.HasKey(x => x.HourUtc);
+        b.Property(x => x.HourUtc).ValueGeneratedNever();
     }
 }

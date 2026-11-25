@@ -27,14 +27,19 @@ public sealed class DevelopmentOnboardingTests
             => Messages.Enqueue(formatter(state, exception));
         public void Dispose() { }
     }
-    [Theory]
+    [UnixOnlyTheory]
     [InlineData("Production", true)]
     [InlineData("Production", false)]
     [InlineData("Staging", true)]
+    public Task Local_delivery_is_unavailable_without_both_explicit_activation_and_Development(string environment, bool enabled) => LocalDeliveryUnavailable(environment, enabled);
+
+    [Theory]
     [InlineData("Development", false)]
-    public async Task Local_delivery_is_unavailable_without_both_explicit_activation_and_Development(string environment, bool enabled)
+    public Task Local_delivery_is_unavailable_in_Development_without_explicit_activation(string environment, bool enabled) => LocalDeliveryUnavailable(environment, enabled);
+
+    private static async Task LocalDeliveryUnavailable(string environment, bool enabled)
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment(environment)
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment(environment).UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()).UseSetting("DataProtection:ApplicationName", "test-prod")
             .UseSetting("DevelopmentOnboarding:Enabled", enabled.ToString()));
         Assert.IsType<UnconfiguredOwnerOnboardingDelivery>(factory.Services.GetRequiredService<IOwnerOnboardingDelivery>());
         Assert.False(factory.Services.GetRequiredService<IOwnerOnboardingDelivery>().IsAvailable);

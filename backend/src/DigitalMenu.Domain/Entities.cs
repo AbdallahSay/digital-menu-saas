@@ -16,6 +16,8 @@ public sealed class Restaurant : VersionedEntity
     public string Status { get; set; } = "Active";
     public bool IsPublished { get; set; }
     public long PublishedMenuVersion { get; set; } = 1;
+    // Search-engine listing opt-in. Default off for every row. Who may change it is an open owner decision.
+    public bool IsIndexable { get; set; }
 }
 
 public sealed class RestaurantUser
@@ -50,6 +52,8 @@ public sealed class MenuItem : VersionedEntity
     public bool IsPublished { get; set; }
     public bool IsAvailable { get; set; } = true;
     public bool IsDeleted { get; set; }
+    // Shown in the public menu's featured section (Figma "featured picks"). Default off for every existing row.
+    public bool IsFeatured { get; set; }
 }
 
 public sealed class MenuItemImage
@@ -78,6 +82,11 @@ public sealed class RestaurantSettings
     public int PublishedContactDetailsFlags { get; set; }
     public string DefaultLocale { get; set; } = "ar";
     public string? Description { get; set; }
+    // Public menu presentation (Figma home and cafe variants). Existing rows get the classic theme and no text.
+    public string Theme { get; set; } = "classic";
+    public string? BrandLabel { get; set; }
+    public string? TaglineAr { get; set; }
+    public string? TaglineEn { get; set; }
     public byte[] RowVersion { get; set; } = [];
 }
 
@@ -91,4 +100,32 @@ public sealed class AuditEntry
     public Guid? ResourceId { get; set; }
     public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
     public string? CorrelationId { get; set; }
+}
+
+/// <summary>
+/// Sales lead from the marketing form. Platform-level data (no tenant). Personal data: keep minimal,
+/// never log it, and expire it after the configured retention window.
+/// </summary>
+public sealed class Lead
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+    public DateTime ExpiresUtc { get; set; }
+    public string ContactName { get; set; } = "";
+    public string BusinessName { get; set; } = "";
+    public string Phone { get; set; } = "";
+    public string? Email { get; set; }
+    public string? Notes { get; set; }
+    public string NoticeVersion { get; set; } = "";
+    /// <summary>Full SHA-256 of the approved notice (version, facts, text hash) this lead was collected under.</summary>
+    public string NoticeFingerprint { get; set; } = "";
+    public string Status { get; set; } = "New";
+    public byte[] RowVersion { get; set; } = [];
+}
+
+/// <summary>Accepted-request counter per UTC hour. Independent of retained leads, so deleting a lead never reopens quota.</summary>
+public sealed class LeadQuota
+{
+    public DateTime HourUtc { get; set; }
+    public int Count { get; set; }
 }

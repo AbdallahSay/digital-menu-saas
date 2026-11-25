@@ -4,15 +4,18 @@ public interface IImageStorage
 {
     Task PutAsync(string key, NormalizedImage image, CancellationToken ct);
     Task RemoveAsync(string key, CancellationToken ct);
+    /// <summary>Reads one immutable variant ("main" or "thumbnail"); null when absent.</summary>
+    Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct);
 }
 public sealed class UnavailableImageStorage : IImageStorage
 {
     public Task PutAsync(string key, NormalizedImage image, CancellationToken ct) => throw new MediaException(503);
     public Task RemoveAsync(string key, CancellationToken ct) => throw new MediaException(503);
+    public Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct) => throw new MediaException(503);
 }
 
 // Private local adapter; no HTTP/static-file serving. Trusted OS user owns this directory.
-public sealed class LocalImageStorage : IImageStorage
+public sealed class LocalImageStorage : IImageStorage, IDisposable
 {
     private readonly string root;
     private readonly ILogger<LocalImageStorage> logger;
@@ -21,6 +24,9 @@ public sealed class LocalImageStorage : IImageStorage
         if (!Path.IsPathFullyQualified(root)) throw new InvalidOperationException("Media root must be absolute.");
         this.root = Path.GetFullPath(root);
         this.logger = logger;
+        // Refuse links in existing ancestors before creating anything, then check again after creation.
+        // Narrows, does not close, the window for another writer to swap a component.
+        RejectLinks(this.root);
         Directory.CreateDirectory(this.root);
         RejectLinks(this.root);
     }
@@ -30,7 +36,8 @@ public sealed class LocalImageStorage : IImageStorage
             if (current.Exists && (current.Attributes & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("Media path is not permitted.");
     }
-    private string Bundle(string key)
+    private string Bundle(string key) => Locate(key).path;
+    private (string path, string tenant, string id) Locate(string key)
     {
         var parts = key.Split('/');
         if (parts.Length != 2 || !Guid.TryParseExact(parts[0], "D", out var tenant) || tenant == Guid.Empty || parts[0] != tenant.ToString("D") ||
@@ -39,11 +46,10 @@ public sealed class LocalImageStorage : IImageStorage
         var path = Path.GetFullPath(Path.Combine(root, parts[0], parts[1][..32]));
         if (!path.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal)) throw new MediaException(400);
         RejectLinks(path);
-        return path;
+        return (path, parts[0], parts[1][..32]);
     }
     public async Task PutAsync(string key, NormalizedImage image, CancellationToken ct)
     {
-        RetryMarkedCleanup();
         var path = Bundle(key);
         // Reserve the server-owned random key exclusively; never overwrite an existing object.
         Directory.CreateDirectory(path);
@@ -68,44 +74,303 @@ public sealed class LocalImageStorage : IImageStorage
         await file.WriteAsync(bytes, ct);
         await file.FlushAsync(ct);
     }
+    public async Task<byte[]?> GetAsync(string key, string variant, CancellationToken ct)
+    {
+        if (variant is not ("main" or "thumbnail")) throw new MediaException(400);
+        var (bundle, tenant, id) = Locate(key);
+        // A bundle whose deletion is pending or stuck is already gone for readers. Three exact-path checks, no directory scan.
+        if (File.Exists(Path.Combine(bundle, "delete.pending")) || File.Exists(IndexEntry(PendingDirName, tenant, id)) || File.Exists(IndexEntry(StuckDirName, tenant, id))) return null;
+        try
+        {
+            var file = Path.Combine(bundle, variant + ".webp");
+            // Leaf links are never followed: a replaced symlink/reparse file reads as absent, not as outside content.
+            var info = new FileInfo(file);
+            if (info.Exists && (info.Attributes.HasFlag(FileAttributes.ReparsePoint) || info.LinkTarget is not null)) return null;
+            return await File.ReadAllBytesAsync(file, ct);
+        }
+        catch (FileNotFoundException) { return null; }
+        catch (DirectoryNotFoundException) { return null; }
+    }
+    // Durable deletion intent lives in two places: delete.pending inside the bundle and an index file under
+    // <root>/.cleanup-pending named "<tenant>_<id>" (opaque ids only). A bundle with either, or with an entry under
+    // <root>/.cleanup-stuck, is hidden from readers until its directory is gone. The index is what the cleanup worker
+    // enumerates, so it never walks tenant directories.
+    internal const string PendingDirName = ".cleanup-pending";
+    internal const string StuckDirName = ".cleanup-stuck";
+    private static readonly string[] KnownFiles = { "main.webp", "thumbnail.webp", "reservation" };
+    private string IndexEntry(string dir, string tenant, string id) => Path.Combine(root, dir, tenant + "_" + id);
+    internal Func<DateTime> UtcNow { get; set; } = () => DateTime.UtcNow;
+    private readonly SemaphoreSlim sweepGate = new(1, 1);
+
+    private void EnsureIndexDir(string name)
+    {
+        var dir = Path.Combine(root, name);
+        RejectLinks(dir);
+        Directory.CreateDirectory(dir);
+        RejectLinks(dir);
+    }
+    private static void CreateEmpty(string file)
+    {
+        var info = new FileInfo(file);
+        if (info.Exists)
+        {
+            if (info.Attributes.HasFlag(FileAttributes.ReparsePoint) || info.LinkTarget is not null) throw new IOException("Media path is not permitted.");
+            return;
+        }
+        using var _ = new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+    }
+
     public async Task RemoveAsync(string key, CancellationToken ct)
     {
-        var path = Bundle(key);
+        var (path, tenant, id) = Locate(key);
         if (!Directory.Exists(path)) return;
-        // Durable deletion intent only after metadata absence is known; retries never inspect pending uploads.
+        // Durable deletion intent only after metadata absence is known; the callers guarantee that order.
+        EnsureIndexDir(PendingDirName);
+        var entry = IndexEntry(PendingDirName, tenant, id);
+        CreateEmpty(entry);
         var marker = Path.Combine(path, "delete.pending");
         if (File.Exists(marker) && (File.GetAttributes(marker) & FileAttributes.ReparsePoint) != 0) throw new IOException("Media path is not permitted.");
         await File.WriteAllTextAsync(marker, "", ct);
-        DeleteMarked(path);
+        // Best-effort inline attempt. A transient failure throws and leaves the durable intent for the worker.
+        if (FinishDelete(path) == Outcome.Done) File.Delete(entry);
+        else { MoveToStuck(entry); logger.LogWarning("Private media cleanup is stuck for one bundle; see the {Dir} directory.", StuckDirName); }
     }
-    private static void DeleteMarked(string path)
+
+    private enum Outcome { Done, Unknown }
+
+    // Deletes only the known file names, the marker and the empty directory. Anything else (unknown names, a
+    // directory or link under a known name) is preserved and reported as Unknown; nothing is removed in that case.
+    // The index entry, not the marker, keeps the bundle hidden while the marker is removed before the directory.
+    private Outcome FinishDelete(string path)
     {
+        if (!Directory.Exists(path)) return Outcome.Done;
         RejectLinks(path);
-        foreach (var name in new[] { "main.webp", "thumbnail.webp", "reservation" })
+        try
         {
-            var file = Path.Combine(path, name);
-            if (File.Exists(file) && (File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0) throw new IOException("Media path is not permitted.");
-            File.Delete(file);
+            foreach (var e in new DirectoryInfo(path).EnumerateFileSystemInfos())
+                if ((Array.IndexOf(KnownFiles, e.Name) < 0 && e.Name != "delete.pending") || e is DirectoryInfo ||
+                    e.Attributes.HasFlag(FileAttributes.ReparsePoint) || e.LinkTarget is not null)
+                    return Outcome.Unknown;
+            foreach (var name in KnownFiles) File.Delete(Path.Combine(path, name));
+            File.Delete(Path.Combine(path, "delete.pending"));
+            Directory.Delete(path, false);
         }
-        File.Delete(Path.Combine(path, "delete.pending"));
-        try { Directory.Delete(path, false); }
-        catch { File.WriteAllText(Path.Combine(path, "delete.pending"), ""); throw; }
+        catch (DirectoryNotFoundException) { }   // removed concurrently (for example by the worker): already done
+        return Outcome.Done;
     }
-    private void RetryMarkedCleanup()
+
+    private void MoveToStuck(string entry)
     {
-        var processed = 0;
-        foreach (var tenant in Directory.EnumerateDirectories(root))
+        EnsureIndexDir(StuckDirName);
+        var dest = Path.Combine(root, StuckDirName, Path.GetFileName(entry));
+        File.Move(entry, dest, true);
+        if (IsRegularFile(dest)) File.SetLastWriteTimeUtc(dest, UtcNow());
+    }
+
+    // ---- Background maintenance -------------------------------------------------------------------------------------
+    // One pass walks three lists with retained forward enumerators (pending index, stuck index, legacy markers) and
+    // resumes each where the previous pass stopped. EVERY examined entry counts against the pass budget, so a prefix
+    // of young, failing or anomalous entries cannot hold back later ones. A completed traversal starts over on the
+    // next pass (stuck, pending) or after legacyEvery (legacy walk). A process restart simply restarts all traversals.
+    // The enumerators are lazy snapshots of a changing directory: an entry added mid-traversal may be seen on the
+    // next traversal instead. The gate serializes RunPass with itself only; RemoveAsync's inline attempt is not covered.
+    internal readonly record struct MaintenanceResult(int Examined, int Deleted, int Stuck, int Failed, int Anomalies, int Revived, int Adopted, bool Truncated, bool Skipped);
+    private IEnumerator<string>? pendingEnum, stuckEnum, tenantEnum, bundleEnum;
+    private DateTime legacyNextStart = DateTime.MinValue;
+    private int passNumber;
+    // Instance-scoped test seam, called once per examined entry inside a pass. Never set in production.
+    internal Action? OnExaminedForTests { get; set; }
+
+    private sealed class PassState
+    {
+        public int Examined, Deleted, Stuck, Failed, Anomalies, Revived, Adopted; public bool Truncated;
+        public required System.Diagnostics.Stopwatch Clock; public required TimeSpan MaxTime; public required CancellationToken Ct;
+        public bool TimeUp => Clock.Elapsed > MaxTime;
+    }
+
+    private static bool IsRegularFile(string file)
+    {
+        var info = new FileInfo(file);
+        return info.Exists && !info.Attributes.HasFlag(FileAttributes.ReparsePoint) && info.LinkTarget is null;
+    }
+    private static bool IsRealDirectory(string dir)
+    {
+        var info = new DirectoryInfo(dir);
+        return info.Exists && !info.Attributes.HasFlag(FileAttributes.ReparsePoint) && info.LinkTarget is null;
+    }
+    private static void Close(ref IEnumerator<string>? e) { e?.Dispose(); e = null; }
+
+    internal MaintenanceResult RunPass(int examineBudget, TimeSpan maxTime, TimeSpan backoff, TimeSpan revivalAge, TimeSpan legacyEvery, CancellationToken ct)
+    {
+        if (!sweepGate.Wait(0)) return new MaintenanceResult(0, 0, 0, 0, 0, 0, 0, false, true);
+        try
         {
-            if (!Guid.TryParseExact(Path.GetFileName(tenant), "D", out _)) continue;
-            RejectLinks(tenant);
-            foreach (var bundle in Directory.EnumerateDirectories(tenant))
+            var st = new PassState { Clock = System.Diagnostics.Stopwatch.StartNew(), MaxTime = maxTime, Ct = ct };
+            var pending = Math.Max(1, examineBudget * 6 / 10); var stuck = Math.Max(1, examineBudget * 2 / 10); var legacy = Math.Max(1, examineBudget - pending - stuck);
+            var order = passNumber++ % 3;   // rotate which list goes first when the time budget is short
+            for (var i = 0; i < 3; i++)
+                switch ((order + i) % 3)
+                {
+                    case 0: PendingStep(pending, backoff, st); break;
+                    case 1: StuckStep(stuck, revivalAge, st); break;
+                    default: LegacyStep(legacy, legacyEvery, st); break;
+                }
+            return new MaintenanceResult(st.Examined, st.Deleted, st.Stuck, st.Failed, st.Anomalies, st.Revived, st.Adopted, st.Truncated, false);
+        }
+        finally { sweepGate.Release(); }
+    }
+
+    private bool Next(ref IEnumerator<string>? e, ref int slice, PassState st, out string current)
+    {
+        current = "";
+        st.Ct.ThrowIfCancellationRequested();
+        if (e is null) return false;
+        if (slice <= 0 || st.TimeUp) { st.Truncated = true; return false; }
+        bool has;
+        try { has = e.MoveNext(); }
+        catch (Exception x) when (x is IOException or UnauthorizedAccessException) { st.Failed++; Close(ref e); return false; }
+        if (!has) { Close(ref e); return false; }
+        slice--; st.Examined++; OnExaminedForTests?.Invoke();
+        current = e.Current;
+        return true;
+    }
+
+    private void PendingStep(int slice, TimeSpan backoff, PassState st)
+    {
+        var dir = Path.Combine(root, PendingDirName);
+        if (pendingEnum is null)
+        {
+            if (!IsRealDirectory(dir)) { if (Directory.Exists(dir)) st.Anomalies++; return; }
+            pendingEnum = Directory.EnumerateFiles(dir).GetEnumerator();
+        }
+        while (Next(ref pendingEnum, ref slice, st, out var file))
+        {
+            if (!IsRegularFile(file)) { st.Anomalies++; continue; }           // links and the like are left untouched
+            if (UtcNow() - File.GetLastWriteTimeUtc(file) < backoff) continue;
+            var name = Path.GetFileName(file);
+            try
             {
-                if (!Guid.TryParseExact(Path.GetFileName(bundle), "N", out _) || !File.Exists(Path.Combine(bundle, "delete.pending"))) continue;
-                if (++processed > 100) return;
-                try { DeleteMarked(bundle); }
-                catch (IOException) { logger.LogWarning("Private media cleanup pending."); }
-                catch (UnauthorizedAccessException) { logger.LogWarning("Private media cleanup pending."); }
+                if (name.Length != 69 || name[36] != '_' || !Guid.TryParseExact(name[..36], "D", out _) || !Guid.TryParseExact(name[37..], "N", out _))
+                { MoveToStuck(file); st.Stuck++; continue; }
+                var path = Path.GetFullPath(Path.Combine(root, name[..36], name[37..]));
+                if (FinishDelete(path) == Outcome.Done) { File.Delete(file); st.Deleted++; }
+                else { MoveToStuck(file); st.Stuck++; }
             }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                st.Failed++;
+                try { if (IsRegularFile(file)) File.SetLastWriteTimeUtc(file, UtcNow()); } catch (Exception t) when (t is IOException or UnauthorizedAccessException) { }
+            }
+        }
+    }
+
+    private void StuckStep(int slice, TimeSpan revivalAge, PassState st)
+    {
+        var dir = Path.Combine(root, StuckDirName);
+        if (stuckEnum is null)
+        {
+            if (!IsRealDirectory(dir)) { if (Directory.Exists(dir)) st.Anomalies++; return; }
+            stuckEnum = Directory.EnumerateFiles(dir).GetEnumerator();
+        }
+        while (Next(ref stuckEnum, ref slice, st, out var file))
+        {
+            if (!IsRegularFile(file)) { st.Anomalies++; continue; }
+            if (UtcNow() - File.GetLastWriteTimeUtc(file) < revivalAge) continue;
+            try
+            {
+                EnsureIndexDir(PendingDirName);
+                File.Move(file, Path.Combine(root, PendingDirName, Path.GetFileName(file)), true);   // moves the entry itself, nothing is deleted
+                st.Revived++;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { st.Failed++; }
+        }
+    }
+
+    // Adopts bundles marked by earlier code (delete.pending without an index entry) by creating the missing empty index
+    // entry only. It deletes nothing and touches no bundle without a regular-file marker. Failed directories are retried
+    // when the next traversal starts, not skipped for good.
+    private void LegacyStep(int slice, TimeSpan every, PassState st)
+    {
+        if (tenantEnum is null && bundleEnum is null)
+        {
+            if (UtcNow() < legacyNextStart) return;
+            tenantEnum = Directory.EnumerateDirectories(root).GetEnumerator();
+        }
+        while (!st.Ct.IsCancellationRequested)
+        {
+            if (bundleEnum is null)
+            {
+                if (tenantEnum is null) return;
+                if (!Next(ref tenantEnum, ref slice, st, out var tenantPath))
+                {
+                    if (tenantEnum is null) legacyNextStart = UtcNow() + every;   // traversal finished (or enumerator failed): next one after `every`
+                    return;
+                }
+                var tenant = Path.GetFileName(tenantPath);
+                if (!Guid.TryParseExact(tenant, "D", out _)) continue;
+                if (!IsRealDirectory(tenantPath)) { st.Anomalies++; continue; }
+                try { bundleEnum = Directory.EnumerateDirectories(tenantPath).GetEnumerator(); }
+                catch (Exception x) when (x is IOException or UnauthorizedAccessException) { st.Failed++; }
+                continue;
+            }
+            if (!Next(ref bundleEnum, ref slice, st, out var bundlePath)) { if (bundleEnum is not null) return; continue; }
+            var tenantName = Path.GetFileName(Path.GetDirectoryName(bundlePath)!); var id = Path.GetFileName(bundlePath);
+            if (!Guid.TryParseExact(id, "N", out _)) continue;
+            try
+            {
+                if (!IsRealDirectory(bundlePath)) { st.Anomalies++; continue; }
+                var marker = Path.Combine(bundlePath, "delete.pending");
+                if (!File.Exists(marker)) continue;
+                if (!IsRegularFile(marker)) { st.Anomalies++; continue; }
+                if (File.Exists(IndexEntry(PendingDirName, tenantName, id)) || File.Exists(IndexEntry(StuckDirName, tenantName, id))) continue;
+                EnsureIndexDir(PendingDirName);
+                CreateEmpty(IndexEntry(PendingDirName, tenantName, id));
+                st.Adopted++;
+            }
+            catch (Exception x) when (x is IOException or UnauthorizedAccessException) { st.Failed++; }
+        }
+    }
+
+    internal int CountStuck(int limit)
+    {
+        var dir = Path.Combine(root, StuckDirName);
+        if (!Directory.Exists(dir)) return 0;
+        RejectLinks(dir);
+        return Directory.EnumerateFiles(dir).Take(limit).Count();
+    }
+
+    public void Dispose()
+    {
+        Close(ref pendingEnum); Close(ref stuckEnum); Close(ref tenantEnum); Close(ref bundleEnum);
+    }
+}
+
+/// <summary>
+/// Runs one bounded maintenance pass at host start (restart catch-up) and then on an interval. It works only on bundles
+/// already marked for deletion (pending index, stuck index, legacy markers) and never touches live bundles or pending
+/// uploads. No interval or completion time is promised under backlog or downtime. The pass time budget is cooperative:
+/// it is checked between synchronous file system calls, and a blocked call cannot be interrupted at 5 seconds.
+/// </summary>
+public sealed class MediaCleanupWorker(IImageStorage storage, IConfiguration configuration, ILogger<MediaCleanupWorker> logger) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        if (storage is not LocalImageStorage local) return;
+        await Task.Yield();
+        var seconds = int.TryParse(configuration["Media:CleanupIntervalSeconds"], out var s) ? Math.Clamp(s, 1, 3600) : 300;
+        var interval = TimeSpan.FromSeconds(seconds);
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                var r = local.RunPass(500, TimeSpan.FromSeconds(5), interval, TimeSpan.FromHours(24), TimeSpan.FromHours(24), ct);
+                if (r.Stuck > 0 || r.Failed > 0 || r.Anomalies > 0 || r.Adopted > 0 || r.Truncated)
+                    logger.LogWarning("Private media cleanup pass: examined {Examined}, deleted {Deleted}, stuck {Stuck}, revived {Revived}, adopted {Adopted}, failed {Failed}, anomalies {Anomalies}, truncated {Truncated}; counts are for this pass only.",
+                        r.Examined, r.Deleted, r.Stuck, r.Revived, r.Adopted, r.Failed, r.Anomalies, r.Truncated);
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception e) { logger.LogWarning("Private media cleanup pass failed: {Type}.", e.GetType().Name); }
+            try { await Task.Delay(interval, ct); } catch (OperationCanceledException) { break; }
         }
     }
 }

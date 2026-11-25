@@ -29,6 +29,8 @@ public interface ITenantDataSession
 {
     Task<IReadOnlyList<TResult>> ReadItemsAsync<TResult>(Expression<Func<DigitalMenu.Domain.MenuItem, TResult>> projection,
         int page, int pageSize, Guid? categoryId, string? search, CancellationToken cancellationToken = default);
+    /// <summary>One deterministic (lowest SortOrder, then lowest Id) image per requested owned item, chosen in SQL before any bound.</summary>
+    Task<IReadOnlyList<(Guid ItemId, Guid ImageId)>> ReadFirstImagesAsync(IReadOnlyCollection<Guid> itemIds, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TResult>> ReadCategoriesAsync<TResult>(Expression<Func<DigitalMenu.Domain.Category, TResult>> projection,
         int page, int pageSize, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TResult>> ReadAsync<TEntity, TResult>(Expression<Func<TEntity, bool>> filter,

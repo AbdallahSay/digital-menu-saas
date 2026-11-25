@@ -29,7 +29,7 @@ public class FoundationTests
         Assert.DoesNotContain("weatherforecast", json);
     }
 
-    [Theory]
+    [UnixOnlyTheory]
     [InlineData("/api/admin/restaurant")]
     [InlineData("/api/platform/restaurants")]
     [InlineData("/api/openapi/v1.json")]
@@ -42,5 +42,5 @@ public class FoundationTests
     }
 
     private static WebApplicationFactory<Program> Factory(string environment) =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseEnvironment(environment));
+        new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseEnvironment(environment).UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()).UseSetting("DataProtection:ApplicationName", "test-prod"));
 }

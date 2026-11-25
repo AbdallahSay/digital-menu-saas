@@ -5,12 +5,33 @@ import { gunzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { chromium } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  ADMIN_MARKERS,
+  adminChunks,
+  chunksContaining,
+  coldScripts,
+  hydrationProbe,
+  assertHydrated,
+  enforceBudget,
+  gzipBytes,
+  verifyBuildManifest,
+  writeRouteEvidence,
+} from './route-js-lib.mjs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const origin = process.env.S01_ORIGIN;
 assert.ok(origin, 'Run through PublicSsrTests with real SQL fixtures.');
 const privateIds = process.env.S01_PRIVATE_IDS.split(',');
 const a = 'مطعم ألف <script>globalThis.s01Canary=true</script>';
 const b = 'مطعم باء';
+// Restaurant A has a logo; the public page renders it through the opaque public-code URL
+// (never the object key or restaurant id).
+const logoPath = '/api/v1/public/media/logo/' + 'a'.repeat(20);
+const logoUrl = origin + logoPath;
+const tinyPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
 function raw(path, encoding = 'gzip', method = 'GET') {
   return new Promise((resolve, reject) => {
     const request = http.request(
@@ -63,15 +84,13 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
     assert.ok(doc.title.includes(a));
     assert.equal(doc.querySelector('link[rel=canonical]').href, origin + '/r/s01-a');
     assert.deepEqual(
-      [...doc.querySelectorAll('h2')].map((n) => n.textContent),
+      [...doc.querySelectorAll('h2[id^="category-"]')].map((n) => n.textContent),
       language === 'ar' ? ['قسم سابق', 'قسم ألف'] : ['Earlier A', 'First A'],
     );
     assert.ok(doc.querySelectorAll('h3')[0].textContent.includes('صنف أول'));
     assert.ok(doc.querySelector('main').textContent.includes('9999999999999999.99'));
     assert.ok(doc.querySelector('main').textContent.includes('12.50'));
-    assert.ok(
-      doc.querySelector('main').textContent.includes(language === 'en' ? 'EGP' : 'جنيه مصري'),
-    );
+    assert.ok(doc.querySelector('main').textContent.includes(language === 'en' ? 'EGP' : 'ج.م'));
     assert.ok(
       doc.querySelector('main').textContent.includes(language === 'ar' ? 'صنف ألف' : 'Item A'),
     );
@@ -80,14 +99,27 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
         .querySelector('main')
         .textContent.includes('</script><script>globalThis.s01Canary=true</script>'),
     );
-    assert.equal(doc.querySelectorAll('img').length, 0);
+    const images = [...doc.querySelectorAll('img')];
+    assert.equal(images.length, 1);
+    assert.equal(images[0].className, 'restaurant-logo');
+    assert.equal(images[0].getAttribute('src'), logoPath);
     const executable = [...doc.querySelectorAll('script:not([src])')].filter(
       (node) => node.type !== 'application/json',
     );
     const cssLoader =
       "document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})";
+    // Angular 22.2.2 event replay emits exactly two inline scripts once the template has (click)/(input)
+    // handlers. Allow them only by pinned content, so any other inline script still fails.
+    const ngContractSha = '54cda666ac84419a0bce84eba79122805bf3434f9fd7049e06ea0e9fde561c28';
+    const ngBootstrap = 'window.__jsaction_bootstrap(document.body,"ng",["click","input"],[]);';
     assert.ok(
-      executable.every((node) => node.textContent === cssLoader),
+      executable.every(
+        (node) =>
+          node.textContent === cssLoader ||
+          node.textContent === ngBootstrap ||
+          (node.id === 'ng-event-dispatch-contract' &&
+            createHash('sha256').update(node.textContent).digest('hex') === ngContractSha),
+      ),
       'Unexpected executable inline script',
     );
     for (const forbidden of [
@@ -98,7 +130,8 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
       'restaurantId',
       'userId',
       'objectKey',
-      'logoUrl',
+      'logoObjectKey',
+      'S01_SECRET_KEY',
       'imageUrl',
       b,
     ])
@@ -190,20 +223,34 @@ test('JavaScript-disabled content, hydration without duplicate API fetch, RTL/LT
         });
         const page = await context.newPage();
         const errors = [];
+        const pageErrors = [];
         const api = [];
-        page.on('pageerror', (error) => errors.push(error.message));
+        const failed = [];
+        // The seeded logo object is not in storage, so serve exactly that URL a tiny valid PNG.
+        // Everything else stays real: no console error, page error or failed request is allowed.
+        await page.route(logoUrl, (route) =>
+          route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }),
+        );
+        page.on('pageerror', (error) => pageErrors.push(error.message));
         page.on('console', (message) => {
           if (message.type() === 'error') errors.push(message.text());
         });
         page.on('request', (request) => {
-          if (request.url().includes('/api/v1/public/')) api.push(request.url());
+          if (request.url().includes('/api/v1/public/') && request.url() !== logoUrl)
+            api.push(request.url());
+        });
+        page.on('requestfailed', (request) => failed.push(request.url()));
+        page.on('response', (response) => {
+          if (response.status() >= 400) failed.push(response.url());
         });
         await page.goto(origin + '/r/s01-a?lang=' + language, { waitUntil: 'networkidle' });
         assert.equal(await page.locator('h1').textContent(), a);
         assert.ok((await page.locator('main').textContent()).includes('9999999999999999.99'));
         if (javaScriptEnabled) {
           assert.equal(await page.evaluate(() => globalThis.s01Canary), undefined);
+          assert.deepEqual(pageErrors, []);
           assert.deepEqual(errors, []);
+          assert.deepEqual(failed, []);
           assert.deepEqual(api, []);
         }
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
@@ -215,6 +262,139 @@ test('JavaScript-disabled content, hydration without duplicate API fetch, RTL/LT
       }
   } finally {
     await browser.close();
+  }
+});
+test('cold SQL-backed AR/EN menu routes stay within the JS gate and never fetch the named marker chunks', async () => {
+  const folder = 'dist/digital-menu/browser';
+  verifyBuildManifest(folder);
+  for (const m of ADMIN_MARKERS)
+    assert.ok(chunksContaining(folder, [m]).length > 0, `marker ${m} matches no chunk`);
+  const browser = await chromium.launch();
+  const measured = {};
+  try {
+    for (const language of ['ar', 'en']) {
+      const files = await coldScripts(browser, origin + '/r/s01-a?lang=' + language, folder, {
+        lang: language,
+        dir: language === 'ar' ? 'rtl' : 'ltr',
+        readySelector: 'main',
+        prepare: (page) =>
+          page.route(logoUrl, (route) =>
+            route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }),
+          ),
+        expectText: language === 'ar' ? 'صنف ألف' : 'Item A',
+      });
+      const measurement = { files, bytes: gzipBytes(folder, files) };
+      console.log('cold JS', language, measurement.bytes, 'B gzip', files.length, 'scripts');
+      measured['/r/s01-a?lang=' + language] = measurement;
+      writeRouteEvidence('route-js-sql', folder, measured, browser.version());
+      enforceBudget('/r/s01-a?lang=' + language, measurement);
+      for (const f of adminChunks(folder))
+        assert.ok(!files.includes(f), 'admin chunk fetched: ' + f);
+    }
+  } finally {
+    await browser.close();
+  }
+});
+test('SQL-backed AR/EN menu routes hydrate the server-rendered DOM in the same load that is budgeted', async () => {
+  const folder = 'dist/digital-menu/browser';
+  verifyBuildManifest(folder);
+  for (const m of ADMIN_MARKERS)
+    assert.ok(chunksContaining(folder, [m]).length > 0, `marker ${m} matches no chunk`);
+  const browser = await chromium.launch();
+  const evidence = {};
+  const prepare = (page) =>
+    page.route(logoUrl, (route) =>
+      route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }),
+    );
+  try {
+    for (const language of ['ar', 'en']) {
+      const url = origin + '/r/s01-a?lang=' + language;
+      const expected = {
+        headingText: a,
+        contains: language === 'ar' ? 'صنف ألف' : 'Item A',
+        lang: language,
+        dir: language === 'ar' ? 'rtl' : 'ltr',
+      };
+      const r = await hydrationProbe(browser, url, folder, { prepare, ...expected });
+      evidence[language] = {
+        url: new URL(url).pathname + new URL(url).search,
+        heldBefore: r.heldBefore,
+        before: r.before,
+        after: r.after,
+        problems: r.problems,
+        files: r.files,
+        gzipBytes: gzipBytes(folder, r.files),
+      };
+      assertHydrated(r, url);
+      // The same load that proved hydration is the one that is budgeted.
+      enforceBudget(url + ' (hydration load)', {
+        files: r.files,
+        bytes: evidence[language].gzipBytes,
+      });
+      for (const f of adminChunks(folder))
+        assert.ok(!r.files.includes(f), 'admin chunk fetched: ' + f);
+      // Controls: client never boots; and the SSR heading is replaced before the client boots.
+      const never = await hydrationProbe(browser, url, folder, {
+        prepare,
+        ...expected,
+        neverRelease: true,
+        timeout: 8000,
+      });
+      assert.throws(() => assertHydrated(never, url), /hydration markers left/);
+      const swapped = await hydrationProbe(browser, url, folder, {
+        prepare,
+        ...expected,
+        replaceSsrNode: true,
+      });
+      assert.throws(() => assertHydrated(swapped, url), /not hydrated/);
+      // Gate-contract controls on this same path: a foreign-origin script and an extensionless script
+      // injected after load must be reported as problems, never charged to the budget.
+      for (const [name, src, pattern] of [
+        ['foreign', 'http://foreign.invalid/injected.js', /foreign script origin/],
+        ['extensionless', origin + '/injected-script', /not a built artifact/],
+      ]) {
+        const injected = await hydrationProbe(browser, url, folder, {
+          prepare: async (page) => {
+            await prepare(page);
+            await page.route(src, (route) =>
+              route.fulfill({
+                status: 200,
+                contentType: 'text/javascript',
+                body: '/* injected */',
+              }),
+            );
+            await page.addInitScript((s) => {
+              addEventListener('load', () =>
+                setTimeout(() => {
+                  const el = document.createElement('script');
+                  el.src = s;
+                  document.head.append(el);
+                }, 300),
+              );
+            }, src);
+          },
+          ...expected,
+        });
+        assert.ok(
+          injected.problems.some((p) => pattern.test(p)),
+          `${name} injected script not reported: ${injected.problems.join('|')}`,
+        );
+        assert.throws(() => assertHydrated(injected, url), /not hydrated/);
+        assert.ok(!injected.files.some((f) => /injected/.test(f)), name + ' counted as measured');
+      }
+      evidence[language].controls = {
+        neverRelease: { markersLeft: never.after.hydrationMarkers, rejected: true },
+        replaceSsrNode: {
+          nodeReused: swapped.after.nodeReused,
+          problems: swapped.problems.length,
+          rejected: true,
+        },
+      };
+    }
+  } finally {
+    await browser.close();
+    mkdirSync('.lighthouseci', { recursive: true });
+    writeFileSync('.lighthouseci/hydration-sql.json', JSON.stringify(evidence, null, 2));
   }
 });
 test('three Lighthouse runs on a genuine SQL-backed menu retain >=90 mobile gates', () => {

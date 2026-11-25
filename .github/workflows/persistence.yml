@@ -28,6 +28,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          node ../scripts/build-vercel.mjs # writes dist/digital-menu/build-manifest.json, same as F01
           npx playwright install --with-deps chromium
       - name: Run disposable SQL Server and required integrity suite
         shell: bash
@@ -50,8 +51,10 @@ jobs:
           dotnet tool restore
           dotnet restore backend/DigitalMenu.slnx --locked-mode
           dotnet build backend/DigitalMenu.slnx -c Release --no-restore
-          dotnet ef migrations has-pending-model-changes --project backend/src/DigitalMenu.Infrastructure
-          dotnet ef migrations script --idempotent --project backend/src/DigitalMenu.Infrastructure --output migration.sql
+          dotnet ef migrations has-pending-model-changes --project backend/src/DigitalMenu.Infrastructure --context MenuDbContext
+          dotnet ef migrations has-pending-model-changes --project backend/src/DigitalMenu.Infrastructure --context DataProtectionKeyDbContext
+          dotnet ef migrations script --idempotent --project backend/src/DigitalMenu.Infrastructure --context MenuDbContext --output migration.sql
+          dotnet ef migrations script --idempotent --project backend/src/DigitalMenu.Infrastructure --context DataProtectionKeyDbContext --output migration-dataprotection.sql
           dotnet test backend/DigitalMenu.slnx -c Release --no-build --logger trx
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
@@ -59,5 +62,6 @@ jobs:
           name: persistence-evidence
           path: |
             migration.sql
+            migration-dataprotection.sql
             backend/tests/**/TestResults/*.trx
             frontend/.lighthouseci/s01-*

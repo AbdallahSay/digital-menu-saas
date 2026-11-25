@@ -10,6 +10,7 @@
  * Licenses (all SIL OFL 1.1 — https://scripts.sil.org/OFL):
  *   Alexandria  — © 2021 Khaled Hosny <khaled@aliftype.com>
  *   Tajawal     — © 2017 Boutros El-Atme, Google
+ *   Cairo       — © 2009 The Cairo Project Authors (public menu, matches the Figma reference)
  *   Inter       — © 2020 The Inter Project Authors (Rasmus Andersson)
  * Cache version: v1 — bump ?v= query on every font file replacement.
  */
@@ -31,6 +32,72 @@
   font-weight: 700;
   font-display: swap;
   src: url('/fonts/alexandria-bold-latin.woff2?v=1') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cairo-arabic-400.woff2?v=1') format('woff2');
+  unicode-range:
+    U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+08A0-08FF, U+200C-200E, U+2010-2011,
+    U+204F, U+2E41, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cairo-latin-400.woff2?v=1') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/cairo-arabic-600.woff2?v=1') format('woff2');
+  unicode-range:
+    U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+08A0-08FF, U+200C-200E, U+2010-2011,
+    U+204F, U+2E41, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/cairo-latin-600.woff2?v=1') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/cairo-arabic-700.woff2?v=1') format('woff2');
+  unicode-range:
+    U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+08A0-08FF, U+200C-200E, U+2010-2011,
+    U+204F, U+2E41, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/cairo-latin-700.woff2?v=1') format('woff2');
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
     U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
@@ -1198,6 +1265,10 @@ h6,
   color: var(--color-brand-on-primary-container);
   line-height: var(--line-height-normal);
 }
+.service-form[hidden] {
+  display: none;
+}
+
 .service-form {
   display: flex;
   flex-direction: column;
@@ -1326,4 +1397,25 @@ h6,
 }
 .footer-note {
   margin: 0;
+}
+
+.hp-field {
+  position: absolute;
+  inset-inline-start: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.consent-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  line-height: 1.6;
+}
+
+.trust-check {
+  vertical-align: -3px;
+  margin-inline-end: 4px;
+  flex: none;
 }

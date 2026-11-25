@@ -10,17 +10,37 @@ public sealed record ImageResponse(Guid Id, Guid MenuItemId, int Width, int Heig
 public static class MediaEndpoints
 {
     public const long BodyLimit = ImageNormalizer.MaxBytes + 65536;
+    /// <summary>
+    /// Local disk is enabled in Development, or elsewhere only when Media:AllowLocalDisk=true is set explicitly.
+    /// That flag asserts the operator provides a persistent, private, backed-up volume outside the app directory
+    /// (uploads are not in SQL and are lost with the disk). Anything else serves 503 for media.
+    /// </summary>
+    public static bool LocalDiskEnabled(IHostEnvironment environment, IConfiguration configuration) =>
+        environment.IsDevelopment() || string.Equals(configuration["Media:AllowLocalDisk"], "true", StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Refuses a media root that is relative, or that equals, contains or sits inside the content root, the application
+    /// base directory or the configured Data Protection key directory. Existing path components are resolved through
+    /// symlinks before comparing. It runs when the storage service is first resolved, which is host start now that MediaCleanupWorker depends on it (with the local adapter enabled), and does not prevent a later replacement
+    /// of a path component by another writer.
+    /// </summary>
+    internal static void ValidateRoot(string root, IHostEnvironment environment, IConfiguration configuration)
+    {
+        if (!Path.IsPathFullyQualified(root)) throw new InvalidOperationException("Media root must be absolute.");
+        var real = DataProtectionConfiguration.ResolveLoose(root);
+        var others = new List<string> { environment.ContentRootPath, AppContext.BaseDirectory };
+        if (configuration[DataProtectionConfiguration.KeysPathKey] is { Length: > 0 } keys) others.Add(keys);
+        foreach (var other in others)
+            if (DataProtectionConfiguration.Overlaps(real, DataProtectionConfiguration.ResolveLoose(other)))
+                throw new InvalidOperationException("Media root must not overlap application, content or Data Protection key directories.");
+    }
     public static void AddMenuMedia(this IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
     {
         services.AddSingleton<ImageNormalizer>();
+        services.AddHostedService<MediaCleanupWorker>();
         services.AddSingleton<IImageStorage>(s =>
         {
-            if (!environment.IsDevelopment() || configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();
-            var full = Path.GetFullPath(root);
-            foreach (var protectedRoot in new[] { environment.ContentRootPath, AppContext.BaseDirectory })
-                if (full.StartsWith(Path.GetFullPath(protectedRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(full, Path.GetFullPath(protectedRoot).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Media root must be outside application directories.");
+            if (!LocalDiskEnabled(environment, configuration) || configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();
+            ValidateRoot(root, environment, configuration);
             return new LocalImageStorage(root, s.GetRequiredService<ILogger<LocalImageStorage>>());
         });
         services.Configure<FormOptions>(o =>
@@ -52,6 +72,8 @@ public static class MediaEndpoints
         try { await storage.RemoveAsync(key, CancellationToken.None); }
         catch (Exception) { logger.LogWarning("Private media cleanup pending."); }
     }
+    /// <summary>Best-effort object cleanup shared with the logo endpoints.</summary>
+    public static Task CleanupObject(IImageStorage storage, string key, ILogger logger) => Cleanup(storage, key, logger);
     public static void MapMenuMedia(this WebApplication app)
     {
         var group = app.MapGroup("/api/v1/admin/items/{id:guid}/images").RequireAuthorization("TenantOwner");

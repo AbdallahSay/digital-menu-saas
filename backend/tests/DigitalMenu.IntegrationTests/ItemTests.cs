@@ -30,7 +30,7 @@ public sealed class ItemTests(Xunit.Abstractions.ITestOutputHelper output)
         Assert.Equal(item, await fetched.Content.ReadFromJsonAsync<ItemResponse>());
         Assert.Equal("no-store", fetched.Headers.CacheControl!.ToString());
         var payload = await (await browser.Send(HttpMethod.Get, response.Headers.Location.ToString())).Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-        Assert.Equal(new[] { "categoryId", "currencyCode", "descriptionAr", "descriptionEn", "id", "isAvailable", "isPublished", "nameAr", "nameEn", "price", "rowVersion", "sortOrder" },
+        Assert.Equal(new[] { "categoryId", "currencyCode", "descriptionAr", "descriptionEn", "id", "imageId", "isAvailable", "isFeatured", "isPublished", "nameAr", "nameEn", "price", "rowVersion", "sortOrder" },
             payload.EnumerateObject().Select(p => p.Name).Order());
         return item;
     }
@@ -39,6 +39,48 @@ public sealed class ItemTests(Xunit.Abstractions.ITestOutputHelper output)
         var response = await browser.Send(HttpMethod.Put, Route + "/" + item.Id, request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<ItemResponse>())!;
+    }
+
+    [SqlServerFact]
+    public async Task Item_reads_expose_only_the_owners_own_image_id_for_thumbnail_read_back()
+    {
+        await using var f = await Fixture.Create();
+        await f.A.Csrf();
+        var single = await (await f.A.Send(HttpMethod.Get, Route + "/" + f.ItemA.Id)).Content.ReadFromJsonAsync<ItemResponse>();
+        Assert.Equal(f.ImageA.Id, single!.ImageId);
+        var page = await (await f.A.Send(HttpMethod.Get, Route)).Content.ReadFromJsonAsync<ItemPageResponse>();
+        Assert.Equal(f.ImageA.Id, page!.Items.Single(i => i.Id == f.ItemA.Id).ImageId);
+        var other = await Add(f.A, Request(f.CategoryA.Id));
+        Assert.Null(other.ImageId);
+        await f.B.Csrf();
+        var foreign = await (await f.B.Send(HttpMethod.Get, Route)).Content.ReadFromJsonAsync<ItemPageResponse>();
+        Assert.DoesNotContain(foreign!.Items, i => i.ImageId == f.ImageA.Id);
+    }
+
+    [SqlServerFact]
+    public async Task First_image_is_one_deterministic_winner_per_item_even_beyond_100_image_rows()
+    {
+        await using var f = await Fixture.Create();
+        await f.A.Csrf();
+        var other = await Add(f.A, Request(f.CategoryA.Id));
+        Guid expectedOther;
+        using (var scope = f.Auth.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+            MenuItemImage Make(Guid item, int sort) => new() { RestaurantId = f.RestaurantA, MenuItemId = item, ObjectKey = f.RestaurantA + "/" + Guid.NewGuid() + ".webp", SortOrder = sort, Width = 1, Height = 1 };
+            // 150 later-sorted rows on ItemA must not hide ImageA (sort 0) nor starve the other item.
+            for (var i = 0; i < 150; i++) db.Add(Make(f.ItemA.Id, 5));
+            var tiedA = Make(other.Id, 1);
+            var tiedB = Make(other.Id, 1);
+            db.AddRange(Make(other.Id, 2), tiedA, tiedB);
+            await db.SaveChangesAsync();
+            expectedOther = (await db.Set<MenuItemImage>().Where(i => i.Id == tiedA.Id || i.Id == tiedB.Id).OrderBy(i => i.Id).Select(i => i.Id).FirstAsync());
+        }
+        var page = await (await f.A.Send(HttpMethod.Get, Route)).Content.ReadFromJsonAsync<ItemPageResponse>();
+        Assert.Equal(f.ImageA.Id, page!.Items.Single(i => i.Id == f.ItemA.Id).ImageId);
+        Assert.Equal(expectedOther, page.Items.Single(i => i.Id == other.Id).ImageId);
+        var single = await (await f.A.Send(HttpMethod.Get, Route + "/" + f.ItemA.Id)).Content.ReadFromJsonAsync<ItemResponse>();
+        Assert.Equal(f.ImageA.Id, single!.ImageId);
     }
 
     [SqlServerFact]

@@ -1,15 +1,20 @@
 using DigitalMenu.Api.Auth;
 using DigitalMenu.Api.Catalog;
+using DigitalMenu.Api.Leads;
 using DigitalMenu.Api.Media;
 using DigitalMenu.Api.Platform;
 using DigitalMenu.Api.Public;
 using DigitalMenu.Application;
 using DigitalMenu.Infrastructure.Tenancy;
+using DigitalMenu.Api.Proxy;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
+// X-Forwarded-For is processed only with a validated nonempty trusted-proxy
+// allowlist; see TrustedProxyConfiguration and docs/09-DEVOPS.
+TrustedProxyConfiguration.Configure(builder.Services, builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TenantProblemHandler>();
 builder.Services.AddExceptionHandler<MediaProblemHandler>();
@@ -24,7 +29,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(opt
 builder.Services.AddHealthChecks();
 builder.Services.AddMenuIdentity(builder.Configuration);
 builder.Services.AddMenuMedia(builder.Environment, builder.Configuration);
+DigitalMenu.Api.DataProtectionConfiguration.Configure(builder.Services, builder.Environment, builder.Configuration);
 builder.Services.AddPublicMenus();
+builder.Services.AddLeadIntake(builder.Configuration);
 builder.Services.AddDevelopmentOnboarding(builder.Environment, builder.Configuration);
 builder.Services.AddSingleton<IRestaurantPublicCodeGenerator, CryptographicPublicCodeGenerator>();
 builder.Services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(options =>
@@ -38,11 +45,18 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+if (args.Contains("--bootstrap-admin=production", StringComparer.Ordinal))
+{
+    await ProductionBootstrap.RunAsync(app.Services, app.Environment, app.Configuration);
+    return;
+}
 if (args.Contains("--bootstrap-admin=true", StringComparer.Ordinal))
 {
     await DevelopmentBootstrap.RunAsync(app.Services, app.Environment, app.Configuration);
     return;
 }
+if (TrustedProxyConfiguration.IsEnabled(app.Configuration))
+    app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.Use(async (context, next) =>
@@ -70,6 +84,9 @@ app.Use(async (context, next) =>
         context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } bodySize)
         bodySize.MaxRequestBodySize = context.GetEndpoint()?.Metadata.GetMetadata<MediaUploadMetadata>() is not null
             ? MediaEndpoints.BodyLimit : context.Request.Path.StartsWithSegments("/api/v1/admin/items") ? 32768 : 8192;
+    if (context.Request.Path.StartsWithSegments("/api/v1/auth/leads") &&
+        context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } leadBody)
+        leadBody.MaxRequestBodySize = LeadEndpoints.BodyLimit;
     if (context.Request.Path.StartsWithSegments("/api") &&
         !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method))
     {
@@ -95,9 +112,12 @@ app.Use(async (context, next) =>
 });
 app.MapMenuAuthentication();
 app.MapPlatformProvisioning();
+app.MapLeads();
 app.MapCategories();
 app.MapItems();
 app.MapMenuMedia();
+app.MapMenuMediaReads();
+app.MapSettings();
 app.MapPublicMenus();
 app.MapHealthChecks("/api/health/live").AllowAnonymous();
 // No external dependencies yet; readiness currently equals liveness.
