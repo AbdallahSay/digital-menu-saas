@@ -54,13 +54,14 @@ check is flaky on this host and not a stable gate. Treat a green run as evidence
 
 ## Data Protection keys (operational requirement)
 
-Outside Development the API refuses to start unless `DataProtection__KeysPath` names an explicit, absolute, dedicated directory. The keys sign auth cookies, antiforgery tokens and one-time identity tokens (owner setup links), so losing them signs out every owner and voids unused links.
+Outside Development the API refuses to start unless both `DataProtection__ApplicationName` (must differ per deployment, for example staging versus production, so key rings stay isolated) and `DataProtection__KeysPath` (an explicit, absolute, dedicated directory) are set. The keys sign auth cookies, antiforgery tokens and one-time identity tokens (owner setup links), so losing them signs out every owner and voids unused links. In Development without a path the framework default applies. Development now uses an explicit application name, so existing dev cookies and tokens issued before this change stop validating once, even with the same key directory.
 
-Enforced in code (Linux/macOS): the path must not be a filesystem root, its parent must already exist, it must not be a symlink, and after symlink resolution it must not contain or sit inside the application, content or media directories. A missing directory is created atomically with mode 0700. An existing directory must already be mode 0700 and is never chmod'ed.
+Checked in code (Linux/macOS): the path must be absolute and not a filesystem root, its parent must already exist, it must not be a symlink or reparse point, and after symlink resolution it must not contain or sit inside the application, content or media directories. A missing directory is created with mode 0700. An existing directory must have no group or other permission bits (owner bits are not required to be exactly rwx, so this is not an exact 0700 check) and must be owned by the service account (checked through `stat` and `id` found on PATH; ownership mismatch is not covered by a test). An existing directory is never chmod'ed.
 
-Not enforced, so these are open acceptance items, not done:
-- Directory ownership (must be the service account), shared or multi-instance readability, durable volume and backup of the key directory.
-- Windows: ACLs are not validated, so Windows is refused outside Development until a verified ACL or protected-store policy exists on the real target host.
+Not solved, so these are open acceptance items, not done:
+- Check-then-create-then-use race: the directory is validated, created and used in separate steps with no owner, mode or link revalidation after creation, so a writer in a writable parent could win the creation. Use only a trusted, stable, dedicated parent that other accounts cannot write to. Not acceptable for shared or hostile parents.
+- The `stat` and `id` helpers resolve from PATH and read output before the 5 second wait, so the timeout does not bound a stalled read.
+- Shared or multi-instance readability, durable volume and backup of the key directory.
+- Windows: ACLs are not validated, so Windows is refused outside Development until a verified ACL or protected-store policy exists on the real target host. Tests that set a production key path will fail at startup on Windows before their intended assertion, so they cannot be accepted as cross-platform as written.
 - Keys are plaintext XML at rest. No key encryption is configured; confidentiality relies on filesystem permissions and host isolation. Decide on a protected key store or encryption before real use.
-- Race-prone writable ancestors of the key directory are not checked.
 - Rotation is automatic (90 days); keep old keys. TLS termination and request/response log redaction are still open.
