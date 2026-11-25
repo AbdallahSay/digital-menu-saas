@@ -42,7 +42,7 @@ jobs:
             $psi = [Diagnostics.ProcessStartInfo]::new($msdeploy)
             $psi.UseShellExecute = $false; $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true
             $psi.ArgumentList.Add('-verb:dump')
-            $psi.ArgumentList.Add("-source:contentPath=Default Web Site,computerName=http://127.0.0.1:$port/msdeploy.axd?site=site111067,userName=site111067,password=$pw,authType=Basic")
+            $psi.ArgumentList.Add("-source:contentPath=site111067,computerName=http://127.0.0.1:$port/msdeploy.axd?site=site111067,userName=site111067,password=$pw,authType=Basic")
             $proc = [Diagnostics.Process]::Start($psi)
             $o = $proc.StandardOutput.ReadToEndAsync(); $e = $proc.StandardError.ReadToEndAsync()
             if (-not $proc.WaitForExit(60000)) { $proc.Kill(); "case=$k TIMEOUT"; continue }
