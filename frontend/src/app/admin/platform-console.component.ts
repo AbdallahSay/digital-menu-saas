@@ -116,81 +116,83 @@ export function describePlatformError(
         } @else if (rows().length === 0) {
           <p>لسه مفيش مطاعم.</p>
         } @else {
-          <table>
-            <thead>
-              <tr>
-                <th>الاسم</th>
-                <th>الرابط</th>
-                <th>الحالة</th>
-                <th>النشر</th>
-                <th>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (r of rows(); track r.id) {
+          <div class="table-scroll">
+            <table>
+              <thead>
                 <tr>
-                  <td>{{ r.name }}</td>
-                  <td dir="ltr">
-                    <a [href]="'/r/' + r.slug" target="_blank" rel="noopener">/r/{{ r.slug }}</a>
-                  </td>
-                  <td>{{ r.status === 'Active' ? 'نشط' : 'موقوف' }}</td>
-                  <td>{{ r.isPublished ? 'منشور' : 'غير منشور' }}</td>
-                  <td class="actions">
-                    @if (rowMessage(); as m) {
-                      @if (m.id === r.id) {
-                        <span [class]="m.kind" role="status">{{ m.text }}</span>
-                      }
-                    }
-                    @if (confirmLinkFor() === r.id) {
-                      <span class="confirm-text" role="alert">
-                        رابط جديد هيلغي أي رابط قديم ويطلّع المالك من كل الجلسات المفتوحة.
-                      </span>
-                      <button
-                        type="button"
-                        class="btn btn-secondary confirm-link"
-                        (click)="issueLink(r)"
-                        [disabled]="busy()"
-                      >
-                        تأكيد رابط جديد
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-secondary cancel-link"
-                        (click)="confirmLinkFor.set(null)"
-                      >
-                        إلغاء
-                      </button>
-                    } @else {
-                      <button
-                        type="button"
-                        class="btn btn-secondary ask-link"
-                        (click)="confirmLinkFor.set(r.id)"
-                        [disabled]="busy()"
-                      >
-                        رابط إعداد المالك
-                      </button>
-                    }
-                    <button
-                      type="button"
-                      class="btn btn-secondary"
-                      (click)="publish(r)"
-                      [disabled]="busy()"
-                    >
-                      {{ r.isPublished ? 'إلغاء النشر' : 'نشر' }}
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-secondary"
-                      (click)="toggleStatus(r)"
-                      [disabled]="busy()"
-                    >
-                      {{ r.status === 'Active' ? 'إيقاف' : 'تفعيل' }}
-                    </button>
-                  </td>
+                  <th>الاسم</th>
+                  <th>الرابط</th>
+                  <th>الحالة</th>
+                  <th>النشر</th>
+                  <th>الإجراءات</th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (r of rows(); track r.id) {
+                  <tr>
+                    <td>{{ r.name }}</td>
+                    <td dir="ltr">
+                      <a [href]="'/r/' + r.slug" target="_blank" rel="noopener">/r/{{ r.slug }}</a>
+                    </td>
+                    <td>{{ r.status === 'Active' ? 'نشط' : 'موقوف' }}</td>
+                    <td>{{ r.isPublished ? 'منشور' : 'غير منشور' }}</td>
+                    <td class="actions">
+                      @if (rowMessage(); as m) {
+                        @if (m.id === r.id) {
+                          <span [class]="m.kind" role="status">{{ m.text }}</span>
+                        }
+                      }
+                      @if (confirmLinkFor() === r.id) {
+                        <span class="confirm-text" role="alert">
+                          رابط جديد هيلغي أي رابط قديم ويطلّع المالك من كل الجلسات المفتوحة.
+                        </span>
+                        <button
+                          type="button"
+                          class="btn btn-secondary confirm-link"
+                          (click)="issueLink(r)"
+                          [disabled]="busy()"
+                        >
+                          تأكيد رابط جديد
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-secondary cancel-link"
+                          (click)="confirmLinkFor.set(null)"
+                        >
+                          إلغاء
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="btn btn-secondary ask-link"
+                          (click)="confirmLinkFor.set(r.id)"
+                          [disabled]="busy()"
+                        >
+                          رابط إعداد المالك
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="publish(r)"
+                        [disabled]="busy()"
+                      >
+                        {{ r.isPublished ? 'إلغاء النشر' : 'نشر' }}
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="toggleStatus(r)"
+                        [disabled]="busy()"
+                      >
+                        {{ r.status === 'Active' ? 'إيقاف' : 'تفعيل' }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
           @if (pageCount() > 1) {
             <nav class="pager" aria-label="الصفحات">
               <button
@@ -219,6 +221,9 @@ export function describePlatformError(
   `,
   styles: [
     `
+      .table-scroll {
+        overflow-x: auto;
+      }
       .platform {
         max-width: 960px;
         margin: 0 auto;

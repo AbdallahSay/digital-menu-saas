@@ -44,72 +44,74 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
       } @else if (rows().length === 0 && !message()) {
         <p>مفيش طلبات دلوقتي.</p>
       } @else {
-        <table>
-          <thead>
-            <tr>
-              <th>الاسم</th>
-              <th>النشاط</th>
-              <th>الرقم</th>
-              <th>ملاحظات</th>
-              <th>الحالة</th>
-              <th>بتتمسح في</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (l of rows(); track l.id) {
+        <div class="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td>{{ l.contactName }}</td>
-                <td>{{ l.businessName }}</td>
-                <td dir="ltr">{{ l.phone }}</td>
-                <td class="notes">{{ l.notes }}</td>
-                <td>
-                  <select
-                    [attr.aria-label]="'حالة طلب ' + l.contactName"
-                    [value]="l.status"
-                    (change)="setStatus(l, $any($event.target).value)"
-                    [disabled]="busy()"
-                  >
-                    @for (s of statuses; track s) {
-                      <option [value]="s" [selected]="s === l.status">{{ label(s) }}</option>
-                    }
-                  </select>
-                </td>
-                <td>{{ l.expiresUtc.slice(0, 10) }}</td>
-                <td>
-                  @if (confirmDelete() === l.id) {
-                    <span role="group" aria-label="تأكيد مسح الطلب">
-                      <span>هيتمسح نهائيًا.</span>
-                      <button
-                        type="button"
-                        class="btn btn-secondary"
-                        (click)="remove(l)"
-                        [disabled]="busy()"
-                      >
-                        تأكيد المسح
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-secondary"
-                        (click)="confirmDelete.set(null)"
-                      >
-                        إلغاء
-                      </button>
-                    </span>
-                  } @else {
-                    <button
-                      type="button"
-                      class="btn btn-secondary"
-                      (click)="confirmDelete.set(l.id)"
-                    >
-                      مسح
-                    </button>
-                  }
-                </td>
+                <th>الاسم</th>
+                <th>النشاط</th>
+                <th>الرقم</th>
+                <th>ملاحظات</th>
+                <th>الحالة</th>
+                <th>بتتمسح في</th>
+                <th></th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (l of rows(); track l.id) {
+                <tr>
+                  <td>{{ l.contactName }}</td>
+                  <td>{{ l.businessName }}</td>
+                  <td dir="ltr">{{ l.phone }}</td>
+                  <td class="notes">{{ l.notes }}</td>
+                  <td>
+                    <select
+                      [attr.aria-label]="'حالة طلب ' + l.contactName"
+                      [value]="l.status"
+                      (change)="setStatus(l, $any($event.target).value)"
+                      [disabled]="busy()"
+                    >
+                      @for (s of statuses; track s) {
+                        <option [value]="s" [selected]="s === l.status">{{ label(s) }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td>{{ l.expiresUtc.slice(0, 10) }}</td>
+                  <td>
+                    @if (confirmDelete() === l.id) {
+                      <span role="group" aria-label="تأكيد مسح الطلب">
+                        <span>هيتمسح نهائيًا.</span>
+                        <button
+                          type="button"
+                          class="btn btn-secondary"
+                          (click)="remove(l)"
+                          [disabled]="busy()"
+                        >
+                          تأكيد المسح
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-secondary"
+                          (click)="confirmDelete.set(null)"
+                        >
+                          إلغاء
+                        </button>
+                      </span>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="confirmDelete.set(l.id)"
+                      >
+                        مسح
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
         @if (pages() > 1) {
           <nav aria-label="صفحات الطلبات">
             <button
@@ -136,6 +138,9 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
   `,
   styles: [
     `
+      .table-scroll {
+        overflow-x: auto;
+      }
       .notes {
         max-width: 18rem;
         white-space: pre-wrap;

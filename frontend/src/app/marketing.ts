@@ -1,7 +1,7 @@
 import { Component, afterNextRender, inject, signal } from '@angular/core';
 import { Title, Meta } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { LeadIntakeService, LeadResult, LeadStatus } from './leads';
 
 interface ServiceRequestForm {
@@ -674,7 +674,7 @@ interface ServiceRequestForm {
 
             <form
               class="service-form"
-              (ngSubmit)="onFormSubmit()"
+              (ngSubmit)="onFormSubmit(form)"
               #form="ngForm"
               [hidden]="leadState() === 'done'"
             >
@@ -919,7 +919,7 @@ export class Marketing {
     this.mobileNavOpen.set(false);
   }
 
-  async onFormSubmit(): Promise<void> {
+  async onFormSubmit(form?: NgForm): Promise<void> {
     const status = this.leadStatus();
     if (this.leadBusy() || this.leadState() !== 'open' || !status?.noticeVersion) return;
     if (!this.formData.consent) return;
@@ -941,6 +941,7 @@ export class Marketing {
       this.formData.contactName = this.formData.restaurantName = this.formData.whatsapp = '';
       this.formData.message = '';
       this.formData.consent = false;
+      form?.resetForm(this.formData);
       this.leadState.set('done');
       return;
     }

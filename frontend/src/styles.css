@@ -1198,6 +1198,10 @@ h6,
   color: var(--color-brand-on-primary-container);
   line-height: var(--line-height-normal);
 }
+.service-form[hidden] {
+  display: none;
+}
+
 .service-form {
   display: flex;
   flex-direction: column;
