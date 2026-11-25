@@ -94,6 +94,50 @@ describe('lead form', () => {
   });
 });
 
+describe('lead form DOM after submit', () => {
+  async function fillAndSubmit(result: LeadResult) {
+    const { f } = await marketing(open, result);
+    const el = f.nativeElement as HTMLElement;
+    const set = async (id: string, v: string) => {
+      const i = el.querySelector('#' + id) as HTMLInputElement | HTMLTextAreaElement;
+      i.value = v;
+      i.dispatchEvent(new Event('input'));
+      i.dispatchEvent(new Event('blur'));
+      f.detectChanges();
+      await f.whenStable();
+    };
+    await set('contactName', 'Synthetic Person');
+    await set('restaurantName', 'Synthetic Cafe');
+    await set('whatsapp', '+201000000000');
+    const consent = el.querySelector('#consent') as HTMLInputElement;
+    consent.click();
+    f.detectChanges();
+    await f.whenStable();
+    const form = el.querySelector('form.service-form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit'));
+    for (let n = 0; n < 4; n++) {
+      await f.whenStable();
+      f.detectChanges();
+    }
+    return { el, f, form };
+  }
+  it('created: hides the form, clears values and touched state, shows the success notice', async () => {
+    const { el, form } = await fillAndSubmit('created');
+    expect(form.hidden).toBe(true);
+    expect(el.querySelector('[data-testid=lead-done]')).toBeTruthy();
+    expect((el.querySelector('#contactName') as HTMLInputElement).value).toBe('');
+    expect(el.querySelectorAll('.form-error').length).toBe(0);
+    expect(el.querySelector('.ng-touched')).toBeNull();
+  });
+  it('error: keeps the form visible with values and shows the error', async () => {
+    const { el, form } = await fillAndSubmit('error');
+    expect(form.hidden).toBe(false);
+    expect(el.querySelector('[data-testid=lead-done]')).toBeNull();
+    expect((el.querySelector('#contactName') as HTMLInputElement).value).toBe('Synthetic Person');
+    expect(el.querySelector('[data-testid=lead-error]')).toBeTruthy();
+  });
+});
+
 describe('privacy page', () => {
   it('is unavailable when closed and ready only with configured facts', async () => {
     setup(closed);

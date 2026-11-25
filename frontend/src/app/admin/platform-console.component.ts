@@ -116,7 +116,12 @@ export function describePlatformError(
         } @else if (rows().length === 0) {
           <p>لسه مفيش مطاعم.</p>
         } @else {
-          <div class="table-scroll">
+          <div
+            class="table-scroll"
+            role="region"
+            tabindex="0"
+            aria-label="جدول المطاعم، استخدم الأسهم للتمرير أفقيا"
+          >
             <table>
               <thead>
                 <tr>
@@ -223,6 +228,10 @@ export function describePlatformError(
     `
       .table-scroll {
         overflow-x: auto;
+      }
+      .table-scroll:focus-visible {
+        outline: 3px solid var(--color-focus, #0b7a6f);
+        outline-offset: 2px;
       }
       .platform {
         max-width: 960px;

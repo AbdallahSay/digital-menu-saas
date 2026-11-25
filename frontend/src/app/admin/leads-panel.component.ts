@@ -44,7 +44,12 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
       } @else if (rows().length === 0 && !message()) {
         <p>مفيش طلبات دلوقتي.</p>
       } @else {
-        <div class="table-scroll">
+        <div
+          class="table-scroll"
+          role="region"
+          tabindex="0"
+          aria-label="جدول طلبات الخدمة، استخدم الأسهم للتمرير أفقيا"
+        >
           <table>
             <thead>
               <tr>
@@ -140,6 +145,10 @@ const STATUS_LABEL: Record<LeadStatusName, string> = {
     `
       .table-scroll {
         overflow-x: auto;
+      }
+      .table-scroll:focus-visible {
+        outline: 3px solid var(--color-focus, #0b7a6f);
+        outline-offset: 2px;
       }
       .notes {
         max-width: 18rem;
