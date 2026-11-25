@@ -439,14 +439,14 @@ public sealed class MediaTests
         Assert.True(File.Exists(Path.Combine(root, LocalImageStorage.StuckDirName, key.Split('/')[0] + "_" + key.Split('/')[1][..32])));
         Assert.Null(await storage.GetAsync(key, "main", default));
         Directory.Delete(thumbnail, false);
-        // Writes no longer trigger cleanup: the bundle stays until a worker pass (revive + sweep) runs.
+        // Writes no longer trigger cleanup: the bundle stays until a worker pass runs.
         var next = key.Split('/')[0] + "/" + Guid.NewGuid().ToString("N") + ".webp";
         await storage.PutAsync(next, image, default);
         Assert.True(Directory.Exists(bundle));
         await storage.RemoveAsync(next, default);
         storage.UtcNow = () => DateTime.UtcNow.AddHours(25);
-        Assert.Equal(1, storage.ReviveStuck(10, TimeSpan.FromHours(24), default));
-        Assert.Equal(1, storage.Sweep(10, TimeSpan.FromSeconds(5), TimeSpan.Zero, default).Deleted);
+        for (var i = 0; i < 6 && Directory.Exists(bundle); i++)
+            storage.RunPass(10, TimeSpan.FromSeconds(5), TimeSpan.Zero, TimeSpan.FromHours(24), TimeSpan.FromHours(1), default);
         Assert.False(Directory.Exists(bundle));
         Directory.Delete(root, true);
     }
