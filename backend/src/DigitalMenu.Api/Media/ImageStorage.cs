@@ -348,7 +348,8 @@ public sealed class LocalImageStorage : IImageStorage, IDisposable
 /// <summary>
 /// Runs one bounded maintenance pass at host start (restart catch-up) and then on an interval. It works only on bundles
 /// already marked for deletion (pending index, stuck index, legacy markers) and never touches live bundles or pending
-/// uploads. No interval or completion time is promised under backlog or downtime.
+/// uploads. No interval or completion time is promised under backlog or downtime. The pass time budget is cooperative:
+/// it is checked between synchronous file system calls, and a blocked call cannot be interrupted at 5 seconds.
 /// </summary>
 public sealed class MediaCleanupWorker(IImageStorage storage, IConfiguration configuration, ILogger<MediaCleanupWorker> logger) : BackgroundService
 {
@@ -364,8 +365,8 @@ public sealed class MediaCleanupWorker(IImageStorage storage, IConfiguration con
             {
                 var r = local.RunPass(500, TimeSpan.FromSeconds(5), interval, TimeSpan.FromHours(24), TimeSpan.FromHours(24), ct);
                 if (r.Stuck > 0 || r.Failed > 0 || r.Anomalies > 0 || r.Adopted > 0 || r.Truncated)
-                    logger.LogWarning("Private media cleanup pass: examined {Examined}, deleted {Deleted}, stuck {Stuck}, revived {Revived}, adopted {Adopted}, failed {Failed}, anomalies {Anomalies}, truncated {Truncated}; stuck total {StuckTotal}.",
-                        r.Examined, r.Deleted, r.Stuck, r.Revived, r.Adopted, r.Failed, r.Anomalies, r.Truncated, local.CountStuck(1000));
+                    logger.LogWarning("Private media cleanup pass: examined {Examined}, deleted {Deleted}, stuck {Stuck}, revived {Revived}, adopted {Adopted}, failed {Failed}, anomalies {Anomalies}, truncated {Truncated}; counts are for this pass only.",
+                        r.Examined, r.Deleted, r.Stuck, r.Revived, r.Adopted, r.Failed, r.Anomalies, r.Truncated);
             }
             catch (OperationCanceledException) { break; }
             catch (Exception e) { logger.LogWarning("Private media cleanup pass failed: {Type}.", e.GetType().Name); }
