@@ -147,13 +147,13 @@ public sealed class LocalImageStorage : IImageStorage, IDisposable
         RejectLinks(path);
         try
         {
-        foreach (var e in new DirectoryInfo(path).EnumerateFileSystemInfos())
-            if ((Array.IndexOf(KnownFiles, e.Name) < 0 && e.Name != "delete.pending") || e is DirectoryInfo ||
-                e.Attributes.HasFlag(FileAttributes.ReparsePoint) || e.LinkTarget is not null)
-                return Outcome.Unknown;
-        foreach (var name in KnownFiles) File.Delete(Path.Combine(path, name));
-        File.Delete(Path.Combine(path, "delete.pending"));
-        Directory.Delete(path, false);
+            foreach (var e in new DirectoryInfo(path).EnumerateFileSystemInfos())
+                if ((Array.IndexOf(KnownFiles, e.Name) < 0 && e.Name != "delete.pending") || e is DirectoryInfo ||
+                    e.Attributes.HasFlag(FileAttributes.ReparsePoint) || e.LinkTarget is not null)
+                    return Outcome.Unknown;
+            foreach (var name in KnownFiles) File.Delete(Path.Combine(path, name));
+            File.Delete(Path.Combine(path, "delete.pending"));
+            Directory.Delete(path, false);
         }
         catch (DirectoryNotFoundException) { }   // removed concurrently (for example by the worker): already done
         return Outcome.Done;

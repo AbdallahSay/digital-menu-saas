@@ -19,8 +19,12 @@ public sealed class SitemapTests
 {
     private static Restaurant R(string slug, bool indexable, bool published = true, string status = "Active") => new()
     {
-        Name = "n-" + slug, Slug = slug, PublicCode = Guid.NewGuid().ToString("N")[..20],
-        IsIndexable = indexable, IsPublished = published, Status = status,
+        Name = "n-" + slug,
+        Slug = slug,
+        PublicCode = Guid.NewGuid().ToString("N")[..20],
+        IsIndexable = indexable,
+        IsPublished = published,
+        Status = status,
     };
 
     [SqlServerFact]

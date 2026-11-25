@@ -152,8 +152,15 @@ public static partial class LeadEndpoints
         if (!await TryTakeQuota(db, now, ct)) return Problem(429, "Too many requests.");
         db.Add(new Lead
         {
-            CreatedUtc = now, ExpiresUtc = now.AddDays(options.RetentionDays), ContactName = name, BusinessName = business,
-            Phone = phone, Email = email, Notes = notes, NoticeVersion = options.NoticeVersion, NoticeFingerprint = options.Fingerprint,
+            CreatedUtc = now,
+            ExpiresUtc = now.AddDays(options.RetentionDays),
+            ContactName = name,
+            BusinessName = business,
+            Phone = phone,
+            Email = email,
+            Notes = notes,
+            NoticeVersion = options.NoticeVersion,
+            NoticeFingerprint = options.Fingerprint,
         });
         await db.SaveChangesAsync(ct);
         return Results.StatusCode(201);

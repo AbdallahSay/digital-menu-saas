@@ -132,7 +132,8 @@ public sealed class DataProtectionDatabaseProviderTests
             [DataProtectionConfiguration.ApplicationNameKey] = "t-db",
             [DataProtectionConfiguration.ProviderKey] = "Database",
             [DataProtectionConfiguration.CertificateKey] = pair.Item1,
-            [DataProtectionConfiguration.CertificateKeyKey] = pair.Item2, [DataProtectionConfiguration.CertificatePasswordKey] = Pw,
+            [DataProtectionConfiguration.CertificateKeyKey] = pair.Item2,
+            [DataProtectionConfiguration.CertificatePasswordKey] = Pw,
             [Conn] = ConnValue,
         };
     }
