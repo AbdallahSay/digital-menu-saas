@@ -264,29 +264,60 @@ export function normalizeSearch(value: string): string {
           >
             @if (detailItem(); as item) {
               <div class="detail-card">
-                @if (item.image; as image) {
-                  <img
-                    class="detail-image"
-                    [src]="image.url"
-                    [alt]="image.alt"
-                    [width]="image.width"
-                    [height]="image.height"
-                  />
-                }
-                <h2>{{ item.name }}</h2>
-                @if (item.description) {
-                  <p class="description">{{ item.description }}</p>
-                }
-                <p class="item-foot">
-                  <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
-                  <span class="price">
-                    <bdi>{{ item.priceText }}</bdi>
-                    {{ english ? menu.restaurant.currency : 'جنيه مصري' }}
-                  </span>
-                </p>
-                <button type="button" class="btn btn-primary detail-close" (click)="closeDetail()">
-                  {{ english ? 'Back to menu' : 'الرجوع للمنيو' }}
-                </button>
+                <div class="detail-hero">
+                  <button
+                    type="button"
+                    class="detail-x"
+                    [attr.aria-label]="english ? 'Close' : 'إغلاق'"
+                    (click)="closeDetail()"
+                  >
+                    ×
+                  </button>
+                  @if (item.image; as image) {
+                    <img
+                      class="detail-image"
+                      [src]="image.url"
+                      [alt]="image.alt"
+                      [width]="image.width"
+                      [height]="image.height"
+                      (error)="imageFailed($event)"
+                    />
+                  }
+                </div>
+                <div class="detail-body">
+                  <h2>{{ item.name }}</h2>
+                  @if (categoryOf(item); as cat) {
+                    <p class="detail-cat">{{ cat }}</p>
+                  }
+                  <p class="detail-avail">
+                    <span class="pill">{{ english ? 'Available now' : 'متوفر الآن' }}</span>
+                  </p>
+                  @if (item.description) {
+                    <h3>{{ english ? 'About the dish' : 'عن الطبق' }}</h3>
+                    <p class="description">{{ item.description }}</p>
+                  }
+                  <p class="detail-price">
+                    <span class="detail-price-label">{{ english ? 'Price' : 'السعر' }}</span>
+                    <span class="price">
+                      <bdi>{{ item.priceText }}</bdi>
+                      {{ english ? menu.restaurant.currency : 'جنيه مصري' }}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-primary detail-close"
+                    (click)="closeDetail()"
+                  >
+                    {{ english ? 'Back to menu' : 'الرجوع للمنيو' }}
+                  </button>
+                  <p class="detail-note">
+                    {{
+                      english
+                        ? 'Display only. Ordering is not available on this page.'
+                        : 'العرض فقط، لا نقوم بطلبات داخل الموقع'
+                    }}
+                  </p>
+                </div>
               </div>
             }
           </dialog>
@@ -650,6 +681,8 @@ export function normalizeSearch(value: string): string {
       dialog .description {
         display: block;
         overflow: visible;
+        font-size: 14px;
+        line-height: 2;
         -webkit-line-clamp: unset;
       }
       .item-foot {
@@ -680,11 +713,14 @@ export function normalizeSearch(value: string): string {
         color: var(--color-brand-primary);
       }
       .detail {
-        width: min(92vw, 480px);
-        max-height: 90vh;
+        width: min(100vw, 390px);
+        max-width: none;
+        max-height: 100dvh;
+        margin: 0 auto;
         padding: 0;
         border: 0;
-        border-radius: var(--radius-xl);
+        border-radius: 0;
+        overflow: auto;
         background: var(--color-bg-canvas);
         color: var(--color-text-primary);
       }
@@ -692,15 +728,85 @@ export function normalizeSearch(value: string): string {
         background: rgb(25 54 48 / 0.55);
       }
       .detail-card {
+        display: block;
+      }
+      .detail-hero {
+        position: relative;
         display: grid;
-        gap: var(--space-3);
-        padding: var(--space-4);
+        place-items: center;
+        height: 330px;
+        background: color-mix(in srgb, var(--tp, #0f766e) 30%, #0b1f1b);
+        border-radius: 0 0 24px 24px;
+      }
+      .detail-x {
+        position: absolute;
+        left: 20px;
+        top: 24px;
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 50%;
+        background: #fff;
+        color: #1c2b27;
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
       }
       .detail-image {
+        width: 296px;
+        height: 200px;
+        object-fit: contain;
+      }
+      .detail-image.broken {
+        visibility: hidden;
+      }
+      .detail-body {
+        display: grid;
+        gap: 12px;
+        padding: 28px 22px 22px;
+        text-align: start;
+      }
+      .detail-body h2 {
+        margin: 0;
+        text-align: start;
+        font-size: 28px;
+        margin-top: 12px;
+      }
+      .detail-cat {
+        margin: 0;
+        text-align: start;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+      }
+      .detail-avail {
+        margin: 6px 0 14px;
+        text-align: start;
+      }
+      .detail-body h3 {
+        margin: 8px 0 0;
+        font-size: 18px;
+      }
+      .detail-price {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 8px 0 0;
+        padding-top: 14px;
+        border-top: 1px solid var(--color-border, #e6e1d6);
+      }
+      .detail-price-label {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+      }
+      .detail-close {
         width: 100%;
-        height: auto;
-        max-height: 50vh;
-        object-fit: cover;
+        margin-top: 10px;
+      }
+      .detail-note {
+        margin: 0;
+        text-align: center;
+        font-size: 10px;
+        color: var(--color-text-secondary);
       }
       .display-only {
         text-align: center;
@@ -781,6 +887,14 @@ export class PublicMenuComponent {
     this.detailItem.set(item);
     const dialog = this.detail()?.nativeElement;
     if (dialog && !dialog.open) dialog.showModal();
+  }
+  imageFailed(event: Event): void {
+    (event.target as HTMLImageElement).classList.add('broken');
+  }
+  categoryOf(item: DisplayItem): string | null {
+    for (const c of this.page.menu?.categories ?? [])
+      if (c.items.some((i) => i.id === item.id)) return c.name;
+    return null;
   }
   closeDetail() {
     this.detail()?.nativeElement.close();
