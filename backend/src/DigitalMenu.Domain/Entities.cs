@@ -52,6 +52,8 @@ public sealed class MenuItem : VersionedEntity
     public bool IsPublished { get; set; }
     public bool IsAvailable { get; set; } = true;
     public bool IsDeleted { get; set; }
+    // Shown in the public menu's featured section (Figma "featured picks"). Default off for every existing row.
+    public bool IsFeatured { get; set; }
 }
 
 public sealed class MenuItemImage
@@ -80,6 +82,11 @@ public sealed class RestaurantSettings
     public int PublishedContactDetailsFlags { get; set; }
     public string DefaultLocale { get; set; } = "ar";
     public string? Description { get; set; }
+    // Public menu presentation (Figma home and cafe variants). Existing rows get the classic theme and no text.
+    public string Theme { get; set; } = "classic";
+    public string? BrandLabel { get; set; }
+    public string? TaglineAr { get; set; }
+    public string? TaglineEn { get; set; }
     public byte[] RowVersion { get; set; } = [];
 }
 

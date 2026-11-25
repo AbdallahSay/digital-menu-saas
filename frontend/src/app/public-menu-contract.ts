@@ -12,6 +12,7 @@ export interface PublicItem {
   description: string;
   price: number;
   image: PublicItemImage | null;
+  featured: boolean;
 }
 export interface PublicCategory {
   id: string;
@@ -25,6 +26,9 @@ export interface PublicMenu {
     primaryColor: string;
     currency: string;
     logoUrl: string | null;
+    theme: 'classic' | 'cafe';
+    brandLabel: string | null;
+    tagline: string | null;
   };
   language: 'ar' | 'en';
   publishedMenuVersion: number;
@@ -97,6 +101,9 @@ export function decodeMenu(
       throw Error('Invalid public menu');
     return value;
   };
+  // Optional presentation text: absent or null from an older API means none.
+  const optional = (value: unknown, max: number): string | null =>
+    value === undefined || value === null ? null : string(value, max);
   const id = (value: unknown) => {
     const result = string(value, 36);
     if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(result))
@@ -189,6 +196,7 @@ export function decodeMenu(
           price: item.price,
           priceText: whole + '.' + fraction.padEnd(2, '0'),
           image: image(item.image),
+          featured: item.featured === true,
         };
       }),
     };
@@ -200,6 +208,9 @@ export function decodeMenu(
       primaryColor: raw.restaurant.primaryColor,
       currency: 'EGP',
       logoUrl: logoUrl(raw.restaurant.logoUrl),
+      theme: raw.restaurant.theme === 'cafe' ? 'cafe' : 'classic',
+      brandLabel: optional(raw.restaurant.brandLabel, 40),
+      tagline: optional(raw.restaurant.tagline, 120),
     },
     language,
     publishedMenuVersion: raw.publishedMenuVersion,

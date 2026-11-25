@@ -231,6 +231,9 @@ namespace DigitalMenu.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsPublished")
                         .HasColumnType("bit");
 
@@ -419,6 +422,10 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("BrandLabel")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
                     b.Property<string>("ContactPhoneOptional")
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
@@ -454,6 +461,21 @@ namespace DigitalMenu.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<string>("TaglineAr")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("TaglineEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .HasDefaultValue("classic");
+
                     b.HasKey("RestaurantId");
 
                     b.ToTable("RestaurantSettings", null, t =>
@@ -463,6 +485,8 @@ namespace DigitalMenu.Infrastructure.Migrations
                             t.HasCheckConstraint("CK_Settings_Contacts", "[PublishedContactDetailsFlags] BETWEEN 0 AND 3");
 
                             t.HasCheckConstraint("CK_Settings_Locale", "[DefaultLocale] IN ('ar','en')");
+
+                            t.HasCheckConstraint("CK_Settings_Theme", "[Theme] IN ('classic','cafe')");
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);

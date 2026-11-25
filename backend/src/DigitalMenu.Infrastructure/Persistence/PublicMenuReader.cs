@@ -22,7 +22,7 @@ public sealed class PublicMenuReader(MenuDbContext db, PublicMenuProjectionCache
     public const int MaxItems = 1000;
 
     private sealed record Probe(Guid Id, string Name, string Slug, string PublicCode, long PublishedMenuVersion,
-        string Color, string? Logo);
+        string Color, string? Logo, string Theme, string? BrandLabel, string? TaglineAr, string? TaglineEn);
 
     public async Task<PublicMenu?> ReadAsync(string identifier, bool bySlug, string language, CancellationToken ct)
     {
@@ -59,7 +59,9 @@ public sealed class PublicMenuReader(MenuDbContext db, PublicMenuProjectionCache
                from s in settings.DefaultIfEmpty()
                where r.Status == "Active" && r.IsPublished && (bySlug ? r.Slug == identifier : r.PublicCode == identifier)
                select new Probe(r.Id, r.Name, r.Slug, r.PublicCode, r.PublishedMenuVersion,
-                   s == null ? "#0F766E" : s.PrimaryColor, s == null ? null : s.LogoObjectKey))
+                   s == null ? "#0F766E" : s.PrimaryColor, s == null ? null : s.LogoObjectKey,
+                   s == null ? "classic" : s.Theme, s == null ? null : s.BrandLabel,
+                   s == null ? null : s.TaglineAr, s == null ? null : s.TaglineEn))
             .SingleOrDefaultAsync(ct);
 
     private async Task<PublicMenu> LoadAsync(Probe probe, string language, CancellationToken ct)
@@ -76,7 +78,7 @@ public sealed class PublicMenuReader(MenuDbContext db, PublicMenuProjectionCache
                            where i.RestaurantId == probe.Id && c.RestaurantId == probe.Id &&
                                !c.IsDeleted && c.IsPublished && !i.IsDeleted && i.IsPublished && i.IsAvailable
                            orderby i.SortOrder, i.Id
-                           select new { i.Id, i.CategoryId, i.NameAr, i.NameEn, i.DescriptionAr, i.DescriptionEn, i.Price })
+                           select new { i.Id, i.CategoryId, i.NameAr, i.NameEn, i.DescriptionAr, i.DescriptionEn, i.Price, i.IsFeatured })
             .Take(MaxItems + 1).ToListAsync(ct);
         if (items.Count > MaxItems) throw new PublicMenuUnavailableException();
         // First image per item by gallery order, one query for the whole page.
@@ -96,10 +98,11 @@ public sealed class PublicMenuReader(MenuDbContext db, PublicMenuProjectionCache
                         Localize(found.AltAr ?? "", found.AltEn, language), found.Width, found.Height)
                     : null;
                 return new PublicItem(i.Id, Localize(i.NameAr, i.NameEn, language),
-                    Localize(i.DescriptionAr ?? "", i.DescriptionEn, language), i.Price, image);
+                    Localize(i.DescriptionAr ?? "", i.DescriptionEn, language), i.Price, image, i.IsFeatured);
             }).ToArray());
         return new PublicMenu(new(probe.Name, probe.Slug, probe.Color, "EGP",
-            probe.Logo is null ? null : $"/api/v1/public/media/logo/{probe.PublicCode}"), language,
+            probe.Logo is null ? null : $"/api/v1/public/media/logo/{probe.PublicCode}",
+            probe.Theme, probe.BrandLabel, language == "en" && !string.IsNullOrWhiteSpace(probe.TaglineEn) ? probe.TaglineEn : probe.TaglineAr), language,
             probe.PublishedMenuVersion, categories.Select(c => new PublicCategory(c.Id, Localize(c.NameAr, c.NameEn, language),
                 grouped.GetValueOrDefault(c.Id) ?? Array.Empty<PublicItem>())).ToArray());
     }

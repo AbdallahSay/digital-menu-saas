@@ -9,7 +9,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import type { DisplayMenu, PublicPage } from './public-menu-contract';
@@ -31,15 +31,35 @@ export function normalizeSearch(value: string): string {
 
 @Component({
   selector: 'app-public-menu',
-  imports: [],
+  imports: [NgTemplateOutlet],
   template: `
     <main class="public-menu">
       @if (page.menu; as menu) {
         <div class="frame" [style.--tp]="menu.restaurant.primaryColor">
-          <header class="hero">
-            <div class="hero-inner">
-              <p class="hero-pill">{{ english ? 'Digital menu' : 'قائمة رقمية' }}</p>
-              <h1>{{ menu.restaurant.name }}</h1>
+          @if (menu.restaurant.theme === 'cafe') {
+            <header class="hero hero-cafe">
+              <div class="hero-lang">
+                <nav class="language" aria-label="Language">
+                  <a
+                    [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
+                    lang="ar"
+                    [attr.aria-current]="english ? null : 'true'"
+                    >عربي</a
+                  >
+                  <a
+                    [href]="'/r/' + menu.restaurant.slug + '?lang=en'"
+                    lang="en"
+                    [attr.aria-current]="english ? 'true' : null"
+                    >EN</a
+                  >
+                </nav>
+              </div>
+              @if (menu.restaurant.brandLabel) {
+                <p class="hero-brand">{{ menu.restaurant.brandLabel }}</p>
+              }
+              @if (menu.restaurant.tagline) {
+                <p class="hero-tagline">{{ menu.restaurant.tagline }}</p>
+              }
               @if (menu.restaurant.logoUrl; as logoUrl) {
                 <img
                   class="restaurant-logo"
@@ -49,30 +69,60 @@ export function normalizeSearch(value: string): string {
                   height="96"
                 />
               }
-            </div>
-          </header>
-          <div class="brand-card">
-            <nav class="language" aria-label="Language">
-              <a
-                [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
-                lang="ar"
-                [attr.aria-current]="english ? null : 'true'"
-                >عربي</a
-              >
-              <a
-                [href]="'/r/' + menu.restaurant.slug + '?lang=en'"
-                lang="en"
-                [attr.aria-current]="english ? 'true' : null"
-                >EN</a
-              >
-            </nav>
-            <div class="brand-text">
-              <p class="brand-title">{{ english ? 'Menu' : 'منيو' }} {{ menu.restaurant.name }}</p>
+            </header>
+            <div class="cafe-title">
+              <h1>{{ menu.restaurant.name }}</h1>
               <p class="brand-sub">
                 {{ english ? 'Enjoy the best dishes' : 'استمتع بأفضل الأطباق' }}
               </p>
             </div>
-          </div>
+          } @else {
+            <header class="hero">
+              <div class="hero-inner">
+                @if (menu.restaurant.brandLabel) {
+                  <p class="hero-brand">{{ menu.restaurant.brandLabel }}</p>
+                }
+                <h1>{{ menu.restaurant.name }}</h1>
+                @if (menu.restaurant.tagline) {
+                  <p class="hero-tagline">{{ menu.restaurant.tagline }}</p>
+                }
+                <p class="hero-pill">{{ english ? 'Digital menu' : 'قائمة رقمية' }}</p>
+                @if (menu.restaurant.logoUrl; as logoUrl) {
+                  <img
+                    class="restaurant-logo"
+                    [src]="logoUrl"
+                    [alt]="menu.restaurant.name"
+                    width="96"
+                    height="96"
+                  />
+                }
+              </div>
+            </header>
+            <div class="brand-card">
+              <nav class="language" aria-label="Language">
+                <a
+                  [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
+                  lang="ar"
+                  [attr.aria-current]="english ? null : 'true'"
+                  >عربي</a
+                >
+                <a
+                  [href]="'/r/' + menu.restaurant.slug + '?lang=en'"
+                  lang="en"
+                  [attr.aria-current]="english ? 'true' : null"
+                  >EN</a
+                >
+              </nav>
+              <div class="brand-text">
+                <p class="brand-title">
+                  {{ english ? 'Menu' : 'منيو' }} {{ menu.restaurant.name }}
+                </p>
+                <p class="brand-sub">
+                  {{ english ? 'Enjoy the best dishes' : 'استمتع بأفضل الأطباق' }}
+                </p>
+              </div>
+            </div>
+          }
           @if (menu.categories.length > 0) {
             <div class="search">
               <label class="sr-only" for="menu-search">{{
@@ -109,7 +159,11 @@ export function normalizeSearch(value: string): string {
                 (input)="setQuery($any($event.target).value)"
               />
             </div>
-            <h2 class="section-title" id="categories-title">
+            <h2
+              class="section-title"
+              id="categories-title"
+              [class.sr-only]="menu.restaurant.theme === 'cafe'"
+            >
               {{ english ? 'Categories' : 'الأقسام' }}
             </h2>
             <div class="chips" role="group" aria-labelledby="categories-title">
@@ -139,6 +193,25 @@ export function normalizeSearch(value: string): string {
               {{ english ? 'The menu is currently empty.' : 'المنيو فاضي حاليًا.' }}
             </p>
           }
+          @if (featuredItems().length > 0) {
+            <section aria-labelledby="featured-title" class="featured">
+              <div class="featured-head">
+                <h2 class="section-title" id="featured-title">
+                  {{ featuredTitle(menu.restaurant.theme) }}
+                </h2>
+                @if (menu.restaurant.theme !== 'cafe') {
+                  <span class="featured-note">{{
+                    english ? 'Worth a try' : 'طعم يستاهل التجربة'
+                  }}</span>
+                }
+              </div>
+              <div class="items">
+                @for (item of featuredItems(); track item.id) {
+                  <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+                }
+              </div>
+            </section>
+          }
           @for (category of visibleCategories(); track category.id; let ci = $index) {
             <section [attr.aria-labelledby]="'category-' + ci">
               <h2 class="section-title" [id]="'category-' + ci">{{ category.name }}</h2>
@@ -147,44 +220,43 @@ export function normalizeSearch(value: string): string {
               }
               <div class="items">
                 @for (item of category.items; track item.id) {
-                  <article>
-                    @if (item.image; as image) {
-                      <img
-                        class="item-thumbnail"
-                        [src]="image.thumbnailUrl"
-                        [alt]="image.alt"
-                        [width]="image.width"
-                        [height]="image.height"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    }
-                    <div class="item-body">
-                      <h3>
-                        <button type="button" class="item-open" (click)="open(item, $event)">
-                          {{ item.name }}
-                        </button>
-                      </h3>
-                      @if (item.description) {
-                        <p class="description">{{ item.description }}</p>
-                      }
-                      <p class="item-foot">
-                        <span class="price">
-                          <bdi>{{ item.priceText }}</bdi>
-                          {{
-                            english
-                              ? menu.restaurant.currency
-                              : currencyAr(menu.restaurant.currency)
-                          }}
-                        </span>
-                        <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
-                      </p>
-                    </div>
-                  </article>
+                  <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
                 }
               </div>
             </section>
           }
+          <ng-template #card let-item>
+            <article>
+              @if (item.image; as image) {
+                <img
+                  class="item-thumbnail"
+                  [src]="image.thumbnailUrl"
+                  [alt]="image.alt"
+                  [width]="image.width"
+                  [height]="image.height"
+                  loading="lazy"
+                  decoding="async"
+                />
+              }
+              <div class="item-body">
+                <h3>
+                  <button type="button" class="item-open" (click)="open(item, $event)">
+                    {{ item.name }}
+                  </button>
+                </h3>
+                @if (item.description) {
+                  <p class="description">{{ item.description }}</p>
+                }
+                <p class="item-foot">
+                  <span class="price">
+                    <bdi>{{ item.priceText }}</bdi>
+                    {{ english ? menu.restaurant.currency : currencyAr(menu.restaurant.currency) }}
+                  </span>
+                  <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
+                </p>
+              </div>
+            </article>
+          </ng-template>
           <dialog
             #detail
             class="detail"
@@ -272,11 +344,73 @@ export function normalizeSearch(value: string): string {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
-        min-height: 120px;
+        min-height: 150px;
         position: relative;
       }
+      .hero-brand {
+        margin: 0;
+        color: #e0b04a;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .hero-tagline {
+        margin: 0;
+        font-size: 13px;
+        color: rgb(255 255 255 / 0.85);
+      }
+      .hero-cafe {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+        padding-bottom: 28px;
+      }
+      .hero-cafe .hero-lang {
+        align-self: stretch;
+        display: flex;
+        justify-content: flex-start;
+      }
+      .hero-cafe .hero-lang .language {
+        background: rgb(255 255 255 / 0.14);
+      }
+      .hero-cafe .hero-lang .language a {
+        color: #fff;
+      }
+      .hero-cafe .restaurant-logo {
+        position: static;
+        width: 160px;
+        height: 160px;
+        margin-top: 12px;
+      }
+      .hero-cafe .hero-brand {
+        color: #fff;
+        font-size: 22px;
+        letter-spacing: 0.04em;
+      }
+      .hero-cafe {
+        min-height: 250px;
+      }
+      .cafe-title {
+        padding: 20px 4px 0;
+      }
+      .cafe-title h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .featured-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .featured-note {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+      }
       .hero-pill {
-        order: 2;
         margin: 0;
         padding: 6px 16px;
         border-radius: 999px;
@@ -285,9 +419,8 @@ export function normalizeSearch(value: string): string {
         font-weight: 700;
       }
       .hero h1 {
-        order: 1;
         color: #fff;
-        margin: 28px 0 0;
+        margin: 0;
         font-size: 28px;
         line-height: 1.3;
       }
@@ -295,11 +428,12 @@ export function normalizeSearch(value: string): string {
         position: absolute;
         inset-block-start: 0;
         inset-inline-end: 0;
-        width: 104px;
-        height: 104px;
+        width: 140px;
+        height: 84px;
         object-fit: cover;
         border-radius: 50%;
         background: #f4e9d6;
+        inset-block-start: 36px;
       }
       h1,
       h2,
@@ -490,10 +624,13 @@ export function normalizeSearch(value: string): string {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 6px 8px;
         margin: auto 0 0;
       }
       .pill {
+        white-space: nowrap;
+        flex: none;
         padding: 6px 14px;
         border-radius: 999px;
         background: var(--color-brand-primary-container);
@@ -502,6 +639,10 @@ export function normalizeSearch(value: string): string {
         font-weight: 700;
       }
       .price {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+        white-space: nowrap;
         font-weight: 700;
         font-size: 22px;
         color: var(--color-brand-primary);
@@ -552,6 +693,18 @@ export class PublicMenuComponent {
   readonly detailItem = signal<DisplayItem | null>(null);
   private readonly detail = viewChild<ElementRef<HTMLDialogElement>>('detail');
   private opener: HTMLElement | null = null;
+  // Featured items only on the unfiltered view, so search and category filters stay predictable.
+  readonly featuredItems = computed(() => {
+    const menu = this.page.menu;
+    if (!menu || this.query().trim() !== '' || this.selected() !== null) return [];
+    return menu.categories.flatMap((c) => c.items.filter((i) => i.featured));
+  });
+
+  featuredTitle(theme: 'classic' | 'cafe'): string {
+    if (theme === 'cafe') return this.english ? 'Favorite coffee' : 'القهوة المفضلة';
+    return this.english ? 'Featured picks' : 'اختيارات مميزة';
+  }
+
   readonly visibleCategories = computed(() => {
     const menu = this.page.menu;
     if (!menu) return [];

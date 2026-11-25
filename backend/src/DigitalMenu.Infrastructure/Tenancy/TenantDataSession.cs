@@ -183,7 +183,11 @@ public sealed class TenantDataSession : ITenantDataSession, IDisposable
                 .Where(e => e.State == EntityState.Modified)
                 .SelectMany(e => e.Properties)
                 .Any(p => (p.Metadata.Name == nameof(RestaurantSettings.PrimaryColor) ||
-                    p.Metadata.Name == nameof(RestaurantSettings.LogoObjectKey)) && p.IsModified);
+                    p.Metadata.Name == nameof(RestaurantSettings.LogoObjectKey) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.Theme) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.BrandLabel) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.TaglineAr) ||
+                    p.Metadata.Name == nameof(RestaurantSettings.TaglineEn)) && p.IsModified);
             // The public projection also includes the restaurant Name and Slug,
             // so editing either through this session must bump the version: the
             // version-keyed cache contract is that every projected change bumps.

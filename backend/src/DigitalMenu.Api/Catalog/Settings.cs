@@ -6,9 +6,11 @@ using DigitalMenu.Api.Media;
 namespace DigitalMenu.Api.Catalog;
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record UpdateSettingsRequest(string? PrimaryColor, string? RowVersion);
+public sealed record UpdateSettingsRequest(string? PrimaryColor, string? RowVersion, string? Theme = null,
+    string? BrandLabel = null, string? TaglineAr = null, string? TaglineEn = null);
 public sealed record SettingsResponse(string Name, string Slug, string PublicCode, string PrimaryColor,
-    bool HasLogo, string? LogoUrl, string RowVersion);
+    bool HasLogo, string? LogoUrl, string RowVersion, string Theme = "classic", string? BrandLabel = null,
+    string? TaglineAr = null, string? TaglineEn = null);
 
 /// <summary>
 /// Owner restaurant settings (Screen 5/6 backing contract): reads the tenant's
@@ -19,7 +21,8 @@ public sealed record SettingsResponse(string Name, string Slug, string PublicCod
 public static class Settings
 {
     private sealed record RestaurantIdentity(string Name, string Slug, string PublicCode);
-    private sealed record SettingsRow(string PrimaryColor, bool HasLogo, string RowVersion);
+    private sealed record SettingsRow(string PrimaryColor, bool HasLogo, string RowVersion, string Theme,
+        string? BrandLabel, string? TaglineAr, string? TaglineEn);
     /// <summary>Admin read URL for the stored logo; null when none is stored.</summary>
     private static string? LogoUrl(bool hasLogo) => hasLogo ? "/api/v1/admin/settings/logo" : null;
 
@@ -53,12 +56,14 @@ public static class Settings
             var restaurants = await session.ReadAsync<Restaurant, RestaurantIdentity>(
                 r => true, r => new RestaurantIdentity(r.Name, r.Slug, r.PublicCode), 1, ct);
             var settings = await session.ReadAsync<RestaurantSettings, SettingsRow>(
-                s => true, s => new SettingsRow(s.PrimaryColor, s.LogoObjectKey != null, Convert.ToBase64String(s.RowVersion)), 1, ct);
+                s => true, s => new SettingsRow(s.PrimaryColor, s.LogoObjectKey != null, Convert.ToBase64String(s.RowVersion),
+                    s.Theme, s.BrandLabel, s.TaglineAr, s.TaglineEn), 1, ct);
             if (restaurants.Count == 0 || settings.Count == 0)
                 throw new TenantBoundaryException(TenantFailure.NotFound);
             return Results.Ok(new SettingsResponse(restaurants[0].Name, restaurants[0].Slug,
                 restaurants[0].PublicCode, settings[0].PrimaryColor, settings[0].HasLogo,
-                LogoUrl(settings[0].HasLogo), settings[0].RowVersion));
+                LogoUrl(settings[0].HasLogo), settings[0].RowVersion, settings[0].Theme, settings[0].BrandLabel,
+                settings[0].TaglineAr, settings[0].TaglineEn));
         });
         group.MapPut("", async (UpdateSettingsRequest request, ITenantContext tenants,
             ITenantDataSession session, CancellationToken ct) =>
@@ -70,12 +75,28 @@ public static class Settings
             // no rowVersion rotation, no publication-version churn.
             if (!string.Equals(settings.PrimaryColor, normalized, StringComparison.OrdinalIgnoreCase))
                 settings.PrimaryColor = normalized;
+            // Presentation fields: null means unchanged (old clients), empty text clears, values are validated.
+            if (request.Theme is not null)
+            {
+                if (request.Theme is not ("classic" or "cafe")) throw new TenantBoundaryException(TenantFailure.InvalidRequest);
+                if (settings.Theme != request.Theme) settings.Theme = request.Theme;
+            }
+            static string? Clean(string? text, int max)
+            {
+                var value = text?.Trim();
+                if (value is not null && (value.Length > max || value.Any(char.IsControl))) throw new TenantBoundaryException(TenantFailure.InvalidRequest);
+                return string.IsNullOrEmpty(value) ? null : value;
+            }
+            if (request.BrandLabel is not null && Clean(request.BrandLabel, 40) != settings.BrandLabel) settings.BrandLabel = Clean(request.BrandLabel, 40);
+            if (request.TaglineAr is not null && Clean(request.TaglineAr, 120) != settings.TaglineAr) settings.TaglineAr = Clean(request.TaglineAr, 120);
+            if (request.TaglineEn is not null && Clean(request.TaglineEn, 120) != settings.TaglineEn) settings.TaglineEn = Clean(request.TaglineEn, 120);
             await session.CommitAsync(ct);
             var restaurants = await session.ReadAsync<Restaurant, RestaurantIdentity>(
                 r => true, r => new RestaurantIdentity(r.Name, r.Slug, r.PublicCode), 1, ct);
             return Results.Ok(new SettingsResponse(restaurants[0].Name, restaurants[0].Slug,
                 restaurants[0].PublicCode, settings.PrimaryColor, settings.LogoObjectKey != null,
-                LogoUrl(settings.LogoObjectKey != null), Convert.ToBase64String(settings.RowVersion)));
+                LogoUrl(settings.LogoObjectKey != null), Convert.ToBase64String(settings.RowVersion), settings.Theme,
+                settings.BrandLabel, settings.TaglineAr, settings.TaglineEn));
         });
 
         // Logo upload/read-back (media delivery phase). Same normalization and

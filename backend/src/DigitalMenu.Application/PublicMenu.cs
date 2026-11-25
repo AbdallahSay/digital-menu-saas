@@ -1,8 +1,9 @@
 namespace DigitalMenu.Application;
 
-public sealed record PublicRestaurant(string Name, string Slug, string PrimaryColor, string Currency, string? LogoUrl);
+public sealed record PublicRestaurant(string Name, string Slug, string PrimaryColor, string Currency, string? LogoUrl,
+    string Theme = "classic", string? BrandLabel = null, string? Tagline = null);
 public sealed record PublicItemImage(string Url, string ThumbnailUrl, string Alt, int Width, int Height);
-public sealed record PublicItem(Guid Id, string Name, string Description, decimal Price, PublicItemImage? Image);
+public sealed record PublicItem(Guid Id, string Name, string Description, decimal Price, PublicItemImage? Image, bool Featured = false);
 public sealed record PublicCategory(Guid Id, string Name, IReadOnlyList<PublicItem> Items);
 public sealed record PublicMenu(PublicRestaurant Restaurant, string Language, long PublishedMenuVersion, IReadOnlyList<PublicCategory> Categories);
 public interface IPublicMenuReader
