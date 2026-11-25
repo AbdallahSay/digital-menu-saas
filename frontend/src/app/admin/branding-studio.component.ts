@@ -635,7 +635,7 @@ export class BrandingStudioComponent implements OnInit {
       } else if (outcome === 'stale') {
         this.feedback.set({
           kind: 'error',
-          text: 'الإعدادات اتغيرت من مكان تاني واتحدّثت. تعديلاتك لسه موجودة، راجعها واحفظ تاني.',
+          text: 'الإعدادات اتغيرت من مكان تاني. تعديلاتك لسه موجودة، راجعها واحفظ تاني.',
         });
         await this.load();
       } else if (outcome === 'invalid') {

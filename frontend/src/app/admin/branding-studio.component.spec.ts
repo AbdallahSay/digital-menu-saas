@@ -336,3 +336,56 @@ describe('BrandingStudioComponent', () => {
     expect(fixture.nativeElement.querySelector('.logo-preview')).toBeNull();
   });
 });
+
+describe('BrandingStudioComponent presentation drafts', () => {
+  const type = (fixture: { nativeElement: HTMLElement }, id: string, v: string) => {
+    const input = fixture.nativeElement.querySelector<HTMLInputElement>('#' + id)!;
+    input.value = v;
+    input.dispatchEvent(new Event('input'));
+  };
+
+  it('sends only touched fields, disables inputs while saving and keeps edits typed in flight', async () => {
+    let release!: (v: 'ok') => void;
+    const calls: unknown[] = [];
+    const stub = storeStub({
+      savePresentation: (input: unknown) => {
+        calls.push(input);
+        return new Promise<'ok'>((r) => (release = r));
+      },
+    });
+    stub.settings.set(settings({ brandLabel: 'قديم' }));
+    const fixture = await create(stub);
+    type(fixture, 'pres-brand', 'اسم جديد');
+    fixture.detectChanges();
+    const save = fixture.componentInstance.savePresentation();
+    fixture.detectChanges();
+    expect(calls).toEqual([{ brandLabel: 'اسم جديد' }]);
+    expect(fixture.nativeElement.querySelector('#pres-brand').disabled).toBe(true);
+    fixture.componentInstance.presBrand.set('اسم أحدث'); // edit typed while in flight
+    release('ok');
+    await save;
+    fixture.detectChanges();
+    expect(fixture.componentInstance.presBrand()).toBe('اسم أحدث');
+  });
+
+  it('keeps drafts after a stale conflict and does not claim the refresh succeeded', async () => {
+    let loads = 0;
+    const stub = storeStub({
+      savePresentation: async () => 'stale',
+      load: async () => {
+        loads++;
+      },
+    });
+    stub.settings.set(settings());
+    const fixture = await create(stub);
+    const before = loads;
+    type(fixture, 'pres-brand', 'X');
+    await fixture.componentInstance.savePresentation();
+    fixture.detectChanges();
+    expect(loads).toBe(before + 1);
+    expect(fixture.componentInstance.presBrand()).toBe('X');
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('تعديلاتك لسه موجودة');
+    expect(text).not.toContain('واتحدّثت');
+  });
+});
