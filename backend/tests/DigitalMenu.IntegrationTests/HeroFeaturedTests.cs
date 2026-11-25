@@ -24,6 +24,8 @@ public sealed class HeroFeaturedTests
 {
     private const string Settings = "/api/v1/admin/settings";
     private const string Hero = Settings + "/hero";
+    // The public hero route accepts exactly 20 lowercase hex characters.
+    private const string PublicCodeA = "0123456789abcdef0123";
     private static string PublicMenu(string slug) => "/api/v1/public/restaurants/by-slug/" + slug;
 
     private sealed class Storage : IImageStorage
@@ -48,7 +50,7 @@ public sealed class HeroFeaturedTests
     private static async Task<(Fixture F, Storage S)> Setup()
     {
         var storage = new Storage();
-        var f = await Fixture.Create(s => s.AddSingleton<IImageStorage>(storage));
+        var f = await Fixture.Create(s => s.AddSingleton<IImageStorage>(storage), publicCodeA: PublicCodeA);
         await f.A.Csrf();
         await f.B.Csrf();
         using var scope = f.Auth.Factory.Services.CreateScope();
@@ -93,8 +95,12 @@ public sealed class HeroFeaturedTests
         return await Json(await client.GetAsync(PublicMenu(slug)));
     }
 
-    private static async Task<SettingsResponse> Current(Browser b) =>
-        (await (await b.Send(HttpMethod.Get, Settings)).Content.ReadFromJsonAsync<SettingsResponse>())!;
+    private static async Task<SettingsResponse> Current(Browser b)
+    {
+        var response = await b.Send(HttpMethod.Get, Settings);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<SettingsResponse>())!;
+    }
 
     [SqlServerFact]
     public async Task Hero_upload_replace_and_delete_keep_storage_settings_and_public_menu_consistent()
@@ -125,6 +131,9 @@ public sealed class HeroFeaturedTests
         using var client = f.Auth.Factory.CreateClient();
         var pub = await client.GetAsync("/api/v1/public/media/hero/" + settings.PublicCode);
         Assert.Equal(HttpStatusCode.OK, pub.StatusCode);
+        Assert.Equal("public, max-age=300", pub.Headers.CacheControl!.ToString());
+        Assert.Equal("nosniff", pub.Headers.GetValues("X-Content-Type-Options").Single());
+        Assert.Equal("image/webp", pub.Content.Headers.ContentType!.MediaType);
 
         // Replace: the previous object is removed, exactly one object remains.
         Assert.Equal(HttpStatusCode.OK, (await Upload(f.A)).StatusCode);
@@ -164,40 +173,61 @@ public sealed class HeroFeaturedTests
     }
 
     [SqlServerFact]
-    public async Task Featured_defaults_false_projects_to_the_public_menu_and_each_change_bumps_the_version()
+    public async Task Featured_flag_defaults_false_toggles_both_ways_and_each_toggle_bumps_the_public_version()
     {
         var (f, _) = await Setup();
         await using var _ = f;
-        var item = (await (await f.A.Send(HttpMethod.Post, "/api/v1/admin/items",
-            new CreateItemRequest(f.CategoryA.Id, "قهوة", null, null, null, 30m, "EGP", 1, true, true))).Content
-            .ReadFromJsonAsync<ItemResponse>())!;
+        var created = await f.A.Send(HttpMethod.Post, "/api/v1/admin/items",
+            new CreateItemRequest(f.CategoryA.Id, "قهوة-مميزة", null, null, null, 30m, "EGP", 1, true, true));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var item = (await created.Content.ReadFromJsonAsync<ItemResponse>())!;
         Assert.False(item.IsFeatured);
+
         var menu0 = await PublicOf(f, "a");
+        var baseline = ItemNamed(menu0, "قهوة-مميزة");
+        Assert.NotNull(baseline); // present on the public menu, and not featured
+        Assert.False(baseline!.Value.GetProperty("featured").GetBoolean());
         var v0 = menu0.GetProperty("publishedMenuVersion").GetInt64();
-        Assert.False(FeaturedOf(menu0, "قهوة"));
 
         var on = await f.A.Send(HttpMethod.Put, "/api/v1/admin/items/" + item.Id,
-            new UpdateItemRequest(item.CategoryId, "قهوة", null, null, null, 30m, "EGP", 1, true, true, item.RowVersion, true));
+            new UpdateItemRequest(item.CategoryId, "قهوة-مميزة", null, null, null, 30m, "EGP", 1, true, true, item.RowVersion, true));
         Assert.Equal(HttpStatusCode.OK, on.StatusCode);
         var updated = (await on.Content.ReadFromJsonAsync<ItemResponse>())!;
         Assert.True(updated.IsFeatured);
         var menu1 = await PublicOf(f, "a");
-        Assert.True(FeaturedOf(menu1, "قهوة"));
-        Assert.True(menu1.GetProperty("publishedMenuVersion").GetInt64() > v0);
+        Assert.True(ItemNamed(menu1, "قهوة-مميزة")!.Value.GetProperty("featured").GetBoolean());
+        var v1 = menu1.GetProperty("publishedMenuVersion").GetInt64();
+        Assert.True(v1 > v0);
 
-        // Omitting isFeatured on update (old client) leaves it unchanged.
+        // A price change that omits isFeatured keeps the flag and still bumps the version.
         var keep = await f.A.Send(HttpMethod.Put, "/api/v1/admin/items/" + item.Id,
-            new UpdateItemRequest(item.CategoryId, "قهوة", null, null, null, 31m, "EGP", 1, true, true, updated.RowVersion));
+            new UpdateItemRequest(item.CategoryId, "قهوة-مميزة", null, null, null, 31m, "EGP", 1, true, true, updated.RowVersion));
         Assert.Equal(HttpStatusCode.OK, keep.StatusCode);
-        Assert.True((await keep.Content.ReadFromJsonAsync<ItemResponse>())!.IsFeatured);
-        Assert.True(FeaturedOf(await PublicOf(f, "a"), "قهوة"));
+        var kept = (await keep.Content.ReadFromJsonAsync<ItemResponse>())!;
+        Assert.True(kept.IsFeatured);
+        var menu2 = await PublicOf(f, "a");
+        Assert.True(ItemNamed(menu2, "قهوة-مميزة")!.Value.GetProperty("featured").GetBoolean());
+        var v2 = menu2.GetProperty("publishedMenuVersion").GetInt64();
+        Assert.True(v2 > v1);
 
-        // The other tenant's menu never shows it.
-        Assert.False(FeaturedOf(await PublicOf(f, "b"), "قهوة"));
+        // True to false.
+        var off = await f.A.Send(HttpMethod.Put, "/api/v1/admin/items/" + item.Id,
+            new UpdateItemRequest(item.CategoryId, "قهوة-مميزة", null, null, null, 31m, "EGP", 1, true, true, kept.RowVersion, false));
+        Assert.Equal(HttpStatusCode.OK, off.StatusCode);
+        Assert.False((await off.Content.ReadFromJsonAsync<ItemResponse>())!.IsFeatured);
+        var menu3 = await PublicOf(f, "a");
+        Assert.False(ItemNamed(menu3, "قهوة-مميزة")!.Value.GetProperty("featured").GetBoolean());
+        Assert.True(menu3.GetProperty("publishedMenuVersion").GetInt64() > v2);
+
+        // Tenant B's public menu has no item with this name at all (featured or not).
+        Assert.Null(ItemNamed(await PublicOf(f, "b"), "قهوة-مميزة"));
     }
 
-    private static bool FeaturedOf(JsonElement menu, string name) =>
-        menu.GetProperty("categories").EnumerateArray()
-            .SelectMany(c => c.GetProperty("items").EnumerateArray())
-            .Any(i => i.GetProperty("name").GetString() == name && i.GetProperty("featured").GetBoolean());
+    private static JsonElement? ItemNamed(JsonElement menu, string name)
+    {
+        foreach (var category in menu.GetProperty("categories").EnumerateArray())
+            foreach (var item in category.GetProperty("items").EnumerateArray())
+                if (item.GetProperty("name").GetString() == name) return item;
+        return null;
+    }
 }
