@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { chromium } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   ADMIN_MARKERS,
   adminChunks,
@@ -107,8 +108,18 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
     );
     const cssLoader =
       "document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})";
+    // Angular 22.2.2 event replay emits exactly two inline scripts once the template has (click)/(input)
+    // handlers. Allow them only by pinned content, so any other inline script still fails.
+    const ngContractSha = '54cda666ac84419a0bce84eba79122805bf3434f9fd7049e06ea0e9fde561c28';
+    const ngBootstrap = 'window.__jsaction_bootstrap(document.body,"ng",["click","input"],[]);';
     assert.ok(
-      executable.every((node) => node.textContent === cssLoader),
+      executable.every(
+        (node) =>
+          node.textContent === cssLoader ||
+          node.textContent === ngBootstrap ||
+          (node.id === 'ng-event-dispatch-contract' &&
+            createHash('sha256').update(node.textContent).digest('hex') === ngContractSha),
+      ),
       'Unexpected executable inline script',
     );
     for (const forbidden of [
