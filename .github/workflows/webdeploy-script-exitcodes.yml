@@ -1,0 +1,41 @@
+# Credential-free: asserts the REAL pwsh process exit code of phase1_v3.ps1 on every credential-shape refusal path.
+# Only INVALID-shape synthetic values are used, so the script returns before any network or msdeploy call.
+name: WebDeploy phase1 script exit codes (synthetic)
+on:
+  push:
+    branches: [preflight/webdeploy-windows]
+    paths: [.github/workflows/webdeploy-script-exitcodes.yml, scripts/webdeploy/phase1_v3.ps1]
+permissions:
+  contents: read
+jobs:
+  exitcodes:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: |
+          $fail = 0
+          $pw = (Get-Process -Id $PID).Path
+          function Case($name, $value, $setEnv) {
+            if ($setEnv) { $env:WD_PASS = $value } else { Remove-Item Env:WD_PASS -ErrorAction SilentlyContinue }
+            $out = & $pw -NoProfile -File scripts/webdeploy/phase1_v3.ps1 -HelperPath scripts/webdeploy/CappedRunner.cs 2>&1 | Out-String
+            $rc = $LASTEXITCODE
+            $leak = ($value -and $value.Length -ge 3 -and $out.Contains($value))
+            "case=$name exit=$rc refused=$($out -match 'CREDENTIAL_SHAPE_REFUSED') value_in_output=$leak"
+            if ($rc -ne 10 -or -not ($out -match 'CREDENTIAL_SHAPE_REFUSED') -or $leak) { $script:fail++; "FAILED case=$name" }
+          }
+          Case 'unset' $null $false
+          Case 'empty' '' $true
+          Case 'too_short' 'Ab!1' $true
+          Case 'comma' 'Abcdef,123456' $true
+          Case 'space' 'Abcdef 123456' $true
+          Case 'quote' 'Abcdef"123456' $true
+          Case 'apostrophe' "Abcdef'123456" $true
+          Case 'trailing_newline' "Abcdef123456`n" $true
+          Case 'embedded_newline' "Abcdef`n123456" $true
+          Case 'percent' 'Abcdef%123456' $true
+          Case 'too_long' ('A' * 65) $true
+          Remove-Item Env:WD_PASS -ErrorAction SilentlyContinue
+          "failures=$fail"
+          if ($fail -ne 0) { exit 1 }
