@@ -83,7 +83,7 @@ test('real SQL A/B source HTML, locale/fallback/order, exact decimal prices, esc
     assert.ok(doc.title.includes(a));
     assert.equal(doc.querySelector('link[rel=canonical]').href, origin + '/r/s01-a');
     assert.deepEqual(
-      [...doc.querySelectorAll('h2')].map((n) => n.textContent),
+      [...doc.querySelectorAll('h2[id^="category-"]')].map((n) => n.textContent),
       language === 'ar' ? ['قسم سابق', 'قسم ألف'] : ['Earlier A', 'First A'],
     );
     assert.ok(doc.querySelectorAll('h3')[0].textContent.includes('صنف أول'));
