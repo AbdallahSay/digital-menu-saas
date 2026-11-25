@@ -75,6 +75,9 @@ export function normalizeSearch(value: string): string {
                   <p class="hero-tagline">{{ menu.restaurant.tagline }}</p>
                 }
                 <p class="hero-pill">{{ english ? 'Digital menu' : 'قائمة رقمية' }}</p>
+                <p class="hero-note" aria-hidden="true">
+                  {{ english ? 'Food that tells a story' : 'طعام بيحكي حكاية' }}
+                </p>
                 @if (menu.restaurant.heroUrl ?? menu.restaurant.logoUrl; as logoUrl) {
                   <img
                     class="restaurant-logo"
@@ -95,16 +98,16 @@ export function normalizeSearch(value: string): string {
               </div>
               <nav class="language" aria-label="Language">
                 <a
-                  [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
-                  lang="ar"
-                  [attr.aria-current]="english ? null : 'true'"
-                  >عربي</a
-                >
-                <a
                   [href]="'/r/' + menu.restaurant.slug + '?lang=en'"
                   lang="en"
                   [attr.aria-current]="english ? 'true' : null"
                   >EN</a
+                >
+                <a
+                  [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
+                  lang="ar"
+                  [attr.aria-current]="english ? null : 'true'"
+                  >عربي</a
                 >
               </nav>
             </div>
@@ -378,16 +381,16 @@ export function normalizeSearch(value: string): string {
         @if (page.menu?.restaurant?.theme === 'cafe') {
           <nav class="language footer-lang" aria-label="Language">
             <a
-              [href]="'/r/' + page.menu!.restaurant.slug + '?lang=ar'"
-              lang="ar"
-              [attr.aria-current]="english ? null : 'true'"
-              >عربي</a
-            >
-            <a
               [href]="'/r/' + page.menu!.restaurant.slug + '?lang=en'"
               lang="en"
               [attr.aria-current]="english ? 'true' : null"
               >EN</a
+            >
+            <a
+              [href]="'/r/' + page.menu!.restaurant.slug + '?lang=ar'"
+              lang="ar"
+              [attr.aria-current]="english ? null : 'true'"
+              >عربي</a
             >
           </nav>
         }
@@ -470,10 +473,16 @@ export function normalizeSearch(value: string): string {
       .hero-inner .hero-brand {
         margin-bottom: 27px;
       }
+      .hero-note,
       .hero-tagline {
         margin: 0;
         font-size: 13px;
         color: rgb(255 255 255 / 0.85);
+      }
+      .hero-note {
+        margin-top: 11px;
+        color: #fff7;
+        line-height: 20px;
       }
       .hero-cafe {
         display: flex;
@@ -542,7 +551,6 @@ export function normalizeSearch(value: string): string {
       }
       .restaurant-logo {
         position: absolute;
-        inset-block-start: 0;
         inset-inline-end: 0;
         width: 130px;
         height: 90px;
@@ -550,6 +558,17 @@ export function normalizeSearch(value: string): string {
         border-radius: 50%;
         background: #f4e9d6;
         inset-block-start: 65px;
+      }
+      .hero-inner > :not(.restaurant-logo) {
+        max-width: calc(100% - 140px);
+      }
+      @media (max-width: 360px) {
+        .hero-inner > :not(.restaurant-logo) {
+          max-width: calc(100% - 110px);
+        }
+        .restaurant-logo {
+          width: 100px;
+        }
       }
       h1,
       h2,
@@ -593,9 +612,8 @@ export function normalizeSearch(value: string): string {
         border-radius: 999px;
         padding: 2px;
         direction: ltr;
-        flex-direction: row-reverse; /* Figma reads "EN | عربي" */
       }
-      .language a:first-child::before {
+      .language a:last-child::before {
         content: '|';
         margin-inline-end: 8px;
         color: var(--color-text-secondary);
@@ -609,13 +627,10 @@ export function normalizeSearch(value: string): string {
         justify-content: center;
         padding: 0 10px;
         border-radius: 999px;
-        color: var(--color-brand-forest);
+        color: var(--color-text-secondary);
         font-size: 12px;
         font-weight: 700;
         text-decoration: none;
-      }
-      .language a {
-        color: var(--color-text-secondary);
       }
       .language a[aria-current='true'] {
         color: var(--color-brand-forest);
@@ -637,7 +652,7 @@ export function normalizeSearch(value: string): string {
         width: 100%;
         min-height: 50px;
         padding-block: 0;
-        padding-inline: 44px 16px;
+        padding-inline: 16px 44px;
         border: 1px solid var(--color-border-subtle);
         border-radius: 14px;
         background: #fff;
@@ -649,13 +664,10 @@ export function normalizeSearch(value: string): string {
       }
       .search-icon {
         position: absolute;
-        inset-inline-end: 16px;
-        top: 15px;
+        inset-inline-end: 30px;
+        top: 14px;
         color: var(--tp);
         pointer-events: none;
-      }
-      .search input {
-        padding-inline: 16px 44px;
       }
       .section-title {
         margin: 22px 0 12px;
@@ -756,6 +768,7 @@ export function normalizeSearch(value: string): string {
         height: 128px;
         object-fit: cover;
         border-radius: 14px;
+        background: #f5ece0;
       }
       .description {
         margin: 0 0 8px;
