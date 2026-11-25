@@ -17,17 +17,29 @@ public static class MediaEndpoints
     /// </summary>
     public static bool LocalDiskEnabled(IHostEnvironment environment, IConfiguration configuration) =>
         environment.IsDevelopment() || string.Equals(configuration["Media:AllowLocalDisk"], "true", StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Refuses a media root that is relative, or that equals, contains or sits inside the content root, the application
+    /// base directory or the configured Data Protection key directory. Existing path components are resolved through
+    /// symlinks before comparing. This is a configuration check at startup; it does not prevent a later replacement
+    /// of a path component by another writer.
+    /// </summary>
+    internal static void ValidateRoot(string root, IHostEnvironment environment, IConfiguration configuration)
+    {
+        if (!Path.IsPathFullyQualified(root)) throw new InvalidOperationException("Media root must be absolute.");
+        var real = DataProtectionConfiguration.ResolveLoose(root);
+        var others = new List<string> { environment.ContentRootPath, AppContext.BaseDirectory };
+        if (configuration[DataProtectionConfiguration.KeysPathKey] is { Length: > 0 } keys) others.Add(keys);
+        foreach (var other in others)
+            if (DataProtectionConfiguration.Overlaps(real, DataProtectionConfiguration.ResolveLoose(other)))
+                throw new InvalidOperationException("Media root must not overlap application, content or Data Protection key directories.");
+    }
     public static void AddMenuMedia(this IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
     {
         services.AddSingleton<ImageNormalizer>();
         services.AddSingleton<IImageStorage>(s =>
         {
             if (!LocalDiskEnabled(environment, configuration) || configuration["Media:LocalRoot"] is not { Length: > 0 } root) return new UnavailableImageStorage();
-            var full = Path.GetFullPath(root);
-            foreach (var protectedRoot in new[] { environment.ContentRootPath, AppContext.BaseDirectory })
-                if (full.StartsWith(Path.GetFullPath(protectedRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(full, Path.GetFullPath(protectedRoot).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Media root must be outside application directories.");
+            ValidateRoot(root, environment, configuration);
             return new LocalImageStorage(root, s.GetRequiredService<ILogger<LocalImageStorage>>());
         });
         services.Configure<FormOptions>(o =>

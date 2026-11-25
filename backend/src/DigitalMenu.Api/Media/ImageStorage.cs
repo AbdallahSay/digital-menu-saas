@@ -24,6 +24,9 @@ public sealed class LocalImageStorage : IImageStorage
         if (!Path.IsPathFullyQualified(root)) throw new InvalidOperationException("Media root must be absolute.");
         this.root = Path.GetFullPath(root);
         this.logger = logger;
+        // Refuse links in existing ancestors before creating anything, then check again after creation.
+        // Narrows, does not close, the window for another writer to swap a component.
+        RejectLinks(this.root);
         Directory.CreateDirectory(this.root);
         RejectLinks(this.root);
     }

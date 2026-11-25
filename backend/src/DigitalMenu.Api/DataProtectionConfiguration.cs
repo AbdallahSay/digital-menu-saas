@@ -124,7 +124,7 @@ public static class DataProtectionConfiguration
         OperatingSystem.IsMacOS() ? new[] { "-f", "%u", path } : new[] { "-c", "%u", path });
     static string CurrentUid() => RunBounded(FindExecutable("/usr/bin/id", "/bin/id"), HelperTimeout, "-u");
 
-    static bool Overlaps(string a, string b)
+    internal static bool Overlaps(string a, string b)
     {
         static string N(string s) => s.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var x = N(a); var y = N(b);
@@ -142,7 +142,7 @@ public static class DataProtectionConfiguration
         return parent is null ? full.TrimEnd(Path.DirectorySeparatorChar) : Resolve(parent.FullName) + Path.DirectorySeparatorChar + info.Name;
     }
 
-    static string ResolveLoose(string path)
+    internal static string ResolveLoose(string path)
     {
         var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
         var probe = full; var tail = "";
