@@ -130,7 +130,7 @@ jobs:
           want = sorted(('DigitalMenu.IntegrationTests.ProductionBootstrapTests.' + n, 'Passed') for n in ('Creates_first_platform_admin_once_and_refuses_when_users_exist', 'Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing', 'Refuses_when_intended_server_differs_from_the_resolved_server_with_the_same_catalog_and_writes_nothing'))
           if sorted(res) != want:
               raise SystemExit(f'Bootstrap SQL facts did not execute and pass: {res}')
-          print('PASS: both production bootstrap SQL facts executed and passed')
+          print('PASS: all three production bootstrap SQL facts executed and passed')
           PY
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
