@@ -42,22 +42,6 @@ export function normalizeSearch(value: string): string {
         >
           @if (menu.restaurant.theme === 'cafe') {
             <header class="hero hero-cafe">
-              <div class="hero-lang">
-                <nav class="language" aria-label="Language">
-                  <a
-                    [href]="'/r/' + menu.restaurant.slug + '?lang=ar'"
-                    lang="ar"
-                    [attr.aria-current]="english ? null : 'true'"
-                    >عربي</a
-                  >
-                  <a
-                    [href]="'/r/' + menu.restaurant.slug + '?lang=en'"
-                    lang="en"
-                    [attr.aria-current]="english ? 'true' : null"
-                    >EN</a
-                  >
-                </nav>
-              </div>
               @if (menu.restaurant.brandLabel) {
                 <p class="hero-brand">{{ menu.restaurant.brandLabel }}</p>
               }
@@ -184,10 +168,7 @@ export function normalizeSearch(value: string): string {
                 <button
                   type="button"
                   class="chip"
-                  [attr.aria-pressed]="
-                    selected() === category.id ||
-                    (menu.restaurant.theme === 'cafe' && selected() === null && $first)
-                  "
+                  [attr.aria-pressed]="selected() === category.id"
                   (click)="select(category.id)"
                 >
                   {{ category.name }}
@@ -259,7 +240,11 @@ export function normalizeSearch(value: string): string {
             </section>
           }
           @for (
-            category of query().trim() === '' ? visibleCategories() : [];
+            category of query().trim() === ''
+              ? menu.restaurant.theme === 'cafe'
+                ? cafeRest()
+                : visibleCategories()
+              : [];
             track category.id;
             let ci = $index
           ) {
@@ -390,6 +375,22 @@ export function normalizeSearch(value: string): string {
             }
           </dialog>
         </div>
+        @if (page.menu?.restaurant?.theme === 'cafe') {
+          <nav class="language footer-lang" aria-label="Language">
+            <a
+              [href]="'/r/' + page.menu!.restaurant.slug + '?lang=ar'"
+              lang="ar"
+              [attr.aria-current]="english ? null : 'true'"
+              >عربي</a
+            >
+            <a
+              [href]="'/r/' + page.menu!.restaurant.slug + '?lang=en'"
+              lang="en"
+              [attr.aria-current]="english ? 'true' : null"
+              >EN</a
+            >
+          </nav>
+        }
         <p class="display-only">
           {{
             english
@@ -433,7 +434,7 @@ export function normalizeSearch(value: string): string {
         background: var(--hero);
         color: #fff;
         margin: 0 -16px;
-        padding: 20px 20px 88px;
+        padding: 45px 20px 63px;
         border-radius: 0 0 28px 28px;
       }
       .hero-inner {
@@ -465,18 +466,9 @@ export function normalizeSearch(value: string): string {
         text-align: center;
         padding-bottom: 28px;
       }
-      .hero-cafe .hero-lang {
-        position: absolute;
-        inset-block-start: 12px;
-        inset-inline-start: 12px;
-        transform: scale(0.85);
-        transform-origin: top left;
-      }
-      .hero-cafe .hero-lang .language {
-        background: rgb(255 255 255 / 0.14);
-      }
-      .hero-cafe .hero-lang .language a {
-        color: #fff;
+      .footer-lang {
+        width: fit-content;
+        margin: 16px auto 0;
       }
       .hero-cafe .restaurant-logo {
         position: static;
@@ -496,7 +488,7 @@ export function normalizeSearch(value: string): string {
         padding-bottom: 32px;
       }
       .cafe-title {
-        padding: 34px 4px 0;
+        padding: 56px 4px 0;
       }
       .cafe-title .brand-sub {
         margin-top: 8px;
@@ -653,10 +645,10 @@ export function normalizeSearch(value: string): string {
         flex: none;
         white-space: nowrap;
       }
-      .cafe-title + .search {
-        margin-top: 28px;
+      .cafe-title ~ .search {
+        margin-top: 36px;
       }
-      .cafe-title + .search input {
+      .cafe-title ~ .search input {
         min-height: 54px;
       }
       .cafe-title ~ .chips {
@@ -794,6 +786,7 @@ export function normalizeSearch(value: string): string {
       .searching .cafe-title,
       .searching .chips,
       .searching .status,
+      .cafe-title ~ .status,
       .searching #categories-title {
         display: none;
       }
@@ -942,7 +935,13 @@ export class PublicMenuComponent {
   // Featured items only on the unfiltered view, so search and category filters stay predictable.
   readonly featuredItems = computed(() => {
     const menu = this.page.menu;
-    if (!menu || this.query().trim() !== '' || this.selected() !== null) return [];
+    if (!menu || this.query().trim() !== '') return [];
+    const sel = this.selected();
+    if (menu.restaurant.theme === 'cafe')
+      return menu.categories
+        .filter((c) => c.id === sel)
+        .flatMap((c) => c.items.filter((i) => i.featured));
+    if (sel !== null) return [];
     return menu.categories.flatMap((c) => c.items.filter((i) => i.featured));
   });
 
@@ -988,6 +987,12 @@ export class PublicMenuComponent {
           : c.items,
       }))
       .filter((c) => needle === '' || c.items.length > 0);
+  });
+  readonly cafeRest = computed(() => {
+    const cats = this.visibleCategories();
+    return cats
+      .map((c) => ({ ...c, items: c.items.filter((i) => !i.featured) }))
+      .filter((c) => c.items.length > 0);
   });
   get statusText(): string {
     const count = this.visibleCategories().reduce((n, c) => n + c.items.length, 0);
@@ -1072,7 +1077,9 @@ export class PublicMenuComponent {
       void [page.menu?.restaurant.slug, page.language, page.status];
       untracked(() => {
         this.query.set('');
-        this.selected.set(null);
+        this.selected.set(
+          page.menu?.restaurant.theme === 'cafe' ? (page.menu.categories[0]?.id ?? null) : null,
+        );
         const dialog = this.detail()?.nativeElement;
         this.opener = null;
         if (dialog?.open) dialog.close();

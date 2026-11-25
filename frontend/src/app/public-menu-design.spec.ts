@@ -12,7 +12,7 @@ function menu(language: 'ar' | 'en' = 'ar'): DisplayMenu {
     name,
     description,
     price: 10 * n,
-    priceText: (10 * n).toFixed(2),
+    priceText: String(10 * n),
     image: withImage
       ? {
           url: '/api/v1/public/media/items/' + id(n) + '/main',
@@ -181,7 +181,7 @@ describe('Public menu design', () => {
       expect(dialog.open).toBe(true);
       expect(dialog.querySelector('h2')?.textContent).toContain('كباب لحم');
       expect(dialog.querySelector('img')?.getAttribute('src')).toMatch(/\/main$/);
-      expect(dialog.textContent).toContain('10.00');
+      expect(dialog.textContent).toContain('10');
       dialog.querySelector<HTMLButtonElement>('.detail-close')!.click();
       f.detectChanges();
       expect(dialog.open).toBe(false);

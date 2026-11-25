@@ -203,7 +203,7 @@ export function decodeMenu(
           name: string(item.name, 150),
           description: string(item.description, 2000, true),
           price: item.price,
-          priceText: whole + '.' + fraction.padEnd(2, '0'),
+          priceText: /^0*$/.test(fraction) ? whole : whole + '.' + fraction.padEnd(2, '0'),
           image: image(item.image),
           featured: item.featured === true,
           available: item.available !== false,
