@@ -22,7 +22,7 @@ public static class DataProtectionConfiguration
     public const string ProviderKey = "DataProtection:Provider";
     public const string CertificateKey = "DataProtection:Certificate:Pem";
     public const string CertificateKeyKey = "DataProtection:Certificate:KeyPem";
-    // Mandatory passphrase for KeyPem, which must be an ENCRYPTED PKCS#8 PEM. Plaintext keys are not accepted.
+    // Passphrase for KeyPem. Mandatory (non-empty) when KeyFormat is EncryptedPkcs8 (the default); for PlaintextPkcs8 it must be absent or empty.
     public const string CertificatePasswordKey = "DataProtection:Certificate:KeyPassword";
     // Explicit key format: EncryptedPkcs8 (default, strict, KeyPassword mandatory) or PlaintextPkcs8 (host-only custody opt-in:
     // the unencrypted PKCS#8 key lives only in host configuration; KeyPassword must then be ABSENT). Any other value throws.
@@ -91,7 +91,7 @@ public static class DataProtectionConfiguration
         if (string.IsNullOrWhiteSpace(certPem) || string.IsNullOrWhiteSpace(keyPem))
             throw new InvalidOperationException($"DataProtection {label} certificate and private key (PEM) are required for the Database provider.");
         if (plaintext && !string.IsNullOrEmpty(keyPassword))
-            throw new InvalidOperationException($"DataProtection {label} KeyFormat PlaintextPkcs8 must not be combined with a KeyPassword.");
+            throw new InvalidOperationException($"DataProtection {label} KeyFormat PlaintextPkcs8 requires KeyPassword to be absent or empty.");
         if (!plaintext && string.IsNullOrEmpty(keyPassword))
             throw new InvalidOperationException($"DataProtection {label} encrypted private key requires KeyPassword.");
         System.Security.Cryptography.X509Certificates.X509Certificate2? pub = null;
