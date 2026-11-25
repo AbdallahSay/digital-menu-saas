@@ -11,6 +11,7 @@ export interface ItemDto {
   sortOrder: number;
   isPublished: boolean;
   isAvailable: boolean;
+  isFeatured?: boolean;
   rowVersion: string;
   /** First stored image id; read back through the tenant-scoped admin media endpoint. */
   imageId?: string | null;
@@ -33,6 +34,7 @@ export interface ItemInput {
   sortOrder: number;
   isPublished: boolean;
   isAvailable: boolean;
+  isFeatured?: boolean;
 }
 
 /** Response of POST /api/v1/admin/items/{id}/images (201). */

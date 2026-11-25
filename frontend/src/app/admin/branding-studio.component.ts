@@ -167,6 +167,91 @@ const PRESETS: { hex: string; label: string }[] = [
               </div>
             </div>
             <p class="hint">حد أقصى 5 ميجابايت؛ بتتحول لـ webp على السيرفر.</p>
+
+            <h2 class="logo-title">شكل صفحة المنيو</h2>
+            <div class="pres-form">
+              <label for="pres-theme">القالب</label>
+              <select
+                id="pres-theme"
+                [value]="presTheme() ?? settings.theme ?? 'classic'"
+                (change)="presTheme.set($any($event.target).value)"
+              >
+                <option value="classic">مطعم (كلاسيك)</option>
+                <option value="cafe">كافيه</option>
+              </select>
+              <label for="pres-brand">اسم البراند فوق الاسم (حتى 40 حرف)</label>
+              <input
+                id="pres-brand"
+                type="text"
+                maxlength="40"
+                [value]="presBrand() ?? settings.brandLabel ?? ''"
+                (input)="presBrand.set($any($event.target).value)"
+              />
+              <label for="pres-tag-ar">الوصف القصير بالعربي (حتى 120 حرف)</label>
+              <input
+                id="pres-tag-ar"
+                type="text"
+                maxlength="120"
+                [value]="presTagAr() ?? settings.taglineAr ?? ''"
+                (input)="presTagAr.set($any($event.target).value)"
+              />
+              <label for="pres-tag-en">الوصف القصير بالإنجليزي (حتى 120 حرف)</label>
+              <input
+                id="pres-tag-en"
+                type="text"
+                dir="ltr"
+                maxlength="120"
+                [value]="presTagEn() ?? settings.taglineEn ?? ''"
+                (input)="presTagEn.set($any($event.target).value)"
+              />
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="saving() || store.mutationBusy() || !presDirty()"
+                (click)="savePresentation()"
+              >
+                حفظ شكل الصفحة
+              </button>
+            </div>
+
+            <h2 class="logo-title">صورة الهيدر</h2>
+            <div class="logo-row">
+              @if (settings.hasHero) {
+                <img
+                  class="logo-preview"
+                  [src]="settings.heroUrl + '?v=' + logoVersion()"
+                  alt="صورة الهيدر الحالية"
+                  width="96"
+                  height="96"
+                />
+              } @else {
+                <span class="logo-placeholder" aria-hidden="true">🖼️</span>
+              }
+              <div class="logo-actions">
+                <label class="btn btn-secondary" for="brand-hero">
+                  {{ settings.hasHero ? 'تغيير صورة الهيدر' : 'رفع صورة الهيدر' }}
+                </label>
+                <input
+                  id="brand-hero"
+                  class="visually-hidden"
+                  type="file"
+                  accept="image/*"
+                  [disabled]="logoBusy() || store.mutationBusy()"
+                  (change)="stageHero($event)"
+                />
+                @if (settings.hasHero) {
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    [disabled]="logoBusy() || store.mutationBusy()"
+                    (click)="removeHero()"
+                  >
+                    حذف صورة الهيدر
+                  </button>
+                }
+              </div>
+            </div>
+            <p class="hint">لو مفيش صورة هيدر، بنستخدم اللوجو.</p>
           </section>
 
           <section class="preview" aria-labelledby="preview-title">
@@ -306,6 +391,18 @@ const PRESETS: { hex: string; label: string }[] = [
         margin-top: var(--space-4);
         min-height: 44px;
       }
+      .pres-form {
+        display: grid;
+        gap: 8px;
+      }
+      .pres-form input,
+      .pres-form select {
+        min-height: 44px;
+        padding: 0 12px;
+        border: 1px solid var(--color-border-subtle);
+        border-radius: 10px;
+        font: inherit;
+      }
       .logo-title {
         margin-top: var(--space-6);
       }
@@ -402,7 +499,18 @@ export class BrandingStudioComponent implements OnInit {
   readonly logoBusy = signal(false);
   readonly feedback = signal<Feedback>(null);
   /** Cache-buster: the admin logo URL is stable, so bump after every change. */
-  private readonly logoVersion = signal(0);
+  readonly logoVersion = signal(0);
+  readonly presTheme = signal<string | null>(null);
+  readonly presBrand = signal<string | null>(null);
+  readonly presTagAr = signal<string | null>(null);
+  readonly presTagEn = signal<string | null>(null);
+  readonly presDirty = computed(
+    () =>
+      this.presTheme() !== null ||
+      this.presBrand() !== null ||
+      this.presTagAr() !== null ||
+      this.presTagEn() !== null,
+  );
   readonly logoSrc = computed(() => {
     const url = this.store.settings()?.logoUrl;
     return url ? `${url}?v=${this.logoVersion()}` : null;
@@ -488,6 +596,78 @@ export class BrandingStudioComponent implements OnInit {
         this.feedback.set({ kind: 'error', text: 'صيغة الصورة غير مدعومة.' });
       } else {
         this.feedback.set({ kind: 'error', text: 'حصل خطأ أثناء رفع اللوجو. جرّب تاني.' });
+      }
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+
+  async savePresentation(): Promise<void> {
+    const s = this.store.settings();
+    if (!s || this.saving() || this.store.mutationBusy()) return;
+    this.saving.set(true);
+    this.feedback.set(null);
+    try {
+      const outcome = await this.store.savePresentation({
+        theme: (this.presTheme() ?? s.theme ?? 'classic') as 'classic' | 'cafe',
+        brandLabel: this.presBrand() ?? s.brandLabel ?? '',
+        taglineAr: this.presTagAr() ?? s.taglineAr ?? '',
+        taglineEn: this.presTagEn() ?? s.taglineEn ?? '',
+      });
+      if (outcome === 'ok') {
+        this.presTheme.set(null);
+        this.presBrand.set(null);
+        this.presTagAr.set(null);
+        this.presTagEn.set(null);
+        this.feedback.set({ kind: 'success', text: 'تم حفظ شكل الصفحة.' });
+      } else if (outcome === 'stale') {
+        this.feedback.set({ kind: 'error', text: 'الإعدادات اتغيرت من مكان تاني. جاري تحديثها.' });
+        await this.load();
+      } else if (outcome === 'invalid') {
+        this.feedback.set({ kind: 'error', text: 'القيم مرفوضة من السيرفر. راجع الأطوال.' });
+      } else {
+        this.feedback.set({ kind: 'error', text: 'حصل خطأ أثناء الحفظ. جرّب تاني.' });
+      }
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  async stageHero(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.logoBusy() || this.store.mutationBusy()) return;
+    this.logoBusy.set(true);
+    this.feedback.set(null);
+    try {
+      const outcome = await this.store.uploadHero(file);
+      if (outcome === 'ok') {
+        this.logoVersion.update((v) => v + 1);
+        this.feedback.set({ kind: 'success', text: 'تم حفظ صورة الهيدر.' });
+      } else if (outcome === 'too-large') {
+        this.feedback.set({ kind: 'error', text: 'الصورة أكبر من 5 ميجابايت. اختار صورة أصغر.' });
+      } else if (outcome === 'unsupported') {
+        this.feedback.set({ kind: 'error', text: 'صيغة الصورة غير مدعومة.' });
+      } else {
+        this.feedback.set({ kind: 'error', text: 'حصل خطأ أثناء رفع الصورة. جرّب تاني.' });
+      }
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+
+  async removeHero(): Promise<void> {
+    if (this.logoBusy() || this.store.mutationBusy()) return;
+    this.logoBusy.set(true);
+    this.feedback.set(null);
+    try {
+      const outcome = await this.store.deleteHero();
+      if (outcome === 'ok') {
+        this.logoVersion.update((v) => v + 1);
+        this.feedback.set({ kind: 'success', text: 'تم حذف صورة الهيدر.' });
+      } else {
+        this.feedback.set({ kind: 'error', text: 'حصل خطأ أثناء حذف الصورة. جرّب تاني.' });
       }
     } finally {
       this.logoBusy.set(false);

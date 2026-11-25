@@ -183,6 +183,10 @@ function twoDecimals(control: AbstractControl<number>): ValidationErrors | null 
             <input id="item-available" type="checkbox" formControlName="isAvailable" />
             <label for="item-available">متوفر</label>
           </div>
+          <div class="form-group form-check">
+            <input id="item-featured" type="checkbox" formControlName="isFeatured" />
+            <label for="item-featured">يظهر في الأصناف المميزة</label>
+          </div>
         </fieldset>
 
         @if (saveError(); as message) {
@@ -333,6 +337,7 @@ export class ItemModalComponent implements OnInit, OnDestroy {
     descriptionAr: ['', [Validators.maxLength(2000)]],
     descriptionEn: ['', [Validators.maxLength(2000)]],
     isAvailable: [true],
+    isFeatured: [false],
   });
 
   ngOnInit(): void {
@@ -346,6 +351,7 @@ export class ItemModalComponent implements OnInit, OnDestroy {
         descriptionAr: existing.descriptionAr ?? '',
         descriptionEn: existing.descriptionEn ?? '',
         isAvailable: existing.isAvailable,
+        isFeatured: existing.isFeatured ?? false,
       });
     } else {
       const first = this.categories()[0];
@@ -394,6 +400,7 @@ export class ItemModalComponent implements OnInit, OnDestroy {
       sortOrder: existing?.sortOrder ?? 0,
       isPublished: existing?.isPublished ?? true,
       isAvailable: raw.isAvailable,
+      isFeatured: raw.isFeatured,
     };
     const result = await this.onSave()({ input, file: this.staged });
     this.saving.set(false);

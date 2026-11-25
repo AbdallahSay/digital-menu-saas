@@ -12,6 +12,19 @@ export interface OwnerSettings {
   /** Admin read URL for the stored logo (stable across replacement); null when none. */
   logoUrl: string | null;
   rowVersion: string;
+  theme?: 'classic' | 'cafe';
+  brandLabel?: string | null;
+  taglineAr?: string | null;
+  taglineEn?: string | null;
+  hasHero?: boolean;
+  heroUrl?: string | null;
+}
+
+export interface PresentationInput {
+  theme: 'classic' | 'cafe';
+  brandLabel: string;
+  taglineAr: string;
+  taglineEn: string;
 }
 
 export type SettingsSaveResult = 'ok' | 'invalid' | 'stale' | 'error';
@@ -86,6 +99,65 @@ export class SettingsStateService {
           if (e.status === 400) return 'invalid';
           if (e.status === 412) return 'stale';
         }
+        return 'error';
+      }
+    });
+  }
+
+  /** Saves theme, brand label and taglines (empty string clears a text). */
+  async savePresentation(input: PresentationInput): Promise<SettingsSaveResult> {
+    return this.enqueue(async () => {
+      if (!(await this.reconcile())) return 'error';
+      const token = this.settings()?.rowVersion;
+      try {
+        const saved = await firstValueFrom(
+          this.http.put<OwnerSettings>('/api/v1/admin/settings', { ...input, rowVersion: token }),
+        );
+        this.settings.set(saved);
+        return 'ok';
+      } catch (e) {
+        if (e instanceof HttpErrorResponse) {
+          if (e.status === 400) return 'invalid';
+          if (e.status === 412) return 'stale';
+        }
+        return 'error';
+      }
+    });
+  }
+
+  /** Uploads (or replaces) the separate hero image shown at the top of the public menu. */
+  async uploadHero(file: File): Promise<LogoUploadResult> {
+    return this.enqueue(async () => {
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const saved = await firstValueFrom(
+          this.http.post<OwnerSettings>('/api/v1/admin/settings/hero', form),
+        );
+        this.settings.set(saved);
+        this.needsReconciliation = false;
+        return 'ok';
+      } catch (e) {
+        if (e instanceof HttpErrorResponse) {
+          if (e.status === 413) return 'too-large';
+          if (e.status === 400 || e.status === 415) return 'unsupported';
+        }
+        return 'error';
+      }
+    });
+  }
+
+  async deleteHero(): Promise<LogoDeleteResult> {
+    return this.enqueue(async () => {
+      try {
+        await firstValueFrom(this.http.delete('/api/v1/admin/settings/hero'));
+        this.settings.set(
+          await firstValueFrom(this.http.get<OwnerSettings>('/api/v1/admin/settings')),
+        );
+        this.needsReconciliation = false;
+        return 'ok';
+      } catch {
+        this.needsReconciliation = true;
         return 'error';
       }
     });

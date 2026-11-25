@@ -71,10 +71,10 @@ describe('ItemModalComponent', () => {
       calls.push(r);
       return 'ok';
     });
-    fixture.componentInstance.form.setValue({ ...valid, price: 0 });
+    fixture.componentInstance.form.patchValue({ ...valid, price: 0 });
     await fixture.componentInstance.save();
     expect(calls).toEqual([]);
-    fixture.componentInstance.form.setValue({ ...valid, price: 0.01 });
+    fixture.componentInstance.form.patchValue({ ...valid, price: 0.01 });
     await fixture.componentInstance.save();
     expect(calls.length).toBe(1);
   });
@@ -85,10 +85,10 @@ describe('ItemModalComponent', () => {
       calls.push(r);
       return 'ok';
     });
-    fixture.componentInstance.form.setValue({ ...valid, price: 10.999 });
+    fixture.componentInstance.form.patchValue({ ...valid, price: 10.999 });
     await fixture.componentInstance.save();
     expect(calls).toEqual([]);
-    fixture.componentInstance.form.setValue({ ...valid, price: 10.99 });
+    fixture.componentInstance.form.patchValue({ ...valid, price: 10.99 });
     await fixture.componentInstance.save();
     expect(calls[0].input.price).toBe(10.99);
   });
@@ -99,7 +99,7 @@ describe('ItemModalComponent', () => {
       calls.push(r);
       return 'ok';
     });
-    fixture.componentInstance.form.setValue({
+    fixture.componentInstance.form.patchValue({
       ...valid,
       nameAr: '  كبدة  ',
       nameEn: '  Liver ',
@@ -132,7 +132,7 @@ describe('ItemModalComponent', () => {
 
   it('keeps the draft open with an inline error when the save fails', async () => {
     const fixture = await create(null, async () => 'error');
-    fixture.componentInstance.form.setValue(valid);
+    fixture.componentInstance.form.patchValue(valid);
     let closed = 0;
     fixture.componentInstance.closed.subscribe(() => closed++);
     await fixture.componentInstance.save();
@@ -154,7 +154,7 @@ describe('ItemModalComponent', () => {
       calls++;
       return new Promise<ItemSaveResult>((resolve) => (release = resolve));
     });
-    fixture.componentInstance.form.setValue(valid);
+    fixture.componentInstance.form.patchValue(valid);
     const first = fixture.componentInstance.save();
     await fixture.componentInstance.save();
     expect(calls).toBe(1);

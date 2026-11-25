@@ -323,4 +323,54 @@ describe('SettingsStateService', () => {
     expect(store.settings()?.rowVersion).toBe('AAAAAAAAAAA=');
     expect(store.settings()?.hasLogo).toBe(false);
   });
+
+  it('saves presentation fields with the current rowVersion and maps 400/412', async () => {
+    store.settings.set(settings());
+    const save = store.savePresentation({
+      theme: 'cafe',
+      brandLabel: 'THE ROOM',
+      taglineAr: '',
+      taglineEn: 'en',
+    });
+    await tick();
+    const req = http.expectOne('/api/v1/admin/settings');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({
+      theme: 'cafe',
+      brandLabel: 'THE ROOM',
+      taglineAr: '',
+      taglineEn: 'en',
+      rowVersion: 'AAAAAAAAAAA=',
+    });
+    req.flush(settings({ theme: 'cafe', brandLabel: 'THE ROOM' }));
+    expect(await save).toBe('ok');
+    expect(store.settings()?.theme).toBe('cafe');
+    const bad = store.savePresentation({
+      theme: 'cafe',
+      brandLabel: '',
+      taglineAr: '',
+      taglineEn: '',
+    });
+    await tick();
+    http.expectOne('/api/v1/admin/settings').flush({}, { status: 412, statusText: '' });
+    expect(await bad).toBe('stale');
+  });
+
+  it('uploads and deletes the hero image through the hero routes', async () => {
+    store.settings.set(settings());
+    const up = store.uploadHero(new File(['x'], 'h.png', { type: 'image/png' }));
+    await tick();
+    const post = http.expectOne('/api/v1/admin/settings/hero');
+    expect(post.request.method).toBe('POST');
+    post.flush(settings({ hasHero: true, heroUrl: '/api/v1/admin/settings/hero' }));
+    expect(await up).toBe('ok');
+    expect(store.settings()?.hasHero).toBe(true);
+    const del = store.deleteHero();
+    await tick();
+    http.expectOne('/api/v1/admin/settings/hero').flush(null, { status: 204, statusText: '' });
+    await tick();
+    http.expectOne('/api/v1/admin/settings').flush(settings());
+    expect(await del).toBe('ok');
+    expect(store.settings()?.hasHero).toBeFalsy();
+  });
 });
