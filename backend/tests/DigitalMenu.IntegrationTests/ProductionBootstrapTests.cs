@@ -23,7 +23,9 @@ public sealed class ProductionBootstrapTests
         new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:MenuDatabase"] = "Server=db.example.test;Database=prod_db;User ID=u;Password=p;Encrypt=True",
-            ["Bootstrap:ConfirmDatabase"] = confirm, ["Bootstrap:Email"] = email, ["Bootstrap:Password"] = password
+            ["Bootstrap:ConfirmDatabase"] = confirm,
+            ["Bootstrap:Email"] = email,
+            ["Bootstrap:Password"] = password
         }).Build();
 
     [Theory]
@@ -58,12 +60,36 @@ public sealed class ProductionBootstrapTests
         var env = new Env("Production");
         await Assert.ThrowsAsync<InvalidOperationException>(() => ProductionBootstrap.RunAsync(fixture.Factory.Services, env, config));
         using (var s = fixture.Factory.Services.CreateScope())
-            Assert.False(await s.ServiceProvider.GetRequiredService<MenuDbContext>().Users.AnyAsync());
+        {
+            var d = s.ServiceProvider.GetRequiredService<MenuDbContext>();
+            Assert.False(await d.Users.AnyAsync());
+            Assert.False(await d.Roles.AnyAsync());
+        }
         config["Bootstrap:Password"] = fixture.Password;
         await ProductionBootstrap.RunAsync(fixture.Factory.Services, env, config);
         using var scope = fixture.Factory.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        Assert.True(await users.IsInRoleAsync((await users.FindByEmailAsync("first-admin@example.test"))!, "PlatformAdmin"));
+        var created = (await users.FindByEmailAsync("first-admin@example.test"))!;
+        Assert.True(await users.IsInRoleAsync(created, "PlatformAdmin"));
+        Assert.True(await users.CheckPasswordAsync(created, fixture.Password));
         await Assert.ThrowsAsync<InvalidOperationException>(() => ProductionBootstrap.RunAsync(fixture.Factory.Services, env, config));
+    }
+
+    [SqlServerFact]
+    public async Task Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing()
+    {
+        await using var fixture = await AuthenticationTests.AuthFixture.Create(empty: true);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:MenuDatabase"] = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(fixture.Connection) { InitialCatalog = "some_other_db" }.ConnectionString,
+            ["Bootstrap:ConfirmDatabase"] = "some_other_db",
+            ["Bootstrap:Email"] = "first-admin@example.test",
+            ["Bootstrap:Password"] = fixture.Password
+        }).Build();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ProductionBootstrap.RunAsync(fixture.Factory.Services, new Env("Production"), config));
+        using var scope = fixture.Factory.Services.CreateScope();
+        var d = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+        Assert.False(await d.Users.AnyAsync());
+        Assert.False(await d.Roles.AnyAsync());
     }
 }

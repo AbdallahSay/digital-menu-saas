@@ -132,7 +132,7 @@ public sealed class PresentationTests
     [SqlServerFact]
     public async Task Hero_routes_require_a_login_and_the_public_hero_is_404_without_an_upload()
     {
-        await using var f = await Fixture.Create();
+        await using var f = await Fixture.Create(publicCodeA: "0123456789abcdef0123");
         await PublishAll(f);
         var guest = new Browser(f.Auth.Factory);
         Assert.Equal(HttpStatusCode.Unauthorized, (await guest.Send(HttpMethod.Get, Route + "/hero")).StatusCode);

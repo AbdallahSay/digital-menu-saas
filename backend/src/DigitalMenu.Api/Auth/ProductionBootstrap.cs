@@ -26,6 +26,10 @@ public static class ProductionBootstrap
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
         await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        // Bind the confirmation to the connection the identity stores will actually write through, not only the supplied string.
+        var actual = (await db.Database.SqlQueryRaw<string>("SELECT DB_NAME() AS [Value]").ToListAsync()).SingleOrDefault();
+        if (!string.Equals(actual, catalog, StringComparison.Ordinal))
+            throw new InvalidOperationException("The resolved database does not match the confirmed target; nothing was written.");
         if (await db.Users.AnyAsync()) throw new InvalidOperationException("Bootstrap requires an empty Identity user store.");
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
