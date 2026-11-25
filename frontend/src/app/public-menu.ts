@@ -427,6 +427,7 @@ export function normalizeSearch(value: string): string {
         --tp: #0f766e;
         --hero: color-mix(in srgb, var(--tp) 45%, #1a1512);
         max-width: 430px;
+        overflow-wrap: anywhere;
         margin: 0 auto;
         padding: 0 16px;
         min-height: 100vh;
@@ -437,7 +438,7 @@ export function normalizeSearch(value: string): string {
         background: var(--hero);
         color: #fff;
         margin: 0 -16px;
-        padding: 20px 20px 20px;
+        padding: 20px;
         border-radius: 0 0 28px 28px;
         position: relative;
         overflow: hidden;
@@ -451,8 +452,7 @@ export function normalizeSearch(value: string): string {
         width: 90px;
         height: 236px;
         border-radius: 0 40px 40px 0;
-        background: rgb(0 0 0 / 0.08);
-        pointer-events: none;
+        background: #00000014;
       }
       .hero-inner {
         display: flex;
@@ -482,7 +482,6 @@ export function normalizeSearch(value: string): string {
       .hero-note {
         margin-top: 11px;
         color: #fff7;
-        line-height: 20px;
       }
       .hero-cafe {
         display: flex;
@@ -557,7 +556,6 @@ export function normalizeSearch(value: string): string {
       }
       .has-art > :not(.restaurant-logo) {
         max-width: calc(100% - 140px);
-        overflow-wrap: anywhere;
       }
       @media (max-width: 360px) {
         .has-art > :not(.restaurant-logo) {
@@ -645,7 +643,6 @@ export function normalizeSearch(value: string): string {
         margin-top: 16px;
       }
       .search input {
-        box-sizing: border-box;
         width: 100%;
         min-height: 50px;
         padding-block: 0;
@@ -708,8 +705,7 @@ export function normalizeSearch(value: string): string {
       .chip::after {
         content: '';
         position: absolute;
-        inset-block: -5px;
-        inset-inline: 0;
+        inset: -5px 0;
       }
       .chip[aria-pressed='true'] {
         background: var(--tp);
