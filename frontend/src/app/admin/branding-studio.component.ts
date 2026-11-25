@@ -222,11 +222,11 @@ const PRESETS: { hex: string; label: string }[] = [
             <div class="logo-row">
               @if (settings.hasHero) {
                 <img
-                  class="logo-preview"
+                  class="logo-preview hero-preview"
                   [src]="settings.heroUrl + '?v=' + logoVersion()"
                   alt="صورة الهيدر الحالية"
-                  width="96"
-                  height="96"
+                  width="160"
+                  height="120"
                 />
               } @else {
                 <span class="logo-placeholder" aria-hidden="true">🖼️</span>
@@ -422,6 +422,14 @@ const PRESETS: { hex: string; label: string }[] = [
         border-radius: var(--radius-md, 10px);
         border: 1px solid var(--color-border, #e2e8f0);
         background: #fff;
+      }
+      .logo-preview.hero-preview {
+        width: 160px;
+        height: auto;
+        max-width: 100%;
+        max-height: 160px;
+        object-fit: contain;
+        background: var(--color-surface-muted, #f1f5f9);
       }
       .logo-placeholder {
         font-size: 2.5rem;

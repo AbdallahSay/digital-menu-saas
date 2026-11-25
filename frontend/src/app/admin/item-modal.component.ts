@@ -216,6 +216,8 @@ function twoDecimals(control: AbstractControl<number>): ValidationErrors | null 
         padding: 0;
         margin: 0;
         min-width: 0;
+        /* Last control stays fully clear of the sticky action bar when scrolled to the end. */
+        padding-bottom: var(--space-4);
       }
       /* Space between fields so a focus ring does not touch the next label. */
       .form-fields > * + * {
