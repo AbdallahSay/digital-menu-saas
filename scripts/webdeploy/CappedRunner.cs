@@ -51,6 +51,7 @@ public static class CappedRunner {
             bool exited = p.WaitForExit(timeoutMs);
             if (!exited) { try { p.Kill(true); } catch { } p.WaitForExit(5000); }
             bool drained = Task.WaitAll(new[] { t1, t2 }, 10000);
+            bool drainTimedOut = !drained;
             if (!drained) {
                 // a grandchild may still hold the pipes: kill the tree again, close our ends, then wait for the pumps to finish
                 try { p.Kill(true); } catch { }
@@ -63,7 +64,7 @@ public static class CappedRunner {
             if (capErr) r.Status = "CAPTURE_ERROR";
             else if (capHit) r.Status = "CAP_EXCEEDED";
             else if (!exited) r.Status = "TIMEOUT";
-            else if (!drained) r.Status = "DRAIN_TIMEOUT";
+            else if (drainTimedOut || !drained) r.Status = "DRAIN_TIMEOUT";
             else r.Status = (r.ExitCode == 0 ? "OK" : "NONZERO");
         } catch (Exception) {
             r.Status = started ? "RUNNER_ERROR" : "START_ERROR";

@@ -45,7 +45,7 @@ jobs:
           $gc = "Start-Process -FilePath '$ps' -ArgumentList '-NoProfile','-Command','Start-Sleep 25' -NoNewWindow; exit 0"
           $r = [CappedRunner]::Run($ps, [string[]]@('-NoProfile','-Command',$gc), $raw, 4096, 8000)
           "fixture=inherited_pipe_grandchild status=$($r.Status) secs=$($r.Seconds) reaped=$($r.ChildReaped)"
-          Chk 'inherited_pipe.never_false_ok' ($r.Status -in @('DRAIN_TIMEOUT','CAPTURE_ERROR'))
+          Chk 'inherited_pipe.never_false_ok' ($r.Status -in @('DRAIN_TIMEOUT'))
           # pump/capture failure: raw path is a directory that cannot be opened for write => must be START_ERROR, never OK
           $bad = [CappedRunner]::Run($ps, [string[]]@('-NoProfile','-Command','1'), $env:RUNNER_TEMP, 4096, 10000)
           "fixture=unwritable_raw status=$($bad.Status)"; Chk 'unwritable_raw.not_ok' ($bad.Status -ne 'OK')
