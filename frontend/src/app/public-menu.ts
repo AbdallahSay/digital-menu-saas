@@ -274,10 +274,6 @@ export function normalizeSearch(value: string): string {
         background: var(--color-brand-primary);
         color: var(--color-brand-on-primary);
       }
-      :focus-visible {
-        outline: 3px solid var(--color-brand-primary);
-        outline-offset: 2px;
-      }
       .search label {
         display: block;
         font-size: var(--font-size-sm);
@@ -363,6 +359,10 @@ export function normalizeSearch(value: string): string {
         content: '';
         position: absolute;
         inset: 0;
+      }
+      :focus-visible {
+        outline: 3px solid var(--color-brand-primary);
+        outline-offset: 2px;
       }
       .restaurant-logo {
         width: 72px;
