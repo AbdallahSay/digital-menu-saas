@@ -434,7 +434,7 @@ export function normalizeSearch(value: string): string {
         background: var(--hero);
         color: #fff;
         margin: 0 -16px;
-        padding: 45px 20px 63px;
+        padding: 20px 20px 63px;
         border-radius: 0 0 28px 28px;
       }
       .hero-inner {
@@ -442,7 +442,7 @@ export function normalizeSearch(value: string): string {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
-        min-height: 188px;
+        min-height: 213px;
         position: relative;
       }
       .hero-brand {
@@ -452,6 +452,9 @@ export function normalizeSearch(value: string): string {
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+      }
+      .hero-inner .hero-brand {
+        margin-bottom: 19px;
       }
       .hero-tagline {
         margin: 0;
@@ -472,8 +475,8 @@ export function normalizeSearch(value: string): string {
       }
       .hero-cafe .restaurant-logo {
         position: static;
-        width: 120px;
-        height: 120px;
+        width: 144px;
+        height: 144px;
         margin-top: 6px;
       }
       .hero-cafe .hero-brand {
@@ -483,12 +486,12 @@ export function normalizeSearch(value: string): string {
       }
       .hero-cafe {
         position: relative;
-        min-height: 256px;
+        min-height: 280px;
         padding-top: 30px;
         padding-bottom: 32px;
       }
       .cafe-title {
-        padding: 56px 4px 0;
+        padding: 31px 4px 0;
       }
       .cafe-title .brand-sub {
         margin-top: 8px;
@@ -686,7 +689,7 @@ export function normalizeSearch(value: string): string {
       }
       .items {
         display: grid;
-        gap: 12px;
+        gap: 22px;
       }
       article {
         position: relative;
@@ -721,8 +724,8 @@ export function normalizeSearch(value: string): string {
       }
       .item-thumbnail {
         flex: none;
-        width: 132px;
-        height: 132px;
+        width: 128px;
+        height: 128px;
         object-fit: cover;
         border-radius: 14px;
       }
