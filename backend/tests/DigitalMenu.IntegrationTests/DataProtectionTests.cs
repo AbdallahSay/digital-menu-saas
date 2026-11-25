@@ -32,7 +32,7 @@ public sealed class DataProtectionTests
         Assert.NotNull(dev.GetService<IDataProtectionProvider>());
     }
 
-    [Fact]
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public void Application_name_is_required_in_production_and_isolates_rings()
     {
         var content = Tmp("content"); var keys = Tmp("keys");
@@ -55,15 +55,15 @@ public sealed class DataProtectionTests
         return services.BuildServiceProvider();
     }
 
-    static ServiceProvider Build(string content, Dictionary<string, string?> cfg)
+    static ServiceProvider Build(string content, Dictionary<string, string?> cfg, Action<string>? afterCreate = null)
     {
         var services = new ServiceCollection();
         var env = new FakeEnv(content);
-        DataProtectionConfiguration.Configure(services, env, new ConfigurationBuilder().AddInMemoryCollection(cfg).Build());
+        DataProtectionConfiguration.Configure(services, env, new ConfigurationBuilder().AddInMemoryCollection(cfg).Build(), OperatingSystem.IsWindows(), afterCreate);
         return services.BuildServiceProvider();
     }
 
-    [Fact]
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public void Persisted_keys_survive_a_new_provider_and_files_are_created()
     {
         var content = Path.Combine(Path.GetTempPath(), "dm-content-" + Guid.NewGuid().ToString("N"));
@@ -167,15 +167,15 @@ public sealed class DataProtectionTests
     }
 
     [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
-    public void Missing_directory_is_revalidated_after_creation_and_a_swapped_in_shared_directory_is_rejected()
+    public void Missing_directory_whose_mode_is_widened_after_creation_is_rejected()
     {
         var content = Tmp("content"); var keys = Tmp("keys");
         try
         {
-            DataProtectionConfiguration.PostCreateTestHook = dir => File.SetUnixFileMode(dir, (UnixFileMode)Convert.ToInt32("755", 8));
-            Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" }));
+            Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" },
+                afterCreate: dir => File.SetUnixFileMode(dir, (UnixFileMode)Convert.ToInt32("755", 8))));
         }
-        finally { DataProtectionConfiguration.PostCreateTestHook = null; if (Directory.Exists(keys)) Directory.Delete(keys, true); }
+        finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
     }
 
     [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
@@ -185,10 +185,10 @@ public sealed class DataProtectionTests
         Directory.CreateDirectory(other); File.SetUnixFileMode(other, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         try
         {
-            DataProtectionConfiguration.PostCreateTestHook = dir => { Directory.Delete(dir); Directory.CreateSymbolicLink(dir, other); };
-            Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" }));
+            Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" },
+                afterCreate: dir => { Directory.Delete(dir); Directory.CreateSymbolicLink(dir, other); }));
         }
-        finally { DataProtectionConfiguration.PostCreateTestHook = null; if (File.Exists(keys) || Directory.Exists(keys)) { try { Directory.Delete(keys); } catch { File.Delete(keys); } } if (Directory.Exists(other)) Directory.Delete(other, true); }
+        finally { if (File.Exists(keys) || Directory.Exists(keys)) { try { Directory.Delete(keys); } catch { File.Delete(keys); } } if (Directory.Exists(other)) Directory.Delete(other, true); }
     }
 
     [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
@@ -206,13 +206,26 @@ public sealed class DataProtectionTests
     }
 
     [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
-    public void A_background_child_holding_the_pipe_open_does_not_hang_the_helper()
+    public void A_background_child_holding_the_pipe_open_does_not_hang_the_helper_but_is_not_cleaned_up_by_it()
     {
         var sh = new[] { "/usr/bin/sh", "/bin/sh" }.FirstOrDefault(File.Exists);
         Assert.NotNull(sh);
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.RunBounded(sh!, TimeSpan.FromSeconds(2), "-c", "sleep 30 & echo 1"));
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10));
+        var pidFile = Tmp("pid");
+        try
+        {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.RunBounded(sh!, TimeSpan.FromSeconds(2), "-c", "sleep 30 & echo $! > '" + pidFile + "'; echo 1"));
+            Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            // The helper does not kill descendants, so the test removes the orphan it created.
+            if (File.Exists(pidFile) && int.TryParse(File.ReadAllText(pidFile).Trim(), out var pid))
+            {
+                try { using var orphan = System.Diagnostics.Process.GetProcessById(pid); orphan.Kill(); } catch (ArgumentException) { } catch (InvalidOperationException) { }
+                File.Delete(pidFile);
+            }
+        }
     }
 
     [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]

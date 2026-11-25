@@ -22,7 +22,7 @@ public static class DataProtectionConfiguration
         => Configure(services, environment, configuration, OperatingSystem.IsWindows());
 
     // Test seam only (internal): the platform is a parameter so the Windows policy decision can be exercised on any OS. Production entry is the three-argument overload bound to the real OS. Directory preparation still reads the real OS.
-    internal static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration, bool isWindows)
+    internal static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration, bool isWindows, Action<string>? afterCreateForTests = null)
     {
         var name = configuration[ApplicationNameKey];
         if (string.IsNullOrWhiteSpace(name))
@@ -40,11 +40,11 @@ public static class DataProtectionConfiguration
         }
         if (isWindows && !environment.IsDevelopment())
             throw new InvalidOperationException("Windows key-directory ACLs are not validated by this build; durable key storage on Windows is not supported yet.");
-        var dir = PrepareDirectory(path, environment, configuration);
+        var dir = PrepareDirectory(path, environment, configuration, afterCreateForTests);
         builder.PersistKeysToFileSystem(new DirectoryInfo(dir));
     }
 
-    internal static string PrepareDirectory(string path, IHostEnvironment environment, IConfiguration configuration)
+    internal static string PrepareDirectory(string path, IHostEnvironment environment, IConfiguration configuration, Action<string>? afterCreateForTests = null)
     {
         if (!Path.IsPathRooted(path)) throw new InvalidOperationException("DataProtection key directory must be an absolute path.");
         var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
@@ -65,16 +65,13 @@ public static class DataProtectionConfiguration
         {
             if (OperatingSystem.IsWindows()) Directory.CreateDirectory(full);
             else Directory.CreateDirectory(full, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            PostCreateTestHook?.Invoke(full);
+            afterCreateForTests?.Invoke(full);
             // Revalidate what actually exists now. This narrows, but does not close, the window in which another
             // writer of the parent directory could replace the path: only a trusted, dedicated parent is safe.
             ValidateExistingDirectory(full);
         }
         return full;
     }
-
-    // Test-only seam: runs after a missing key directory was created and before it is revalidated.
-    internal static Action<string>? PostCreateTestHook;
 
     static void ValidateExistingDirectory(string full)
     {
@@ -107,11 +104,16 @@ public static class DataProtectionConfiguration
         var stderr = p.StandardError.ReadToEndAsync();
         if (!p.WaitForExit(timeout))
         {
-            try { p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
-            p.WaitForExit(TimeSpan.FromSeconds(2));
-            throw new InvalidOperationException("Cannot verify key directory ownership (helper timed out).");
+            var killed = true;
+            try { p.Kill(entireProcessTree: true); }
+            catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException) { killed = false; }
+            if (killed) p.WaitForExit(TimeSpan.FromSeconds(2));
+            throw new InvalidOperationException(killed
+                ? "Cannot verify key directory ownership (helper timed out and was killed)."
+                : "Cannot verify key directory ownership (helper timed out and could not be killed).");
         }
         // The process exited; a descendant could still hold the pipes open, so the reads are bounded too.
+        // This only bounds the wait: it does not stop or clean up such a descendant.
         if (!Task.WhenAll(stdout, stderr).Wait(TimeSpan.FromSeconds(2)))
             throw new InvalidOperationException("Cannot verify key directory ownership (helper output did not close).");
         var o = stdout.Result.Trim();
