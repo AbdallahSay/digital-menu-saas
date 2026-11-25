@@ -22,6 +22,8 @@ public static class DataProtectionConfiguration
     public const string ProviderKey = "DataProtection:Provider";
     public const string CertificateKey = "DataProtection:Certificate:Pem";
     public const string CertificateKeyKey = "DataProtection:Certificate:KeyPem";
+    // Mandatory passphrase for KeyPem, which must be an ENCRYPTED PKCS#8 PEM. Plaintext keys are not accepted.
+    public const string CertificatePasswordKey = "DataProtection:Certificate:KeyPassword";
     // Historical decrypt-only certificates: DataProtection:PreviousCertificates:0:Pem / :KeyPem, then 1, 2, ...
     public const string PreviousCertificatesKey = "DataProtection:PreviousCertificates";
 
@@ -38,13 +40,13 @@ public static class DataProtectionConfiguration
         var owned = new List<System.Security.Cryptography.X509Certificates.X509Certificate2>();
         try
         {
-            var current = LoadCertificate(configuration[CertificateKey], configuration[CertificateKeyKey], "current");
+            var current = LoadCertificate(configuration[CertificateKey], configuration[CertificateKeyKey], "current", configuration[CertificatePasswordKey]);
             owned.Add(current);
             var previous = new List<System.Security.Cryptography.X509Certificates.X509Certificate2>();
             foreach (var child in configuration.GetSection(PreviousCertificatesKey).GetChildren().OrderBy(c => int.TryParse(c.Key, out var i) ? i : int.MaxValue))
             {
                 // Strict: a previous entry with only one half, or neither, is an error and never silently ignored.
-                var cert = LoadCertificate(child["Pem"], child["KeyPem"], $"previous #{child.Key}");
+                var cert = LoadCertificate(child["Pem"], child["KeyPem"], $"previous #{child.Key}", child["KeyPassword"]);
                 owned.Add(cert); previous.Add(cert);
             }
             var connection = configuration.GetConnectionString("MenuDatabase");
@@ -56,23 +58,28 @@ public static class DataProtectionConfiguration
             builder.ProtectKeysWithCertificate(current);
             // Decrypt-only: old certificates are kept until all retained ring keys and recovery needs allow retirement.
             if (previous.Count > 0) builder.UnprotectKeysWithAnyCertificate(previous.ToArray());
-            builder.Services.AddSingleton(new CertificateOwner(owned)); // disposed with the container, after Data Protection use
+            // Factory registration as IHostedService: the host resolves it at start, the container owns and disposes it at shutdown
+            // (instances passed to AddSingleton are never disposed by the container).
+            builder.Services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService>(_ => new CertificateOwner(owned));
         }
         catch { foreach (var c in owned) c.Dispose(); throw; }
     }
 
-    sealed class CertificateOwner(IEnumerable<System.Security.Cryptography.X509Certificates.X509Certificate2> certs) : IDisposable
+    internal sealed class CertificateOwner(IEnumerable<System.Security.Cryptography.X509Certificates.X509Certificate2> certs) : Microsoft.Extensions.Hosting.IHostedService, IDisposable
     {
-        public void Dispose() { foreach (var c in certs) c.Dispose(); }
+        public bool IsDisposed { get; private set; }
+        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public void Dispose() { IsDisposed = true; foreach (var c in certs) c.Dispose(); }
     }
 
     // Accepts real newlines or literal \n sequences (single-line environment values).
     static string NormalizePem(string value) => value.Trim().Replace("\\r", "").Replace("\\n", "\n");
 
-    internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? certPem, string? keyPem, string label)
+    internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? certPem, string? keyPem, string label, string? keyPassword)
     {
-        if (string.IsNullOrWhiteSpace(certPem) || string.IsNullOrWhiteSpace(keyPem))
-            throw new InvalidOperationException($"DataProtection {label} certificate and private key (PEM) are both required for the Database provider.");
+        if (string.IsNullOrWhiteSpace(certPem) || string.IsNullOrWhiteSpace(keyPem) || string.IsNullOrEmpty(keyPassword))
+            throw new InvalidOperationException($"DataProtection {label} certificate, encrypted private key (PEM) and KeyPassword are all required for the Database provider.");
         System.Security.Cryptography.X509Certificates.X509Certificate2? pub = null;
         System.Security.Cryptography.RSA? priv = null;
         try
@@ -80,22 +87,24 @@ public static class DataProtectionConfiguration
             pub = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(NormalizePem(certPem));
             using var pubKey = pub.GetRSAPublicKey() ?? throw new InvalidOperationException($"DataProtection {label} certificate must contain an RSA key.");
             priv = System.Security.Cryptography.RSA.Create();
-            priv.ImportFromPem(NormalizePem(keyPem));
+            priv.ImportFromEncryptedPem(NormalizePem(keyPem), keyPassword); // encrypted PKCS#8 only: plaintext keys are rejected, never tried as a fallback
             if (!pubKey.ExportParameters(false).Modulus!.AsSpan().SequenceEqual(priv.ExportParameters(false).Modulus!))
                 throw new InvalidOperationException($"DataProtection {label} private key does not match the certificate.");
             var withKey = pub.CopyWithPrivateKey(priv);
-            // Prove the pair is usable for wrapping and unwrapping now, not at first login.
-            using (var rsa = withKey.GetRSAPrivateKey() ?? throw new InvalidOperationException($"DataProtection {label} private key is not usable."))
+            try
             {
+                // Prove the pair is usable for wrapping and unwrapping now, not at first login.
+                using var rsa = withKey.GetRSAPrivateKey() ?? throw new InvalidOperationException($"DataProtection {label} private key is not usable.");
                 var probe = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
                 if (!rsa.Decrypt(rsa.Encrypt(probe, System.Security.Cryptography.RSAEncryptionPadding.OaepSHA256), System.Security.Cryptography.RSAEncryptionPadding.OaepSHA256).AsSpan().SequenceEqual(probe))
                     throw new InvalidOperationException($"DataProtection {label} certificate key pair failed a wrap/unwrap check.");
+                return withKey;
             }
-            return withKey;
+            catch { withKey.Dispose(); throw; }
         }
         catch (Exception e) when (e is System.Security.Cryptography.CryptographicException or ArgumentException or FormatException)
         {
-            throw new InvalidOperationException($"DataProtection {label} certificate or private key could not be loaded (must be RSA certificate PEM plus unencrypted PKCS#8 RSA key PEM).");
+            throw new InvalidOperationException($"DataProtection {label} certificate or private key could not be loaded (must be RSA certificate PEM plus an ENCRYPTED PKCS#8 RSA key PEM and its KeyPassword).");
         }
         finally { priv?.Dispose(); pub?.Dispose(); }
     }

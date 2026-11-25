@@ -11,6 +11,8 @@ namespace DigitalMenu.IntegrationTests;
 // Keys and certificates are created in memory for each test and never written to disk or logged.
 public sealed class DataProtectionDatabaseProviderTests
 {
+    const string Pw = "test-pass-1";
+    static readonly PbeParameters Pbe = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 10000);
     const string Conn = "ConnectionStrings:MenuDatabase";
     const string ConnValue = "Server=127.0.0.1;Database=x;User Id=u;Password=p;";
 
@@ -19,7 +21,7 @@ public sealed class DataProtectionDatabaseProviderTests
         using var rsa = RSA.Create(2048);
         var req = new CertificateRequest("CN=dm-test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         using var c = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(30));
-        return (c.ExportCertificatePem(), rsa.ExportPkcs8PrivateKeyPem());
+        return (c.ExportCertificatePem(), rsa.ExportEncryptedPkcs8PrivateKeyPem(Pw, Pbe));
     }
 
     static (string cert, string key) NewEcdsa()
@@ -27,14 +29,14 @@ public sealed class DataProtectionDatabaseProviderTests
         using var ec = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var req = new CertificateRequest("CN=dm-ec", ec, HashAlgorithmName.SHA256);
         using var c = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(30));
-        return (c.ExportCertificatePem(), ec.ExportPkcs8PrivateKeyPem());
+        return (c.ExportCertificatePem(), ec.ExportEncryptedPkcs8PrivateKeyPem(Pw, Pbe));
     }
 
     [Fact]
     public void Valid_rsa_pem_pair_loads_and_wraps_a_real_key_ring_round_trip()
     {
         var (c, k) = NewRsa();
-        using var cert = DataProtectionConfiguration.LoadCertificate(c, k, "current");
+        using var cert = DataProtectionConfiguration.LoadCertificate(c, k, "current", Pw);
         Assert.True(cert.HasPrivateKey);
         var dir = Path.Combine(Path.GetTempPath(), "dm-dpdb-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
@@ -55,7 +57,7 @@ public sealed class DataProtectionDatabaseProviderTests
     public void Single_line_env_style_pem_with_literal_backslash_n_loads()
     {
         var (c, k) = NewRsa();
-        using var cert = DataProtectionConfiguration.LoadCertificate(c.Replace("\n", "\\n"), k.Replace("\n", "\\n"), "current");
+        using var cert = DataProtectionConfiguration.LoadCertificate(c.Replace("\n", "\\n"), k.Replace("\n", "\\n"), "current", Pw);
         Assert.True(cert.HasPrivateKey);
     }
 
@@ -63,13 +65,13 @@ public sealed class DataProtectionDatabaseProviderTests
     public void Missing_ecdsa_mismatched_public_only_and_garbage_all_fail_closed()
     {
         var (c, k) = NewRsa(); var (c2, k2) = NewRsa(); var (ec, eck) = NewEcdsa();
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(null, k, "current"));
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, "", "current"));
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(ec, eck, "current"));      // ECDSA cert and key
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, eck, "current"));       // RSA cert, EC key
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k2, "current"));        // key does not match
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, c, "current"));         // certificate given as key
-        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate("not pem", "not pem", "current"));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(null, k, "current", Pw));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, "", "current", Pw));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(ec, eck, "current", Pw));      // ECDSA cert and key
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, eck, "current", Pw));       // RSA cert, EC key
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k2, "current", Pw));        // key does not match
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, c, "current", Pw));         // certificate given as key
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate("not pem", "not pem", "current", Pw));
     }
 
     static Dictionary<string, string?> Good(out (string, string) pair)
@@ -80,7 +82,7 @@ public sealed class DataProtectionDatabaseProviderTests
             [DataProtectionConfiguration.ApplicationNameKey] = "t-db",
             [DataProtectionConfiguration.ProviderKey] = "Database",
             [DataProtectionConfiguration.CertificateKey] = pair.Item1,
-            [DataProtectionConfiguration.CertificateKeyKey] = pair.Item2,
+            [DataProtectionConfiguration.CertificateKeyKey] = pair.Item2, [DataProtectionConfiguration.CertificatePasswordKey] = Pw,
             [Conn] = ConnValue,
         };
     }
@@ -113,8 +115,8 @@ public sealed class DataProtectionDatabaseProviderTests
         var cfg = Good(out _);
         var (o1, k1) = NewRsa(); var (o2, k2) = NewRsa();
         var pre = DataProtectionConfiguration.PreviousCertificatesKey;
-        cfg[pre + ":0:Pem"] = o1; cfg[pre + ":0:KeyPem"] = k1;
-        cfg[pre + ":1:Pem"] = o2; cfg[pre + ":1:KeyPem"] = k2;
+        cfg[pre + ":0:Pem"] = o1; cfg[pre + ":0:KeyPem"] = k1; cfg[pre + ":0:KeyPassword"] = Pw;
+        cfg[pre + ":1:Pem"] = o2; cfg[pre + ":1:KeyPem"] = k2; cfg[pre + ":1:KeyPassword"] = Pw;
         using (var many = Build("Production", cfg)) Assert.NotNull(many);
         cfg.Remove(pre + ":1:KeyPem"); // half-configured entry must not be silently ignored
         Assert.Throws<InvalidOperationException>(() => Build("Production", cfg));
@@ -122,6 +124,33 @@ public sealed class DataProtectionDatabaseProviderTests
         Assert.Throws<InvalidOperationException>(() => Build("Production", cfg));
         cfg[pre + ":1:Pem"] = ""; cfg[pre + ":1:KeyPem"] = ""; // empty entry
         Assert.Throws<InvalidOperationException>(() => Build("Production", cfg));
+    }
+
+    [Fact]
+    public void Encrypted_pkcs8_key_loads_only_with_the_right_password()
+    {
+        using var rsa = RSA.Create(2048);
+        var req = new CertificateRequest("CN=dm-enc", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var c = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(30));
+        var enc = rsa.ExportEncryptedPkcs8PrivateKeyPem("test-pass-1", Pbe);
+        var plain = rsa.ExportPkcs8PrivateKeyPem();
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c.ExportCertificatePem(), plain, "current", "test-pass-1"));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c.ExportCertificatePem(), plain, "current", null));
+        using var ok = DataProtectionConfiguration.LoadCertificate(c.ExportCertificatePem(), enc, "current", "test-pass-1");
+        Assert.True(ok.HasPrivateKey);
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c.ExportCertificatePem(), enc, "current", "wrong"));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c.ExportCertificatePem(), enc, "current", null));
+    }
+
+    [Fact]
+    public void Certificate_owner_is_resolved_with_the_host_and_disposed_with_the_container()
+    {
+        var (c, k) = NewRsa();
+        var sp = Build("Production", new() { [DataProtectionConfiguration.ApplicationNameKey] = "t-own", [DataProtectionConfiguration.ProviderKey] = "Database", [DataProtectionConfiguration.CertificateKey] = c, [DataProtectionConfiguration.CertificateKeyKey] = k, [DataProtectionConfiguration.CertificatePasswordKey] = Pw, [Conn] = ConnValue });
+        var owner = sp.GetServices<Microsoft.Extensions.Hosting.IHostedService>().OfType<DataProtectionConfiguration.CertificateOwner>().Single();
+        Assert.False(owner.IsDisposed);
+        sp.Dispose();
+        Assert.True(owner.IsDisposed);
     }
 
     static ServiceProvider Build(string environment, Dictionary<string, string?> cfg)
