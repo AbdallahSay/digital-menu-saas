@@ -22,6 +22,7 @@ function menu(language: 'ar' | 'en' = 'ar'): DisplayMenu {
           height: 300,
         }
       : null,
+    featured: false,
   });
   return {
     restaurant: {
@@ -30,6 +31,10 @@ function menu(language: 'ar' | 'en' = 'ar'): DisplayMenu {
       primaryColor: '#0f766e',
       currency: 'EGP',
       logoUrl: null,
+      heroUrl: null,
+      theme: 'classic',
+      brandLabel: null,
+      tagline: null,
     },
     language,
     publishedMenuVersion: 1,

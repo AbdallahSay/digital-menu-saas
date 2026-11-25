@@ -640,10 +640,17 @@ export function normalizeSearch(value: string): string {
         font-size: 12px;
         line-height: 1.6;
         color: var(--color-text-secondary);
+      }
+      article .description {
         display: -webkit-box;
         -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
+      }
+      dialog .description {
+        display: block;
+        overflow: visible;
+        -webkit-line-clamp: unset;
       }
       .item-foot {
         display: flex;
