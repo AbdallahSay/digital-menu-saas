@@ -1,4 +1,4 @@
-# Credential-free fixtures for the capped process runner. No secret, no network, no msdeploy.
+# Credential-free ASSERTED fixtures for the capped process runner. No secret, no network, no msdeploy.
 name: WebDeploy helper fixtures (synthetic)
 on:
   push:
@@ -19,20 +19,38 @@ jobs:
           Add-Type -TypeDefinition (Get-Content -Raw scripts/webdeploy/CappedRunner.cs)
           $raw = Join-Path $env:RUNNER_TEMP 'fx.raw'
           $ps = (Get-Process -Id $PID).Path
-          function T($name,$code,$cap,$to,$expect) {
-            $r = [CappedRunner]::Run($ps, [string[]]@('-NoProfile','-Command',$code), $raw, $cap, $to)
-            $size = (Get-Item $raw).Length
-            $ok = ($r.Status -eq $expect)
-            "fixture=$name status=$($r.Status) expect=$expect exit=$($r.ExitCode) out=$($r.StdoutBytes) err=$($r.StderrBytes) lines=$($r.Lines) file=$size secs=$($r.Seconds) pass=$ok"
-            if (-not $ok) { $script:fail++ }
-          }
           $script:fail = 0
-          T 'ok_small' "'a'; [Console]::Error.WriteLine('b')" 4096 20000 'OK'
-          T 'nonzero' "'x'; exit 3" 4096 20000 'NONZERO'
-          T 'timeout' "Start-Sleep 30" 4096 3000 'TIMEOUT'
-          T 'huge_single_line' "[Console]::Out.Write(('A' * 3000000))" 100000 20000 'CAP_EXCEEDED'
-          T 'dual_stream_flood' "1..200000 | ForEach-Object { [Console]::Out.WriteLine('o'*50); [Console]::Error.WriteLine('e'*50) }" 200000 60000 'CAP_EXCEEDED'
-          $r = [CappedRunner]::Run('C:\definitely\missing.exe', [string[]]@(), $raw, 100, 1000); "fixture=start_error status=$($r.Status) pass=$($r.Status -eq 'START_ERROR')"; if ($r.Status -ne 'START_ERROR') { $script:fail++ }
-          Remove-Item $raw -Force; "raw_removed=$(-not (Test-Path $raw))"
+          function Chk($name, $cond) { "assert $name=$cond"; if (-not $cond) { $script:fail++ } }
+          function T($name, $code, $cap, $to, $expect) {
+            $r = [CappedRunner]::Run($ps, [string[]]@('-NoProfile','-Command',$code), $raw, $cap, $to)
+            $size = (Get-Item -LiteralPath $raw).Length
+            "fixture=$name status=$($r.Status) exit=$($r.ExitCode) out=$($r.StdoutBytes) err=$($r.StderrBytes) lines=$($r.Lines) file=$size secs=$($r.Seconds) reaped=$($r.ChildReaped)"
+            Chk "$name.status" ($r.Status -eq $expect)
+            Chk "$name.file_le_cap" ($size -le $cap)
+            Chk "$name.file_eq_counts" ($size -eq ($r.StdoutBytes + $r.StderrBytes))
+            Chk "$name.reaped" ($r.ChildReaped -eq $true)
+            return $r
+          }
+          $r = T 'ok_small' "[Console]::Out.Write('abc'); [Console]::Error.Write('de')" 4096 20000 'OK'
+          Chk 'ok_small.exit0_out3_err2' ($r.ExitCode -eq 0 -and $r.StdoutBytes -eq 3 -and $r.StderrBytes -eq 2)
+          $r = T 'nonzero' "[Console]::Out.Write('x'); exit 3" 4096 20000 'NONZERO'
+          Chk 'nonzero.exit3_out1' ($r.ExitCode -eq 3 -and $r.StdoutBytes -eq 1)
+          $r = T 'timeout' "Start-Sleep 30" 4096 3000 'TIMEOUT'
+          Chk 'timeout.secs_lt_15' ($r.Seconds -lt 15)
+          $r = T 'huge_single_line' "[Console]::Out.Write(('A' * 3000000))" 100000 20000 'CAP_EXCEEDED'
+          Chk 'huge.exact_cap' (($r.StdoutBytes + $r.StderrBytes) -eq 100000)
+          $r = T 'dual_stream_flood' "1..200000 | ForEach-Object { [Console]::Out.WriteLine('o'*50); [Console]::Error.WriteLine('e'*50) }" 200000 60000 'CAP_EXCEEDED'
+          Chk 'dual.exact_cap_both_streams' (($r.StdoutBytes + $r.StderrBytes) -eq 200000 -and $r.StdoutBytes -gt 0 -and $r.StderrBytes -gt 0)
+          # inherited pipe: child spawns a grandchild that holds the pipes after the child exits; must not report OK with unfinished pumps
+          $gc = "Start-Process -FilePath '$ps' -ArgumentList '-NoProfile','-Command','Start-Sleep 25' -NoNewWindow; exit 0"
+          $r = [CappedRunner]::Run($ps, [string[]]@('-NoProfile','-Command',$gc), $raw, 4096, 8000)
+          "fixture=inherited_pipe_grandchild status=$($r.Status) secs=$($r.Seconds) reaped=$($r.ChildReaped)"
+          Chk 'inherited_pipe.never_false_ok' ($r.Status -in @('DRAIN_TIMEOUT','CAPTURE_ERROR'))
+          # pump/capture failure: raw path is a directory that cannot be opened for write => must be START_ERROR, never OK
+          $bad = [CappedRunner]::Run($ps, [string[]]@('-NoProfile','-Command','1'), $env:RUNNER_TEMP, 4096, 10000)
+          "fixture=unwritable_raw status=$($bad.Status)"; Chk 'unwritable_raw.not_ok' ($bad.Status -ne 'OK')
+          $m = [CappedRunner]::Run('C:\definitely\missing.exe', [string[]]@(), $raw, 100, 1000)
+          "fixture=start_error status=$($m.Status)"; Chk 'start_error.status' ($m.Status -eq 'START_ERROR')
+          Remove-Item -LiteralPath $raw -Force; Chk 'raw_removed' (-not (Test-Path -LiteralPath $raw))
           "failures=$script:fail"
           if ($script:fail -ne 0) { exit 1 }
