@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 import { PublicMenuComponent, normalizeSearch } from './public-menu';
 import type { DisplayMenu, PublicPage } from './public-menu-contract';
 
@@ -80,8 +81,14 @@ const names = (f: { nativeElement: HTMLElement }) =>
 // jsdom does not implement HTMLDialogElement.showModal/close, so the unit test
 // stands in for them. Real <dialog> behaviour (modal, Escape, focus trap) is
 // covered only by the real-browser walkthrough, not by this spec.
+const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
+const originalDialog = { showModal: dialogProto['showModal'], close: dialogProto['close'] };
+afterAll(() => {
+  dialogProto['showModal'] = originalDialog.showModal;
+  dialogProto['close'] = originalDialog.close;
+});
 beforeAll(() => {
-  const proto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
+  const proto = dialogProto;
   proto['showModal'] = function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
   };
@@ -203,5 +210,58 @@ describe('Public menu design', () => {
     expect(el(f).querySelector('h1')?.textContent).toContain('المنيو مش موجود');
     expect(el(f).querySelector('#menu-search')).toBeNull();
     expect(el(f).querySelector('dialog')).toBeNull();
+  });
+
+  it('resets search, category and open dish when route data changes to another menu', async () => {
+    const page = (m: DisplayMenu, slug: string): PublicPage => ({
+      slug,
+      language: 'ar',
+      status: 200,
+      publicOrigin: 'https://menu.example',
+      menu: m,
+    });
+    const first = menu();
+    const second = {
+      ...menu(),
+      restaurant: { ...menu().restaurant, slug: 'other', name: 'Other' },
+    };
+    const data$ = new BehaviorSubject<Record<string, unknown>>({ menu: page(first, 'al-saraya') });
+    await TestBed.configureTestingModule({
+      imports: [PublicMenuComponent],
+      providers: [
+        { provide: ActivatedRoute, useValue: { data: data$, snapshot: { data: data$.value } } },
+      ],
+    }).compileComponents();
+    const f = TestBed.createComponent(PublicMenuComponent);
+    f.detectChanges();
+    const root = el(f);
+    root.querySelectorAll<HTMLButtonElement>('.chip')[2].click();
+    f.detectChanges();
+    root.querySelector<HTMLButtonElement>('.item-open')?.click();
+    f.detectChanges();
+    expect(root.querySelector('dialog')?.hasAttribute('open')).toBe(true);
+    data$.next({ menu: page(second, 'other') });
+    f.detectChanges();
+    f.detectChanges();
+    expect(root.querySelector('dialog')?.hasAttribute('open')).toBe(false);
+    expect(f.componentInstance.detailItem()).toBeNull();
+    expect(f.componentInstance.selected()).toBeNull();
+    expect(f.componentInstance.query()).toBe('');
+    expect(names(f)).toEqual(['كباب لحم', 'كفتة', 'حمص']);
+  });
+
+  it('closes on a click outside the dialog box but not inside it', async () => {
+    const f = await create(menu());
+    el(f).querySelector<HTMLButtonElement>('.item-open')?.click();
+    f.detectChanges();
+    const dialog = el(f).querySelector('dialog') as HTMLDialogElement;
+    dialog.getBoundingClientRect = () =>
+      ({ left: 10, right: 110, top: 10, bottom: 110 }) as DOMRect;
+    dialog.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 50, clientY: 50 }));
+    f.detectChanges();
+    expect(dialog.hasAttribute('open')).toBe(true);
+    dialog.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 500, clientY: 50 }));
+    f.detectChanges();
+    expect(dialog.hasAttribute('open')).toBe(false);
   });
 });

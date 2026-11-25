@@ -1,5 +1,14 @@
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
@@ -204,7 +213,6 @@ export function normalizeSearch(value: string): string {
         max-width: 1040px;
         margin: auto;
         padding: 0 var(--space-4) var(--space-8);
-        min-height: 100vh;
         overflow-wrap: anywhere;
       }
       .hero {
@@ -226,7 +234,7 @@ export function normalizeSearch(value: string): string {
         color: var(--color-brand-primary-container);
       }
       .hero h1 {
-        color: var(--color-text-inverse);
+        color: inherit;
         margin: 0;
       }
       h1,
@@ -235,14 +243,7 @@ export function normalizeSearch(value: string): string {
         font-family: var(--font-family-display);
         color: var(--color-brand-forest);
       }
-      h1 {
-        font-size: var(--font-size-3xl);
-      }
-      h2 {
-        font-size: var(--font-size-xl);
-      }
       h3 {
-        font-size: var(--font-size-lg);
         margin: 0 0 var(--space-2);
       }
       .toolbar {
@@ -273,11 +274,7 @@ export function normalizeSearch(value: string): string {
         background: var(--color-brand-primary);
         color: var(--color-brand-on-primary);
       }
-      .language a:focus-visible,
-      .chip:focus-visible,
-      .item-open:focus-visible,
-      .search input:focus-visible,
-      .detail-close:focus-visible {
+      :focus-visible {
         outline: 3px solid var(--color-brand-primary);
         outline-offset: 2px;
       }
@@ -293,10 +290,8 @@ export function normalizeSearch(value: string): string {
         min-height: 44px;
         padding: 0 var(--space-4);
         border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-lg, var(--radius-xl));
-        background: var(--color-surface-subtle);
+        border-radius: var(--radius-xl);
         font: inherit;
-        color: var(--color-text-primary);
       }
       .chips {
         display: flex;
@@ -322,7 +317,6 @@ export function normalizeSearch(value: string): string {
       .status {
         margin: 0;
         font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
       }
       section {
         border-block-start: 2px solid;
@@ -331,7 +325,6 @@ export function normalizeSearch(value: string): string {
       .items {
         display: grid;
         gap: var(--space-4);
-        grid-template-columns: 1fr;
       }
       @media (min-width: 768px) {
         .items {
@@ -364,9 +357,7 @@ export function normalizeSearch(value: string): string {
       .item-open {
         all: unset;
         cursor: pointer;
-        display: block;
         min-height: 44px;
-        box-sizing: border-box;
       }
       .item-open::after {
         content: '';
@@ -377,7 +368,6 @@ export function normalizeSearch(value: string): string {
         width: 72px;
         height: 72px;
         object-fit: contain;
-        background: var(--color-surface-card);
         border-radius: var(--radius-xl);
       }
       .item-thumbnail {
@@ -385,8 +375,7 @@ export function normalizeSearch(value: string): string {
         width: 96px;
         height: 96px;
         object-fit: cover;
-        border-radius: var(--radius-lg, var(--radius-xl));
-        background: var(--color-border-subtle);
+        border-radius: var(--radius-xl);
       }
       .description {
         margin: 0 0 var(--space-2);
@@ -420,7 +409,6 @@ export function normalizeSearch(value: string): string {
         border-radius: var(--radius-xl);
         background: var(--color-bg-canvas);
         color: var(--color-text-primary);
-        box-shadow: var(--shadow-lg, 0 20px 40px rgb(0 0 0 / 0.25));
       }
       .detail::backdrop {
         background: rgb(25 54 48 / 0.55);
@@ -435,27 +423,20 @@ export function normalizeSearch(value: string): string {
         height: auto;
         max-height: 50vh;
         object-fit: cover;
-        border-radius: var(--radius-lg, var(--radius-xl));
-      }
-      .detail-card h2 {
-        margin: 0;
-      }
-      .detail-close {
-        min-height: 48px;
       }
       .display-only {
         text-align: center;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
+      }
+      .display-only,
+      .empty {
         margin-block: var(--space-6);
       }
       .home {
         display: inline-flex;
         min-height: 44px;
         align-items: center;
-      }
-      .empty {
-        margin-block: var(--space-6);
       }
     `,
   ],
@@ -508,7 +489,17 @@ export class PublicMenuComponent {
     this.opener = null;
   }
   onDetailBackdrop(event: MouseEvent) {
-    if (event.target === this.detail()?.nativeElement) this.closeDetail();
+    const dialog = this.detail()?.nativeElement;
+    if (event.target !== dialog || !dialog) return;
+    // Clicks on the dialog's own scrollbar or blank interior also target it,
+    // so close only when the pointer is outside the dialog box (the backdrop).
+    const r = dialog.getBoundingClientRect();
+    const outside =
+      event.clientX < r.left ||
+      event.clientX > r.right ||
+      event.clientY < r.top ||
+      event.clientY > r.bottom;
+    if (outside) this.closeDetail();
   }
   private readonly route = inject(ActivatedRoute);
   private readonly data = toSignal(this.route.data, { initialValue: this.route.snapshot.data });
@@ -535,6 +526,20 @@ export class PublicMenuComponent {
     const document = inject(DOCUMENT);
     const meta = inject(Meta);
     const title = inject(Title);
+    effect(() => {
+      // A reused component must not carry search, category or an open dish
+      // dialog over to a different menu or language.
+      const page = this.page;
+      void [page.menu?.restaurant.slug, page.language, page.status];
+      untracked(() => {
+        this.query.set('');
+        this.selected.set(null);
+        const dialog = this.detail()?.nativeElement;
+        this.opener = null;
+        if (dialog?.open) dialog.close();
+        this.detailItem.set(null);
+      });
+    });
     effect(() => {
       document.documentElement.lang = this.page.language;
       document.documentElement.dir = this.english ? 'ltr' : 'rtl';
