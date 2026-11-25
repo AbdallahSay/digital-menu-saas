@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
 
 namespace DigitalMenu.Api;
 
@@ -17,6 +18,53 @@ public static class DataProtectionConfiguration
 {
     public const string KeysPathKey = "DataProtection:KeysPath";
     public const string ApplicationNameKey = "DataProtection:ApplicationName";
+    public const string ProviderKey = "DataProtection:Provider";
+    public const string CertificateKey = "DataProtection:Certificate:Pfx";
+    public const string CertificatePasswordKey = "DataProtection:Certificate:Password";
+    public const string PreviousCertificateKey = "DataProtection:PreviousCertificate:Pfx";
+    public const string PreviousCertificatePasswordKey = "DataProtection:PreviousCertificate:Password";
+
+    // Database provider: key ring rows live in the application database and are encrypted with an X.509
+    // certificate delivered as a base64 PFX plus a separate password in configuration (environment variables).
+    // Nothing is written to the filesystem and no machine or user key store is used, so it works where the
+    // application pool has no loaded user profile and file ACLs cannot be validated. Required outside Development.
+    // An optional previous certificate decrypts old rows during rotation only.
+    internal static void ConfigureDatabaseProvider(IDataProtectionBuilder builder, IHostEnvironment environment, IConfiguration configuration)
+    {
+        if (environment.IsDevelopment() && string.IsNullOrWhiteSpace(configuration[CertificateKey])) return;
+        var current = LoadCertificate(configuration[CertificateKey], configuration[CertificatePasswordKey], "current");
+        var connection = configuration.GetConnectionString("MenuDatabase");
+        if (string.IsNullOrWhiteSpace(connection))
+            throw new InvalidOperationException("ConnectionStrings:MenuDatabase is required for the Database data-protection provider.");
+        // Dedicated context: no tenant filters or auth dependency; own migration history table. No fallback if SQL fails.
+        builder.Services.AddDbContext<DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext>(
+            o => o.UseSqlServer(connection, sql => sql.MigrationsHistoryTable(DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext.HistoryTable)));
+        builder.PersistKeysToDbContext<DigitalMenu.Infrastructure.Persistence.DataProtectionKeyDbContext>();
+        builder.ProtectKeysWithCertificate(current);
+        if (!string.IsNullOrWhiteSpace(configuration[PreviousCertificateKey]))
+            builder.UnprotectKeysWithAnyCertificate(LoadCertificate(configuration[PreviousCertificateKey], configuration[PreviousCertificatePasswordKey], "previous"));
+    }
+
+    internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? base64, string? password, string label)
+    {
+        if (string.IsNullOrWhiteSpace(base64) || string.IsNullOrEmpty(password))
+            throw new InvalidOperationException($"DataProtection {label} certificate and password are required for the Database provider.");
+        byte[] bytes;
+        try { bytes = Convert.FromBase64String(base64.Trim()); }
+        catch (FormatException) { throw new InvalidOperationException($"DataProtection {label} certificate is not valid base64."); }
+        try
+        {
+            // In-memory only: no persisted private key, no user or machine store.
+            var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12(
+                bytes, password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeySet);
+            if (!cert.HasPrivateKey) throw new InvalidOperationException($"DataProtection {label} certificate has no private key.");
+            return cert;
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            throw new InvalidOperationException($"DataProtection {label} certificate could not be loaded (wrong password or invalid PFX).");
+        }
+    }
 
     public static void Configure(IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
         => Configure(services, environment, configuration, OperatingSystem.IsWindows());
@@ -32,6 +80,11 @@ public static class DataProtectionConfiguration
             name = "DigitalMenu-Development";
         }
         var builder = services.AddDataProtection().SetApplicationName(name.Trim());
+        if (string.Equals(configuration[ProviderKey], "Database", StringComparison.OrdinalIgnoreCase))
+        {
+            ConfigureDatabaseProvider(builder, environment, configuration);
+            return;
+        }
         var path = configuration[KeysPathKey];
         if (string.IsNullOrWhiteSpace(path))
         {
