@@ -20,11 +20,12 @@ export interface OwnerSettings {
   heroUrl?: string | null;
 }
 
+/** Only the fields the owner changed; an omitted field stays as stored, an empty text clears it. */
 export interface PresentationInput {
-  theme: 'classic' | 'cafe';
-  brandLabel: string;
-  taglineAr: string;
-  taglineEn: string;
+  theme?: 'classic' | 'cafe';
+  brandLabel?: string;
+  taglineAr?: string;
+  taglineEn?: string;
 }
 
 export type SettingsSaveResult = 'ok' | 'invalid' | 'stale' | 'error';
@@ -108,10 +109,15 @@ export class SettingsStateService {
   async savePresentation(input: PresentationInput): Promise<SettingsSaveResult> {
     return this.enqueue(async () => {
       if (!(await this.reconcile())) return 'error';
-      const token = this.settings()?.rowVersion;
+      const current = this.settings();
       try {
+        // The PUT contract still requires the brand color, so resend the current one.
         const saved = await firstValueFrom(
-          this.http.put<OwnerSettings>('/api/v1/admin/settings', { ...input, rowVersion: token }),
+          this.http.put<OwnerSettings>('/api/v1/admin/settings', {
+            primaryColor: current?.primaryColor,
+            ...input,
+            rowVersion: current?.rowVersion,
+          }),
         );
         this.settings.set(saved);
         return 'ok';
@@ -151,15 +157,21 @@ export class SettingsStateService {
     return this.enqueue(async () => {
       try {
         await firstValueFrom(this.http.delete('/api/v1/admin/settings/hero'));
+      } catch {
+        return 'error';
+      }
+      try {
         this.settings.set(
           await firstValueFrom(this.http.get<OwnerSettings>('/api/v1/admin/settings')),
         );
         this.needsReconciliation = false;
-        return 'ok';
       } catch {
+        // The deletion committed: clear the hero locally and reconcile before the next save.
+        const current = this.settings();
+        if (current) this.settings.set({ ...current, hasHero: false, heroUrl: null });
         this.needsReconciliation = true;
-        return 'error';
       }
+      return 'ok';
     });
   }
 

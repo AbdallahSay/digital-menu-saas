@@ -169,6 +169,21 @@ describe('Public menu design', () => {
     expect(el(f).querySelector('.status')?.textContent?.trim()).toBe('');
   });
 
+  it('search spans all categories and the live count matches the rendered results', async () => {
+    const f = await create(menu());
+    const chips = [...el(f).querySelectorAll<HTMLButtonElement>('.chip')];
+    chips[2].click(); // a category that does not contain the dish searched next
+    f.detectChanges();
+    const input = el(f).querySelector<HTMLInputElement>('#menu-search')!;
+    input.value = 'كباب';
+    input.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    expect(names(f)).toEqual(['كباب لحم']);
+    const status = el(f).querySelector('.status')?.textContent ?? '';
+    expect(status).not.toContain('مفيش أصناف مطابقة');
+    expect(status).toContain('1');
+  });
+
   it('opens a detail dialog with the main image and restores focus on close', async () => {
     const f = await create(menu());
     document.body.appendChild(el(f));

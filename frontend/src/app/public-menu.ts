@@ -998,8 +998,11 @@ export class PublicMenuComponent {
       .filter((c) => c.items.length > 0);
   });
   get statusText(): string {
-    const count = this.visibleCategories().reduce((n, c) => n + c.items.length, 0);
-    if (this.query().trim() === '' && this.selected() === null) return '';
+    const searching = this.query().trim() !== '';
+    const count = searching
+      ? this.searchHits().on.length
+      : this.visibleCategories().reduce((n, c) => n + c.items.length, 0);
+    if (!searching && this.selected() === null) return '';
     if (count === 0) return this.english ? 'No matching dishes.' : 'مفيش أصناف مطابقة.';
     return this.english ? count + ' dish(es) shown' : 'تم عرض ' + count + ' صنف';
   }

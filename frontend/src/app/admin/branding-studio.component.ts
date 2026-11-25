@@ -174,6 +174,7 @@ const PRESETS: { hex: string; label: string }[] = [
               <select
                 id="pres-theme"
                 [value]="presTheme() ?? settings.theme ?? 'classic'"
+                [disabled]="saving()"
                 (change)="presTheme.set($any($event.target).value)"
               >
                 <option value="classic">مطعم (كلاسيك)</option>
@@ -185,6 +186,7 @@ const PRESETS: { hex: string; label: string }[] = [
                 type="text"
                 maxlength="40"
                 [value]="presBrand() ?? settings.brandLabel ?? ''"
+                [disabled]="saving()"
                 (input)="presBrand.set($any($event.target).value)"
               />
               <label for="pres-tag-ar">الوصف القصير بالعربي (حتى 120 حرف)</label>
@@ -193,6 +195,7 @@ const PRESETS: { hex: string; label: string }[] = [
                 type="text"
                 maxlength="120"
                 [value]="presTagAr() ?? settings.taglineAr ?? ''"
+                [disabled]="saving()"
                 (input)="presTagAr.set($any($event.target).value)"
               />
               <label for="pres-tag-en">الوصف القصير بالإنجليزي (حتى 120 حرف)</label>
@@ -202,6 +205,7 @@ const PRESETS: { hex: string; label: string }[] = [
                 dir="ltr"
                 maxlength="120"
                 [value]="presTagEn() ?? settings.taglineEn ?? ''"
+                [disabled]="saving()"
                 (input)="presTagEn.set($any($event.target).value)"
               />
               <button
@@ -608,20 +612,31 @@ export class BrandingStudioComponent implements OnInit {
     this.saving.set(true);
     this.feedback.set(null);
     try {
+      // Send only what the owner changed, so a save never rewrites other fields.
+      const sent = {
+        theme: this.presTheme(),
+        brandLabel: this.presBrand(),
+        taglineAr: this.presTagAr(),
+        taglineEn: this.presTagEn(),
+      };
       const outcome = await this.store.savePresentation({
-        theme: (this.presTheme() ?? s.theme ?? 'classic') as 'classic' | 'cafe',
-        brandLabel: this.presBrand() ?? s.brandLabel ?? '',
-        taglineAr: this.presTagAr() ?? s.taglineAr ?? '',
-        taglineEn: this.presTagEn() ?? s.taglineEn ?? '',
+        ...(sent.theme !== null && { theme: sent.theme as 'classic' | 'cafe' }),
+        ...(sent.brandLabel !== null && { brandLabel: sent.brandLabel }),
+        ...(sent.taglineAr !== null && { taglineAr: sent.taglineAr }),
+        ...(sent.taglineEn !== null && { taglineEn: sent.taglineEn }),
       });
       if (outcome === 'ok') {
-        this.presTheme.set(null);
-        this.presBrand.set(null);
-        this.presTagAr.set(null);
-        this.presTagEn.set(null);
+        // Keep anything typed while the save was in flight.
+        if (this.presTheme() === sent.theme) this.presTheme.set(null);
+        if (this.presBrand() === sent.brandLabel) this.presBrand.set(null);
+        if (this.presTagAr() === sent.taglineAr) this.presTagAr.set(null);
+        if (this.presTagEn() === sent.taglineEn) this.presTagEn.set(null);
         this.feedback.set({ kind: 'success', text: 'تم حفظ شكل الصفحة.' });
       } else if (outcome === 'stale') {
-        this.feedback.set({ kind: 'error', text: 'الإعدادات اتغيرت من مكان تاني. جاري تحديثها.' });
+        this.feedback.set({
+          kind: 'error',
+          text: 'الإعدادات اتغيرت من مكان تاني واتحدّثت. تعديلاتك لسه موجودة، راجعها واحفظ تاني.',
+        });
         await this.load();
       } else if (outcome === 'invalid') {
         this.feedback.set({ kind: 'error', text: 'القيم مرفوضة من السيرفر. راجع الأطوال.' });

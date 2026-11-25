@@ -336,6 +336,7 @@ describe('SettingsStateService', () => {
     const req = http.expectOne('/api/v1/admin/settings');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({
+      primaryColor: '#0f766e',
       theme: 'cafe',
       brandLabel: 'THE ROOM',
       taglineAr: '',
@@ -345,12 +346,7 @@ describe('SettingsStateService', () => {
     req.flush(settings({ theme: 'cafe', brandLabel: 'THE ROOM' }));
     expect(await save).toBe('ok');
     expect(store.settings()?.theme).toBe('cafe');
-    const bad = store.savePresentation({
-      theme: 'cafe',
-      brandLabel: '',
-      taglineAr: '',
-      taglineEn: '',
-    });
+    const bad = store.savePresentation({ theme: 'cafe' });
     await tick();
     http.expectOne('/api/v1/admin/settings').flush({}, { status: 412, statusText: '' });
     expect(await bad).toBe('stale');
@@ -372,5 +368,39 @@ describe('SettingsStateService', () => {
     http.expectOne('/api/v1/admin/settings').flush(settings());
     expect(await del).toBe('ok');
     expect(store.settings()?.hasHero).toBeFalsy();
+  });
+
+  it('sends only the changed presentation fields', async () => {
+    store.settings.set(settings());
+    const save = store.savePresentation({ brandLabel: 'X' });
+    await tick();
+    const req = http.expectOne('/api/v1/admin/settings');
+    expect(req.request.body).toEqual({
+      primaryColor: '#0f766e',
+      brandLabel: 'X',
+      rowVersion: 'AAAAAAAAAAA=',
+    });
+    req.flush(settings({ brandLabel: 'X' }));
+    expect(await save).toBe('ok');
+  });
+
+  it('treats a committed hero DELETE with a failed refresh as success and reconciles next', async () => {
+    store.settings.set(settings({ hasHero: true, heroUrl: '/api/v1/admin/settings/hero' }));
+    const del = store.deleteHero();
+    await tick();
+    http.expectOne('/api/v1/admin/settings/hero').flush(null, { status: 204, statusText: '' });
+    await tick();
+    http.expectOne('/api/v1/admin/settings').flush({}, { status: 500, statusText: '' });
+    expect(await del).toBe('ok');
+    expect(store.settings()?.hasHero).toBe(false);
+    expect(store.settings()?.heroUrl).toBeNull();
+    const save = store.savePresentation({ theme: 'cafe' });
+    await tick();
+    http.expectOne('/api/v1/admin/settings').flush(settings({ rowVersion: 'BBBBBBBBBBB=' }));
+    await tick();
+    const put = http.expectOne('/api/v1/admin/settings');
+    expect(put.request.body.rowVersion).toBe('BBBBBBBBBBB=');
+    put.flush(settings({ theme: 'cafe' }));
+    expect(await save).toBe('ok');
   });
 });

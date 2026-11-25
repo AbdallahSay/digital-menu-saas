@@ -57,7 +57,7 @@ public sealed class PresentationTests
         using var client = f.Auth.Factory.CreateClient();
         var before = await Public(client, "a");
         var current = await Current(f);
-        var response = await f.A.Send(HttpMethod.Put, Route, new UpdateSettingsRequest(null, current.RowVersion,
+        var response = await f.A.Send(HttpMethod.Put, Route, new UpdateSettingsRequest(current.PrimaryColor, current.RowVersion,
             "cafe", "THE ROOM", "نص عربي", "English text"));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var after = await Public(client, "a");
@@ -78,7 +78,7 @@ public sealed class PresentationTests
         await f.A.Csrf();
         var s1 = await Current(f);
         Assert.Equal(HttpStatusCode.OK, (await f.A.Send(HttpMethod.Put, Route,
-            new UpdateSettingsRequest(null, s1.RowVersion, "cafe", "LABEL", "ar", "en"))).StatusCode);
+            new UpdateSettingsRequest(s1.PrimaryColor, s1.RowVersion, "cafe", "LABEL", "ar", "en"))).StatusCode);
         var s2 = await Current(f);
         // Old client: color only.
         Assert.Equal(HttpStatusCode.OK, (await f.A.Send(HttpMethod.Put, Route,
@@ -89,7 +89,7 @@ public sealed class PresentationTests
         Assert.Equal("ar", s3.TaglineAr);
         // Empty string clears.
         Assert.Equal(HttpStatusCode.OK, (await f.A.Send(HttpMethod.Put, Route,
-            new UpdateSettingsRequest(null, s3.RowVersion, null, "", "", ""))).StatusCode);
+            new UpdateSettingsRequest(s3.PrimaryColor, s3.RowVersion, null, "", "", ""))).StatusCode);
         var s4 = await Current(f);
         Assert.Null(s4.BrandLabel);
         Assert.Null(s4.TaglineAr);
@@ -104,14 +104,14 @@ public sealed class PresentationTests
         await f.A.Csrf();
         var s = await Current(f);
         Assert.Equal(HttpStatusCode.BadRequest, (await f.A.Send(HttpMethod.Put, Route,
-            new UpdateSettingsRequest(null, s.RowVersion, "neon"))).StatusCode);
+            new UpdateSettingsRequest(s.PrimaryColor, s.RowVersion, "neon"))).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await f.A.Send(HttpMethod.Put, Route,
-            new UpdateSettingsRequest(null, s.RowVersion, null, new string('x', 41)))).StatusCode);
+            new UpdateSettingsRequest(s.PrimaryColor, s.RowVersion, null, new string('x', 41)))).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await f.A.Send(HttpMethod.Put, Route,
-            new UpdateSettingsRequest(null, s.RowVersion, null, null, new string('x', 121)))).StatusCode);
+            new UpdateSettingsRequest(s.PrimaryColor, s.RowVersion, null, null, new string('x', 121)))).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await f.A.Send(HttpMethod.Put, Route,
-            new UpdateSettingsRequest(null, s.RowVersion, "cafe"))).StatusCode);
-        var stale = await f.A.Send(HttpMethod.Put, Route, new UpdateSettingsRequest(null, s.RowVersion, "classic"));
+            new UpdateSettingsRequest(s.PrimaryColor, s.RowVersion, "cafe"))).StatusCode);
+        var stale = await f.A.Send(HttpMethod.Put, Route, new UpdateSettingsRequest(s.PrimaryColor, s.RowVersion, "classic"));
         Assert.NotEqual(HttpStatusCode.OK, stale.StatusCode);
         Assert.Equal("cafe", (await Current(f)).Theme);
     }
@@ -122,7 +122,8 @@ public sealed class PresentationTests
         await using var f = await Fixture.Create();
         await f.A.Csrf();
         var s = await Current(f);
-        await f.A.Send(HttpMethod.Put, Route, new UpdateSettingsRequest(null, s.RowVersion, "cafe", "A-ONLY"));
+        Assert.Equal(HttpStatusCode.OK, (await f.A.Send(HttpMethod.Put, Route,
+            new UpdateSettingsRequest(s.PrimaryColor, s.RowVersion, "cafe", "A-ONLY"))).StatusCode);
         var b = (await (await f.B.Send(HttpMethod.Get, Route)).Content.ReadFromJsonAsync<SettingsResponse>())!;
         Assert.Equal("classic", b.Theme);
         Assert.Null(b.BrandLabel);
