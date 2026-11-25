@@ -92,4 +92,23 @@ public sealed class ProductionBootstrapTests
         Assert.False(await d.Users.AnyAsync());
         Assert.False(await d.Roles.AnyAsync());
     }
+
+    [SqlServerFact]
+    public async Task Refuses_when_intended_server_differs_from_the_resolved_server_with_the_same_catalog_and_writes_nothing()
+    {
+        await using var fixture = await AuthenticationTests.AuthFixture.Create(empty: true);
+        var real = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(fixture.Connection);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:MenuDatabase"] = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(fixture.Connection) { DataSource = "not-the-resolved-server.invalid,1433" }.ConnectionString,
+            ["Bootstrap:ConfirmDatabase"] = real.InitialCatalog,
+            ["Bootstrap:Email"] = "first-admin@example.test",
+            ["Bootstrap:Password"] = fixture.Password
+        }).Build();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ProductionBootstrap.RunAsync(fixture.Factory.Services, new Env("Production"), config));
+        using var scope = fixture.Factory.Services.CreateScope();
+        var d = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+        Assert.False(await d.Users.AnyAsync());
+        Assert.False(await d.Roles.AnyAsync());
+    }
 }

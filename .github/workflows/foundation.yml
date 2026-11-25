@@ -118,7 +118,7 @@ jobs:
           rm -rf backend/tests/DigitalMenu.IntegrationTests/TestResults/bootstrap-sql
           dotnet test backend/tests/DigitalMenu.IntegrationTests/DigitalMenu.IntegrationTests.csproj \
             -c Release --no-build \
-            --filter 'FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Creates_first_platform_admin_once_and_refuses_when_users_exist|FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing' \
+            --filter 'FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Creates_first_platform_admin_once_and_refuses_when_users_exist|FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing|FullyQualifiedName~DigitalMenu.IntegrationTests.ProductionBootstrapTests.Refuses_when_intended_server_differs_from_the_resolved_server_with_the_same_catalog_and_writes_nothing' \
             --results-directory backend/tests/DigitalMenu.IntegrationTests/TestResults/bootstrap-sql \
             --logger 'trx;LogFileName=bootstrap-sql.trx'
           python3 - <<'PY'
@@ -127,7 +127,7 @@ jobs:
           root = ET.parse(Path('backend/tests/DigitalMenu.IntegrationTests/TestResults/bootstrap-sql/bootstrap-sql.trx')).getroot()
           ns = {'t': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
           res = [(r.attrib.get('testName', ''), r.attrib.get('outcome', '')) for r in root.findall('./t:Results/t:UnitTestResult', ns)]
-          want = sorted(('DigitalMenu.IntegrationTests.ProductionBootstrapTests.' + n, 'Passed') for n in ('Creates_first_platform_admin_once_and_refuses_when_users_exist', 'Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing'))
+          want = sorted(('DigitalMenu.IntegrationTests.ProductionBootstrapTests.' + n, 'Passed') for n in ('Creates_first_platform_admin_once_and_refuses_when_users_exist', 'Refuses_when_confirmed_target_differs_from_the_resolved_database_and_writes_nothing', 'Refuses_when_intended_server_differs_from_the_resolved_server_with_the_same_catalog_and_writes_nothing'))
           if sorted(res) != want:
               raise SystemExit(f'Bootstrap SQL facts did not execute and pass: {res}')
           print('PASS: both production bootstrap SQL facts executed and passed')

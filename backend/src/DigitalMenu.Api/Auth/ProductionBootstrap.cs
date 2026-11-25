@@ -16,7 +16,8 @@ public static class ProductionBootstrap
         if (!environment.IsProduction()) throw new InvalidOperationException("Production bootstrap requires the Production environment.");
         var cs = config.GetConnectionString("MenuDatabase");
         if (string.IsNullOrWhiteSpace(cs)) throw new InvalidOperationException("ConnectionStrings:MenuDatabase is required.");
-        var catalog = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(cs).InitialCatalog;
+        var intended = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(cs);
+        var catalog = intended.InitialCatalog;
         if (string.IsNullOrWhiteSpace(catalog) || !string.Equals(config["Bootstrap:ConfirmDatabase"], catalog, StringComparison.Ordinal))
             throw new InvalidOperationException("Bootstrap:ConfirmDatabase must equal the target database name.");
         var email = config["Bootstrap:Email"];
@@ -25,6 +26,11 @@ public static class ProductionBootstrap
             throw new InvalidOperationException("Bootstrap:Email and Bootstrap:Password are required (secret supplied out-of-band).");
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MenuDbContext>();
+        // Exact endpoint binding: the context the identity stores write through must use the same server and catalog as the intended configuration.
+        var resolved = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(db.Database.GetConnectionString());
+        if (!string.Equals(resolved.DataSource, intended.DataSource, StringComparison.Ordinal) ||
+            !string.Equals(resolved.InitialCatalog, intended.InitialCatalog, StringComparison.Ordinal))
+            throw new InvalidOperationException("The resolved database endpoint does not match the intended configuration; nothing was written.");
         await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
         // Bind the confirmation to the connection the identity stores will actually write through, not only the supplied string.
         var actual = (await db.Database.SqlQueryRaw<string>("SELECT DB_NAME() AS [Value]").ToListAsync()).SingleOrDefault();
