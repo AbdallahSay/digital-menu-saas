@@ -52,9 +52,9 @@ function Invoke-Phase1 {
     # 6. ONE authenticated metadata dump. No spaces and no commas other than msdeploy separators. Read-only verb.
     #    Protected file/dir skips (host state, secrets, media): appsettings.Production/Development, iisstart.htm,
     #    and .well-known, media, keys, uploads, logs, private with all descendants.
-    $protFile = 'appsettings\.(Production|Development)\.json$'
-    $protIis = 'iisstart\.htm$'
-    $protDir = '(^|[\\/])(\.well-known|media|keys|uploads|logs|private)([\\/]|$)'
+    $protFile = '(?i)(^|[\\/])appsettings\.(production|development)\.json\z'
+    $protIis = '(?i)(^|[\\/])iisstart\.htm\z'
+    $protDir = '(?i)(^|[\\/])(\.well-known|media|keys|uploads|logs|private)([\\/]|\z)'
     $arg = "-source:contentPath=$Site,computerName=https://$HostName`:8172/msdeploy.axd?site=$Site,userName=$Site,password=$pass,authType=Basic,includeAcls=False"
     $args = [string[]]@('-verb:dump', $arg, '-disableLink:AppPoolExtension', '-disableLink:ContentExtension', '-disableLink:CertificateExtension',
       "-skip:objectName=filePath,absolutePath=$protFile", "-skip:objectName=filePath,absolutePath=$protIis",
