@@ -30,7 +30,7 @@ public sealed class ItemTests(Xunit.Abstractions.ITestOutputHelper output)
         Assert.Equal(item, await fetched.Content.ReadFromJsonAsync<ItemResponse>());
         Assert.Equal("no-store", fetched.Headers.CacheControl!.ToString());
         var payload = await (await browser.Send(HttpMethod.Get, response.Headers.Location.ToString())).Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-        Assert.Equal(new[] { "categoryId", "currencyCode", "descriptionAr", "descriptionEn", "id", "imageId", "isAvailable", "isPublished", "nameAr", "nameEn", "price", "rowVersion", "sortOrder" },
+        Assert.Equal(new[] { "categoryId", "currencyCode", "descriptionAr", "descriptionEn", "id", "imageId", "isAvailable", "isFeatured", "isPublished", "nameAr", "nameEn", "price", "rowVersion", "sortOrder" },
             payload.EnumerateObject().Select(p => p.Name).Order());
         return item;
     }
