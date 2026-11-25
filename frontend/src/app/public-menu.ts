@@ -434,15 +434,29 @@ export function normalizeSearch(value: string): string {
         background: var(--hero);
         color: #fff;
         margin: 0 -16px;
-        padding: 20px 20px 63px;
+        padding: 20px 20px 20px;
         border-radius: 0 0 28px 28px;
+        position: relative;
+        overflow: hidden;
+      }
+      /* Figma classic hero: a darker panel on the physical left edge. */
+      .hero:not(.hero-cafe)::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 12px;
+        width: 90px;
+        height: 236px;
+        border-radius: 0 40px 40px 0;
+        background: rgb(0 0 0 / 0.08);
+        pointer-events: none;
       }
       .hero-inner {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
-        min-height: 213px;
+        min-height: 215px;
         position: relative;
       }
       .hero-brand {
@@ -454,7 +468,7 @@ export function normalizeSearch(value: string): string {
         text-transform: uppercase;
       }
       .hero-inner .hero-brand {
-        margin-bottom: 19px;
+        margin-bottom: 27px;
       }
       .hero-tagline {
         margin: 0;
@@ -511,8 +525,10 @@ export function normalizeSearch(value: string): string {
         color: var(--color-text-secondary);
       }
       .hero-pill {
-        margin: 0;
+        margin: 14px 0 0;
+        min-width: 130px;
         padding: 6px 16px;
+        text-align: center;
         border-radius: 999px;
         background: rgb(0 0 0 / 0.35);
         font-size: 12px;
@@ -529,11 +545,11 @@ export function normalizeSearch(value: string): string {
         inset-block-start: 0;
         inset-inline-end: 0;
         width: 130px;
-        height: 62px;
+        height: 90px;
         object-fit: cover;
         border-radius: 50%;
         background: #f4e9d6;
-        inset-block-start: 62px;
+        inset-block-start: 65px;
       }
       h1,
       h2,
@@ -550,12 +566,12 @@ export function normalizeSearch(value: string): string {
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        margin-top: -72px;
+        margin-top: -27px;
         position: relative;
         background: var(--color-surface-card);
         border: 1px solid var(--color-border-subtle);
         border-radius: 18px;
-        padding: 14px 16px;
+        padding: 10px 16px;
         box-shadow: var(--shadow-sm);
       }
       .brand-title {
@@ -577,6 +593,13 @@ export function normalizeSearch(value: string): string {
         border-radius: 999px;
         padding: 2px;
         direction: ltr;
+        flex-direction: row-reverse; /* Figma reads "EN | عربي" */
+      }
+      .language a:first-child::before {
+        content: '|';
+        margin-inline-end: 8px;
+        color: var(--color-text-secondary);
+        font-weight: 400;
       }
       .language a {
         display: inline-flex;
@@ -591,9 +614,11 @@ export function normalizeSearch(value: string): string {
         font-weight: 700;
         text-decoration: none;
       }
+      .language a {
+        color: var(--color-text-secondary);
+      }
       .language a[aria-current='true'] {
-        background: var(--tp);
-        color: #fff;
+        color: var(--color-brand-forest);
       }
       .sr-only {
         position: absolute;
@@ -618,6 +643,9 @@ export function normalizeSearch(value: string): string {
         background: #fff;
         font: inherit;
         font-size: 14px;
+      }
+      .brand-card ~ .search {
+        margin-top: 26px;
       }
       .search-icon {
         position: absolute;
@@ -658,7 +686,7 @@ export function normalizeSearch(value: string): string {
         margin-top: 30px;
       }
       .chip {
-        min-height: 34px;
+        min-height: 30px;
         padding: 0 16px;
         border: 0;
         position: relative;
@@ -761,8 +789,8 @@ export function normalizeSearch(value: string): string {
         flex: none;
         padding: 6px 14px;
         border-radius: 999px;
-        background: var(--color-brand-primary-container);
-        color: var(--color-brand-on-primary-container);
+        background: #dfeee7;
+        color: #4d7b6f;
         font-size: 12px;
         font-weight: 700;
       }
