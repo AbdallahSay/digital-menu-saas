@@ -39,3 +39,4 @@ jobs:
           Remove-Item Env:WD_PASS -ErrorAction SilentlyContinue
           "failures=$fail"
           if ($fail -ne 0) { exit 1 }
+          exit 0
