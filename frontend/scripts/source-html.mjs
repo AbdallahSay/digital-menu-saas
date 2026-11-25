@@ -100,8 +100,15 @@ test('parallel public and missing requests do not mix metadata or fixture conten
 // (base 8f4d422 = 181,329 B, tip a2da5f7 = 186,333 B, same algorithm, which failed the old
 // budget by 2,013 B). Reviewed allowance for that feature: 5 KiB (5,120 B). Do not grow per feature
 // without a new measured delta and review.
+// Public/admin presentation feature (Figma public-menu rebuild, cafe theme, hero upload, featured
+// items, branding studio): measured +9,884 B (a2da5f7 = 186,314 B -> 5f2a7d9 = 196,194 B; tip
+// b983cca = 196,198 B), Node 24.19.0, clean `ng build`, same gzip algorithm, 20 chunks both sides, no
+// new dependency. Reviewed allowance 10 KiB (10,240 B), headroom over the measured +9,884 B delta is 356 B; total headroom vs 196,198 B is 3,482 B for the
+// aggregate. The public cold-route gate (route-js-gate.mjs, 184,320 B) and bootstrap-static gate are
+// unchanged. Do not grow per feature without a new measured delta and review.
 const AGGREGATE_BASE_BYTES = 180 * 1024;
 const LEAD_FEATURE_ALLOWANCE_BYTES = 5 * 1024;
+const PRESENTATION_FEATURE_ALLOWANCE_BYTES = 10 * 1024;
 
 test('all browser JavaScript together stays within the reviewed aggregate gzip budget', () => {
   const folder = 'dist/digital-menu/browser';
@@ -109,7 +116,10 @@ test('all browser JavaScript together stays within the reviewed aggregate gzip b
     .filter((f) => f.endsWith('.js'))
     .reduce((total, file) => total + gzipSync(readFileSync(folder + '/' + file)).length, 0);
   console.log('All browser JS gzip bytes:', bytes);
-  assert.ok(bytes <= AGGREGATE_BASE_BYTES + LEAD_FEATURE_ALLOWANCE_BYTES);
+  assert.ok(
+    bytes <=
+      AGGREGATE_BASE_BYTES + LEAD_FEATURE_ALLOWANCE_BYTES + PRESENTATION_FEATURE_ALLOWANCE_BYTES,
+  );
 });
 
 test('bootstrap-static JavaScript (entry script plus static imports only; NOT public first-load, see route-js-gate.mjs) stays within 180 KiB gzip', () => {
