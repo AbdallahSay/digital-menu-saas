@@ -66,7 +66,7 @@ export function normalizeSearch(value: string): string {
             </div>
           } @else {
             <header class="hero">
-              <div class="hero-inner">
+              <div class="hero-inner" [class.has-art]="!!(menu.restaurant.heroUrl ?? menu.restaurant.logoUrl)">
                 @if (menu.restaurant.brandLabel) {
                   <p class="hero-brand">{{ menu.restaurant.brandLabel }}</p>
                 }
@@ -490,7 +490,9 @@ export function normalizeSearch(value: string): string {
         align-items: center;
         gap: 6px;
         text-align: center;
-        padding-bottom: 28px;
+        position: relative;
+        min-height: 280px;
+        padding: 30px 20px 32px;
       }
       .footer-lang {
         width: fit-content;
@@ -506,12 +508,6 @@ export function normalizeSearch(value: string): string {
         color: #fff;
         font-size: 22px;
         letter-spacing: 0.04em;
-      }
-      .hero-cafe {
-        position: relative;
-        min-height: 280px;
-        padding-top: 30px;
-        padding-bottom: 32px;
       }
       .cafe-title {
         padding: 31px 4px 0;
@@ -557,13 +553,14 @@ export function normalizeSearch(value: string): string {
         object-fit: cover;
         border-radius: 50%;
         background: #f4e9d6;
-        inset-block-start: 65px;
+        top: 65px;
       }
-      .hero-inner > :not(.restaurant-logo) {
+      .has-art > :not(.restaurant-logo) {
         max-width: calc(100% - 140px);
+        overflow-wrap: anywhere;
       }
       @media (max-width: 360px) {
-        .hero-inner > :not(.restaurant-logo) {
+        .has-art > :not(.restaurant-logo) {
           max-width: calc(100% - 110px);
         }
         .restaurant-logo {
@@ -652,7 +649,7 @@ export function normalizeSearch(value: string): string {
         width: 100%;
         min-height: 50px;
         padding-block: 0;
-        padding-inline: 16px 44px;
+        padding-inline: 16px 52px;
         border: 1px solid var(--color-border-subtle);
         border-radius: 14px;
         background: #fff;
@@ -684,10 +681,6 @@ export function normalizeSearch(value: string): string {
       .chips::-webkit-scrollbar {
         display: none;
       }
-      .chip {
-        flex: none;
-        white-space: nowrap;
-      }
       .cafe-title ~ .search {
         margin-top: 36px;
       }
@@ -698,6 +691,8 @@ export function normalizeSearch(value: string): string {
         margin-top: 30px;
       }
       .chip {
+        flex: none;
+        white-space: nowrap;
         min-height: 30px;
         padding: 0 16px;
         border: 0;
