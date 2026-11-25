@@ -61,6 +61,8 @@ const dialogStack: AccessibleDialogComponent[] = [];
         bottom: 0;
         max-height: 92vh;
         max-height: 92dvh;
+        /* Keyboard focus scrolling must clear a sticky action row inside the dialog. */
+        scroll-padding-bottom: 6rem;
         overflow-y: auto;
         background: var(--color-surface-card);
         border-radius: var(--radius-xl) var(--radius-xl) 0 0;

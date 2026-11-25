@@ -213,8 +213,13 @@ function twoDecimals(control: AbstractControl<number>): ValidationErrors | null 
         margin: 0;
         min-width: 0;
       }
+      /* Space between fields so a focus ring does not touch the next label. */
+      .form-fields > * + * {
+        margin-top: var(--space-3);
+      }
       .form-check {
         display: flex;
+        flex-direction: row; /* the global .form-group stacks children; a checkbox sits beside its label */
         align-items: center;
         gap: var(--space-2);
       }
