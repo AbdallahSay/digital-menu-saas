@@ -1,0 +1,41 @@
+# Credential-less Windows preflight for a possible WebDeploy path. NO secrets, NO host authentication, NO deploy.
+# Lives only on a non-main branch; triggered by push to this branch (and manually if the file ever reaches the default branch).
+name: WebDeploy preflight (credential-less)
+on:
+  push:
+    branches: [preflight/webdeploy-windows]
+    paths: [.github/workflows/webdeploy-preflight.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: msdeploy presence, product version, local help (no network, no secrets)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSVersionTable.PSVersion.ToString() | ForEach-Object { "pwsh=$_" }
+          $msdeploy = 'C:\Program Files (x86)\IIS\Microsoft Web Deploy V3\msdeploy.exe'
+          "msdeploy_present=$(Test-Path -LiteralPath $msdeploy)"
+          if (-not (Test-Path -LiteralPath $msdeploy)) { 'STOP: msdeploy.exe not present on this runner image; no install attempted'; exit 0 }
+          "msdeploy_product_version=$((Get-Item -LiteralPath $msdeploy).VersionInfo.ProductVersion)"
+          $h = & $msdeploy -help 2>&1 | Out-String; "help_exit=$LASTEXITCODE help_bytes=$($h.Length)"
+          foreach ($k in 'verb','contentPath','skip','disableLink','whatif','allowUntrusted') { "help_mentions_$k=$($h -match "(?i)$k")" }
+          $d = & $msdeploy '-verb:dump' '-?' 2>&1 | Out-String; "dump_help_exit=$LASTEXITCODE dump_help_bytes=$($d.Length) dump_help_mentions_contentPath=$($d -match '(?i)contentPath')"
+          $s = & $msdeploy '-verb:sync' '-?' 2>&1 | Out-String; "sync_help_exit=$LASTEXITCODE sync_help_mentions_whatif=$($s -match '(?i)whatif')"
+      - name: Strict TLS to the WebDeploy port, default .NET validation, no credential
+        shell: pwsh
+        run: |
+          $HostName = 'site111067.siteasp.net'
+          $c = [Net.Sockets.TcpClient]::new(); $ssl = $null
+          try {
+            if (-not $c.ConnectAsync($HostName, 8172).Wait(15000)) { throw 'connect timeout' }
+            $ssl = [Net.Security.SslStream]::new($c.GetStream(), $false)
+            $o = [Net.Security.SslClientAuthenticationOptions]::new(); $o.TargetHost = $HostName
+            if (-not $ssl.AuthenticateAsClientAsync($o, [Threading.CancellationToken]::None).Wait(15000)) { throw 'handshake timeout' }
+            "tls_ok protocol=$($ssl.SslProtocol) issuer_cn_present=$($ssl.RemoteCertificate.Issuer -match 'YR')"
+          } catch { "tls_failed type=$($_.Exception.GetType().Name) inner=$($_.Exception.InnerException.GetType().Name)" }
+          finally { if ($ssl) { $ssl.Dispose() }; $c.Dispose() }
