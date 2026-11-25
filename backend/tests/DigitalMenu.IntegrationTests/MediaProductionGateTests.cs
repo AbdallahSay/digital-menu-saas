@@ -161,6 +161,20 @@ public sealed class MediaRootPolicyTests
         finally { Directory.Delete(parent, true); }
     }
 
+    [Fact]
+    public void Roots_equal_inside_or_containing_the_real_AppContext_base_directory_are_refused()
+    {
+        var b = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+        var content = Dir();
+        try
+        {
+            Assert.Throws<InvalidOperationException>(() => MediaEndpoints.ValidateRoot(b, Env(content), Cfg()));
+            Assert.Throws<InvalidOperationException>(() => MediaEndpoints.ValidateRoot(Path.Combine(b, "media"), Env(content), Cfg()));
+            Assert.Throws<InvalidOperationException>(() => MediaEndpoints.ValidateRoot(Path.GetDirectoryName(b)!, Env(content), Cfg()));
+        }
+        finally { Directory.Delete(content, true); }
+    }
+
     [UnixOnlyFact]
     public void A_symlink_alias_of_the_content_root_is_resolved_before_comparing()
     {

@@ -20,7 +20,7 @@ public static class MediaEndpoints
     /// <summary>
     /// Refuses a media root that is relative, or that equals, contains or sits inside the content root, the application
     /// base directory or the configured Data Protection key directory. Existing path components are resolved through
-    /// symlinks before comparing. This is a configuration check at startup; it does not prevent a later replacement
+    /// symlinks before comparing. It runs when the storage service is first resolved (lazy, not an eager startup check) and does not prevent a later replacement
     /// of a path component by another writer.
     /// </summary>
     internal static void ValidateRoot(string root, IHostEnvironment environment, IConfiguration configuration)
