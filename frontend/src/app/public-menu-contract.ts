@@ -13,6 +13,7 @@ export interface PublicItem {
   price: number;
   image: PublicItemImage | null;
   featured: boolean;
+  available: boolean;
 }
 export interface PublicCategory {
   id: string;
@@ -205,6 +206,7 @@ export function decodeMenu(
           priceText: whole + '.' + fraction.padEnd(2, '0'),
           image: image(item.image),
           featured: item.featured === true,
+          available: item.available !== false,
         };
       }),
     };

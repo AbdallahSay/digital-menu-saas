@@ -35,7 +35,11 @@ export function normalizeSearch(value: string): string {
   template: `
     <main class="public-menu">
       @if (page.menu; as menu) {
-        <div class="frame" [style.--tp]="menu.restaurant.primaryColor">
+        <div
+          class="frame"
+          [class.searching]="query().trim() !== ''"
+          [style.--tp]="menu.restaurant.primaryColor"
+        >
           @if (menu.restaurant.theme === 'cafe') {
             <header class="hero hero-cafe">
               <div class="hero-lang">
@@ -122,6 +126,7 @@ export function normalizeSearch(value: string): string {
             </div>
           }
           @if (menu.categories.length > 0) {
+            <h2 class="search-title">{{ english ? 'Search the menu' : 'بحث في المنيو' }}</h2>
             <div class="search">
               <label class="sr-only" for="menu-search">{{
                 english ? 'Search the menu' : 'ابحث في المنيو'
@@ -191,7 +196,45 @@ export function normalizeSearch(value: string): string {
               {{ english ? 'The menu is currently empty.' : 'المنيو فاضي حاليًا.' }}
             </p>
           }
-          @if (featuredItems().length > 0) {
+          @if (query().trim() !== '') {
+            <section aria-labelledby="results-title">
+              <h2 class="section-title" id="results-title">
+                {{ english ? 'Results' : 'نتائج البحث' }} ({{ searchHits().on.length }})
+              </h2>
+              <div class="items">
+                @for (item of searchHits().on; track item.id) {
+                  <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+                }
+              </div>
+            </section>
+            @if (searchHits().off.length > 0) {
+              <section aria-labelledby="off-title">
+                <h2 class="section-title" id="off-title">
+                  {{ english ? 'Availability' : 'حالات العرض' }}
+                </h2>
+                <div class="items">
+                  @for (item of searchHits().off; track item.id) {
+                    <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+                  }
+                </div>
+              </section>
+            }
+            @if (searchHits().on.length === 0) {
+              <div class="no-results">
+                <p class="no-results-title">
+                  {{ english ? "Can't find the dish you want?" : 'ملقتش الطبق اللي بتدور عليه؟' }}
+                </p>
+                <p class="no-results-sub">
+                  {{
+                    english
+                      ? 'Try another name or browse all categories.'
+                      : 'جرب اسم تاني أو استعرض كل الأقسام.'
+                  }}
+                </p>
+              </div>
+            }
+          }
+          @if (query().trim() === '' && featuredItems().length > 0) {
             <section aria-labelledby="featured-title" class="featured">
               <div class="featured-head">
                 <h2 class="section-title" id="featured-title">
@@ -210,7 +253,11 @@ export function normalizeSearch(value: string): string {
               </div>
             </section>
           }
-          @for (category of visibleCategories(); track category.id; let ci = $index) {
+          @for (
+            category of query().trim() === '' ? visibleCategories() : [];
+            track category.id;
+            let ci = $index
+          ) {
             <section [attr.aria-labelledby]="'category-' + ci">
               <h2 class="section-title" [id]="'category-' + ci">{{ category.name }}</h2>
               @if (category.items.length === 0) {
@@ -250,7 +297,15 @@ export function normalizeSearch(value: string): string {
                     <bdi>{{ item.priceText }}</bdi>
                     {{ english ? menu.restaurant.currency : currencyAr(menu.restaurant.currency) }}
                   </span>
-                  <span class="pill">{{ english ? 'Available' : 'متوفر' }}</span>
+                  <span class="pill" [class.pill-off]="!item.available">{{
+                    item.available
+                      ? english
+                        ? 'Available'
+                        : 'متوفر'
+                      : english
+                        ? 'Sold out'
+                        : 'نفد'
+                  }}</span>
                 </p>
               </div>
             </article>
@@ -290,7 +345,15 @@ export function normalizeSearch(value: string): string {
                     <p class="detail-cat">{{ cat }}</p>
                   }
                   <p class="detail-avail">
-                    <span class="pill">{{ english ? 'Available now' : 'متوفر الآن' }}</span>
+                    <span class="pill" [class.pill-off]="!item.available">{{
+                      item.available
+                        ? english
+                          ? 'Available now'
+                          : 'متوفر الآن'
+                        : english
+                          ? 'Sold out'
+                          : 'نفد'
+                    }}</span>
                   </p>
                   @if (item.description) {
                     <h3>{{ english ? 'About the dish' : 'عن الطبق' }}</h3>
@@ -712,6 +775,46 @@ export function normalizeSearch(value: string): string {
         font-size: 22px;
         color: var(--color-brand-primary);
       }
+      .search-title {
+        display: none;
+        margin: 0;
+        padding: 32px 22px 16px;
+        font-size: 24px;
+      }
+      .searching .search-title {
+        display: block;
+      }
+      .searching .hero,
+      .searching .brand-card,
+      .searching .cafe-title,
+      .searching .chips,
+      .searching .status,
+      .searching #categories-title {
+        display: none;
+      }
+      .pill-off {
+        background: #ece8de;
+        color: var(--color-text-secondary);
+      }
+      .no-results {
+        margin: 24px 16px;
+        padding: 20px 16px;
+        border-radius: 16px;
+        background: #e3f1ec;
+        text-align: start;
+      }
+      .no-results p {
+        margin: 0;
+      }
+      .no-results-title {
+        font-weight: 700;
+        color: var(--color-brand-primary);
+      }
+      .no-results-sub {
+        margin-top: 6px !important;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+      }
       .detail {
         width: min(100vw, 390px);
         max-width: none;
@@ -854,6 +957,17 @@ export class PublicMenuComponent {
     if (theme === 'cafe') return this.english ? 'Favorite coffee' : 'القهوة المفضلة';
     return this.english ? 'Featured picks' : 'اختيارات مميزة';
   }
+
+  readonly searchHits = computed(() => {
+    const menu = this.page.menu;
+    const needle = normalizeSearch(this.query());
+    const all = (menu?.categories ?? []).flatMap((c) =>
+      c.items.filter(
+        (i) => needle !== '' && normalizeSearch(i.name + ' ' + i.description).includes(needle),
+      ),
+    );
+    return { on: all.filter((i) => i.available), off: all.filter((i) => !i.available) };
+  });
 
   readonly visibleCategories = computed(() => {
     const menu = this.page.menu;

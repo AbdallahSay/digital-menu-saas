@@ -23,6 +23,7 @@ function menu(language: 'ar' | 'en' = 'ar'): DisplayMenu {
         }
       : null,
     featured: false,
+    available: true,
   });
   return {
     restaurant: {
