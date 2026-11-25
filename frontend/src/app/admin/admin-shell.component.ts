@@ -2,11 +2,12 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AdminAuthService } from './admin-auth.service';
+import { NavIconComponent, NavIconName } from './nav-icon.component';
 
 interface NavItem {
   path: string;
   exact: boolean;
-  icon: string;
+  icon: NavIconName;
   label: string;
   enabled: boolean;
 }
@@ -18,7 +19,7 @@ interface NavItem {
  */
 @Component({
   selector: 'app-admin-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NavIconComponent],
   template: `
     <div class="admin-shell">
       <header class="admin-header">
@@ -40,12 +41,16 @@ interface NavItem {
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: item.exact }"
             >
-              <span class="admin-nav-icon" aria-hidden="true">{{ item.icon }}</span>
+              <span class="admin-nav-icon" aria-hidden="true"
+                ><app-nav-icon [name]="item.icon"
+              /></span>
               <span>{{ item.label }}</span>
             </a>
           } @else {
             <span class="admin-nav-link admin-nav-disabled" aria-disabled="true">
-              <span class="admin-nav-icon" aria-hidden="true">{{ item.icon }}</span>
+              <span class="admin-nav-icon" aria-hidden="true"
+                ><app-nav-icon [name]="item.icon"
+              /></span>
               <span>{{ item.label }}</span>
               <small class="admin-nav-soon">قريباً</small>
             </span>
@@ -74,12 +79,12 @@ interface NavItem {
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: item.exact }"
             >
-              <span aria-hidden="true">{{ item.icon }}</span>
+              <span aria-hidden="true"><app-nav-icon [name]="item.icon" /></span>
               <span>{{ item.label }}</span>
             </a>
           } @else {
             <span class="admin-bottom-link admin-nav-disabled" aria-disabled="true">
-              <span aria-hidden="true">{{ item.icon }}</span>
+              <span aria-hidden="true"><app-nav-icon [name]="item.icon" /></span>
               <span>{{ item.label }}</span>
             </span>
           }
@@ -232,11 +237,11 @@ export class AdminShellComponent {
   });
 
   readonly navItems: NavItem[] = [
-    { path: '/admin', exact: true, icon: '📊', label: 'الرئيسية', enabled: true },
-    { path: '/admin/categories', exact: false, icon: '📁', label: 'الأقسام', enabled: true },
-    { path: '/admin/items', exact: false, icon: '🍽️', label: 'الأطباق', enabled: true },
-    { path: '/admin/branding', exact: false, icon: '🎨', label: 'الهوية', enabled: true },
-    { path: '/admin/qr', exact: false, icon: '📱', label: 'رمز QR', enabled: true },
+    { path: '/admin', exact: true, icon: 'home', label: 'الرئيسية', enabled: true },
+    { path: '/admin/categories', exact: false, icon: 'folder', label: 'الأقسام', enabled: true },
+    { path: '/admin/items', exact: false, icon: 'dish', label: 'الأطباق', enabled: true },
+    { path: '/admin/branding', exact: false, icon: 'palette', label: 'الهوية', enabled: true },
+    { path: '/admin/qr', exact: false, icon: 'qr', label: 'رمز QR', enabled: true },
   ];
 
   constructor() {

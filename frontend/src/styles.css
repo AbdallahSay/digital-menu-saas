@@ -1342,3 +1342,9 @@ h6,
   align-items: flex-start;
   line-height: 1.6;
 }
+
+.trust-check {
+  vertical-align: -3px;
+  margin-inline-end: 4px;
+  flex: none;
+}

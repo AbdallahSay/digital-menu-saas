@@ -131,9 +131,60 @@ interface ServiceRequestForm {
               <a routerLink="/r/demo" class="btn btn-secondary btn-lg">شوف المنيو بنفسك</a>
             </div>
             <div class="hero-trust-list">
-              <span class="trust-item">⚡ تصفح سريع بدون تحميل أي تطبيق</span>
-              <span class="trust-item">✎ تعديل فوري للأسعار في ثوانٍ</span>
-              <span class="trust-item">📱 متوافق مع كل الموبايلات</span>
+              <span class="trust-item"
+                ><svg
+                  class="trust-check"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                تصفح سريع بدون تحميل أي تطبيق</span
+              >
+              <span class="trust-item"
+                ><svg
+                  class="trust-check"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                تعديل فوري للأسعار في ثوانٍ</span
+              >
+              <span class="trust-item"
+                ><svg
+                  class="trust-check"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                متوافق مع كل الموبايلات</span
+              >
             </div>
           </div>
 

@@ -331,6 +331,14 @@ type Feedback = { kind: 'success' | 'error'; text: string } | null;
         justify-content: flex-end;
         gap: var(--space-3);
         margin-top: var(--space-5);
+        /* Keep save/cancel visible while a tall dialog scrolls (small phones). */
+        position: sticky;
+        bottom: calc(-1 * var(--space-6));
+        margin-inline: calc(-1 * var(--space-6));
+        margin-bottom: calc(-1 * var(--space-6));
+        padding: var(--space-3) var(--space-6);
+        background: var(--color-surface-card);
+        border-top: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
       }
       .modal-actions .btn {
         min-height: 44px;
