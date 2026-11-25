@@ -1,0 +1,57 @@
+# Credential-free local parser/preservation test. SYNTHETIC passwords only, loopback listener only. No real host, no secret.
+name: WebDeploy parser test (synthetic, loopback)
+on:
+  push:
+    branches: [preflight/webdeploy-windows]
+    paths: [.github/workflows/webdeploy-parse-test.yml]
+permissions:
+  contents: read
+jobs:
+  parse:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: synthetic password parse and preservation via loopback Basic-auth listener
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msdeploy = 'C:\Program Files (x86)\IIS\Microsoft Web Deploy V3\msdeploy.exe'
+          $srv = @'
+          import http.server, sys, base64
+          class H(http.server.BaseHTTPRequestHandler):
+              def log_message(self,*a): pass
+              def do_ANY(self):
+                  a=self.headers.get('Authorization','')
+                  got=''
+                  if a.lower().startswith('basic '):
+                      try: got=base64.b64decode(a[6:]).decode('utf-8','replace')
+                      except Exception: got='<undecodable>'
+                  with open(sys.argv[2],'a',encoding='utf-8') as f: f.write(self.command+'\t'+got+'\n')
+                  self.send_response(401); self.send_header('WWW-Authenticate','Basic realm="t"'); self.send_header('Content-Length','0'); self.end_headers()
+              do_GET=do_POST=do_PUT=do_HEAD=do_ANY
+          http.server.HTTPServer(('127.0.0.1',int(sys.argv[1])),H).serve_forever()
+          '@
+          Set-Content -LiteralPath srv.py -Value $srv
+          $port = 18172; $log = Join-Path $PWD 'auth.log'
+          $p = Start-Process python -ArgumentList 'srv.py',$port,$log -PassThru -WindowStyle Hidden
+          Start-Sleep 3
+          $cases = [ordered]@{ control='Abcdef123456'; bang='Abc!def12345'; dash='Abc-def12345'; eq='Abc=def12345'; combo='Ab!c-d=ef1234'; leadeq='=Abcdef12345' }
+          foreach ($k in $cases.Keys) {
+            $pw = $cases[$k]
+            if (Test-Path $log) { Remove-Item $log }
+            $psi = [Diagnostics.ProcessStartInfo]::new($msdeploy)
+            $psi.UseShellExecute = $false; $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true
+            $psi.ArgumentList.Add('-verb:dump')
+            $psi.ArgumentList.Add("-source:contentPath=Default Web Site,computerName=http://127.0.0.1:$port/msdeploy.axd?site=site111067,userName=site111067,password=$pw,authType=Basic")
+            $proc = [Diagnostics.Process]::Start($psi)
+            $o = $proc.StandardOutput.ReadToEndAsync(); $e = $proc.StandardError.ReadToEndAsync()
+            if (-not $proc.WaitForExit(60000)) { $proc.Kill(); "case=$k TIMEOUT"; continue }
+            $txt = ($e.Result + $o.Result)
+            $seen = if (Test-Path $log) { (Get-Content $log -Raw) } else { '' }
+            $expected = "site111067:$pw"
+            $match = $seen -split "`n" | Where-Object { $_ -match "`t" } | ForEach-Object { ($_ -split "`t",2)[1].TrimEnd("`r") } | Where-Object { $_ -eq $expected }
+            $cat = if ($txt -match '(?i)invalid|unrecognized|argument|setting') { 'argument-or-setting-error' } elseif ($txt -match '(?i)401|unauthorized|denied|credential') { 'auth-challenge-stage' } elseif ($txt -match '(?i)connect|refused|actively|unable') { 'connect-stage' } else { 'other' }
+            "case=$k exit=$($proc.ExitCode) stage=$cat requests_seen=$((($seen -split "`n") | Where-Object {$_}).Count) exact_password_preserved=$([bool]$match)"
+            ($txt -split "`n" | Select-Object -First 3 | ForEach-Object { '  msg: ' + $_.Trim() })
+          }
+          Stop-Process -Id $p.Id -Force
