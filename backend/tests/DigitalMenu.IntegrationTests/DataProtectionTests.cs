@@ -7,6 +7,18 @@ using Xunit;
 
 namespace DigitalMenu.IntegrationTests;
 
+/// <summary>Reported as Skipped (never as passed) on Windows, where the behavior under test is Unix-only.</summary>
+public sealed class UnixOnlyFactAttribute : FactAttribute
+{
+    public UnixOnlyFactAttribute() { if (OperatingSystem.IsWindows()) Skip = "Unix-only behavior; not executed on Windows."; }
+}
+
+/// <summary>Reported as Skipped on Windows: the test starts the app in a non-Development environment with a key path, which Windows refuses by design.</summary>
+public sealed class UnixOnlyTheoryAttribute : TheoryAttribute
+{
+    public UnixOnlyTheoryAttribute() { if (OperatingSystem.IsWindows()) Skip = "Needs a non-Development key path, refused on Windows by design (see the explicit policy tests)."; }
+}
+
 public sealed class DataProtectionTests
 {
     public static string TempKeys() => Path.Combine(Path.GetTempPath(), "dm-keys-test-" + Guid.NewGuid().ToString("N"));
@@ -70,10 +82,9 @@ public sealed class DataProtectionTests
 
     static string Tmp(string n) => Path.Combine(Path.GetTempPath(), "dm-" + n + "-" + Guid.NewGuid().ToString("N"));
 
-    [Fact]
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public void Unsafe_key_directories_are_rejected_without_touching_permissions()
     {
-        if (OperatingSystem.IsWindows()) return;
         var content = Tmp("content"); var media = Tmp("media"); Directory.CreateDirectory(content); Directory.CreateDirectory(media);
         var shared = Tmp("shared"); Directory.CreateDirectory(shared);
         File.SetUnixFileMode(shared, (UnixFileMode)Convert.ToInt32("755", 8));
@@ -92,10 +103,9 @@ public sealed class DataProtectionTests
         Rejects(direct);
     }
 
-    [Fact]
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public void New_key_directory_is_created_private_and_existing_private_one_is_reused()
     {
-        if (OperatingSystem.IsWindows()) return;
         var content = Tmp("content"); var keys = Tmp("keys");
         try
         {
@@ -142,10 +152,9 @@ public sealed class DataProtectionTests
 
     // Checks directory mode only (not key file mode). Plaintext keys are protected by
     // filesystem permissions only, so the directory (0700) is the control; this asserts the directory stays private.
-    [Fact]
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public void Generated_key_files_live_inside_a_private_directory_on_Unix()
     {
-        if (OperatingSystem.IsWindows()) return;
         var content = Tmp("content"); var keys = Tmp("keys");
         try
         {
@@ -153,6 +162,67 @@ public sealed class DataProtectionTests
                 sp.GetRequiredService<IDataProtectionProvider>().CreateProtector("t").Protect("x");
             Assert.NotEmpty(Directory.GetFiles(keys, "*.xml"));
             Assert.Equal(0, (int)File.GetUnixFileMode(keys) & 0x3F); // no group/other access to the directory
+        }
+        finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
+    }
+
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void Missing_directory_is_revalidated_after_creation_and_a_swapped_in_shared_directory_is_rejected()
+    {
+        var content = Tmp("content"); var keys = Tmp("keys");
+        try
+        {
+            DataProtectionConfiguration.PostCreateTestHook = dir => File.SetUnixFileMode(dir, (UnixFileMode)Convert.ToInt32("755", 8));
+            Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" }));
+        }
+        finally { DataProtectionConfiguration.PostCreateTestHook = null; if (Directory.Exists(keys)) Directory.Delete(keys, true); }
+    }
+
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void Missing_directory_replaced_by_a_symlink_after_creation_is_rejected()
+    {
+        var content = Tmp("content"); var keys = Tmp("keys"); var other = Tmp("other");
+        Directory.CreateDirectory(other); File.SetUnixFileMode(other, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        try
+        {
+            DataProtectionConfiguration.PostCreateTestHook = dir => { Directory.Delete(dir); Directory.CreateSymbolicLink(dir, other); };
+            Assert.Throws<InvalidOperationException>(() => Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" }));
+        }
+        finally { DataProtectionConfiguration.PostCreateTestHook = null; if (File.Exists(keys) || Directory.Exists(keys)) { try { Directory.Delete(keys); } catch { File.Delete(keys); } } if (Directory.Exists(other)) Directory.Delete(other, true); }
+    }
+
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void Helper_execution_is_bounded_and_fails_closed()
+    {
+        var sleep = new[] { "/usr/bin/sleep", "/bin/sleep" }.FirstOrDefault(File.Exists);
+        Assert.NotNull(sleep);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var timeout = Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.RunBounded(sleep!, TimeSpan.FromMilliseconds(400), "30"));
+        Assert.Contains("timed out", timeout.Message);
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(8), "the helper timeout must bound the call");
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.RunBounded("/definitely/not/an/executable", TimeSpan.FromSeconds(1)));
+        var falseExe = new[] { "/usr/bin/false", "/bin/false" }.First(File.Exists);
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.RunBounded(falseExe, TimeSpan.FromSeconds(2)));
+    }
+
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void A_background_child_holding_the_pipe_open_does_not_hang_the_helper()
+    {
+        var sh = new[] { "/usr/bin/sh", "/bin/sh" }.FirstOrDefault(File.Exists);
+        Assert.NotNull(sh);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.RunBounded(sh!, TimeSpan.FromSeconds(2), "-c", "sleep 30 & echo 1"));
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10));
+    }
+
+    [UnixOnlyFact, System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void Owner_check_reports_the_current_user_for_a_directory_this_process_created()
+    {
+        var content = Tmp("content"); var keys = Tmp("keys");
+        try
+        {
+            using (Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" })) { }
+            using var again = Build(content, new() { [DataProtectionConfiguration.KeysPathKey] = keys, [DataProtectionConfiguration.ApplicationNameKey] = "t-prod" });
         }
         finally { if (Directory.Exists(keys)) Directory.Delete(keys, true); }
     }

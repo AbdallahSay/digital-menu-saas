@@ -226,7 +226,7 @@ public sealed class AuthenticationTests
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.Login(fixture.Password)).StatusCode);
     }
 
-    [Fact]
+    [UnixOnlyFact]
     public async Task Bootstrap_refuses_production_before_any_database_access()
     {
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment("Production").UseSetting("DataProtection:KeysPath", DataProtectionTests.TempKeys()).UseSetting("DataProtection:ApplicationName", "test-prod"));

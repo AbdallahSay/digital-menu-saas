@@ -29,7 +29,7 @@ public class FoundationTests
         Assert.DoesNotContain("weatherforecast", json);
     }
 
-    [Theory]
+    [UnixOnlyTheory]
     [InlineData("/api/admin/restaurant")]
     [InlineData("/api/platform/restaurants")]
     [InlineData("/api/openapi/v1.json")]
