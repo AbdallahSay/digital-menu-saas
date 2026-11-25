@@ -32,6 +32,56 @@ public sealed class DataProtectionDatabaseProviderTests
         return (c.ExportCertificatePem(), ec.ExportEncryptedPkcs8PrivateKeyPem(Pw, Pbe));
     }
 
+    static (string cert, string key) NewRsaPlain()
+    {
+        using var rsa = RSA.Create(2048);
+        var req = new CertificateRequest("CN=dm-test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var c = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(30));
+        return (c.ExportCertificatePem(), rsa.ExportPkcs8PrivateKeyPem());
+    }
+
+    [Fact]
+    public void Plaintext_pkcs8_loads_only_when_explicit_and_without_password()
+    {
+        var (c, k) = NewRsaPlain();
+        using (var cert = DataProtectionConfiguration.LoadCertificate(c, k.Replace("\n", "\\n"), "current", null, "PlaintextPkcs8")) Assert.True(cert.HasPrivateKey);
+        // Default (unset) mode stays encrypted-only and refuses a plaintext key.
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k, "current", Pw));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k, "current", null));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k, "current", Pw, "EncryptedPkcs8"));
+        // Ambiguous mix: plaintext mode with a password is rejected, not tolerated.
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k, "current", Pw, "PlaintextPkcs8"));
+        // Unknown or wrong-case values are rejected.
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k, "current", null, "plaintextpkcs8"));
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, k, "current", null, "Pfx"));
+    }
+
+    [Fact]
+    public void Plaintext_mode_rejects_an_encrypted_key_and_a_mismatched_key_and_never_falls_back()
+    {
+        var (c, enc) = NewRsa();
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, enc, "current", null, "PlaintextPkcs8"));
+        var (_, other) = NewRsaPlain();
+        Assert.Throws<InvalidOperationException>(() => DataProtectionConfiguration.LoadCertificate(c, other, "current", null, "PlaintextPkcs8"));
+    }
+
+    [Fact]
+    public void Plaintext_wrapped_ring_round_trips_with_a_plaintext_previous_certificate_via_the_provider()
+    {
+        var (c, k) = NewRsaPlain();
+        using var cert = DataProtectionConfiguration.LoadCertificate(c, k, "current", null, "PlaintextPkcs8");
+        var dir = Path.Combine(Path.GetTempPath(), "dm-dpdb-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var p1 = DataProtectionProvider.Create(new DirectoryInfo(dir), o => o.ProtectKeysWithCertificate(cert).SetApplicationName("t"));
+            var enc = p1.CreateProtector("p").Protect("hello");
+            var p2 = DataProtectionProvider.Create(new DirectoryInfo(dir), o => o.UnprotectKeysWithAnyCertificate(cert).SetApplicationName("t"));
+            Assert.Equal("hello", p2.CreateProtector("p").Unprotect(enc));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
     [Fact]
     public void Valid_rsa_pem_pair_loads_and_wraps_a_real_key_ring_round_trip()
     {

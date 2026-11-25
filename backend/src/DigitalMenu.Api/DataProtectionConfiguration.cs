@@ -24,6 +24,9 @@ public static class DataProtectionConfiguration
     public const string CertificateKeyKey = "DataProtection:Certificate:KeyPem";
     // Mandatory passphrase for KeyPem, which must be an ENCRYPTED PKCS#8 PEM. Plaintext keys are not accepted.
     public const string CertificatePasswordKey = "DataProtection:Certificate:KeyPassword";
+    // Explicit key format: EncryptedPkcs8 (default, strict, KeyPassword mandatory) or PlaintextPkcs8 (host-only custody opt-in:
+    // the unencrypted PKCS#8 key lives only in host configuration; KeyPassword must then be ABSENT). Any other value throws.
+    public const string CertificateKeyFormatKey = "DataProtection:Certificate:KeyFormat";
     // Historical decrypt-only certificates: DataProtection:PreviousCertificates:0:Pem / :KeyPem, then 1, 2, ...
     public const string PreviousCertificatesKey = "DataProtection:PreviousCertificates";
 
@@ -40,13 +43,13 @@ public static class DataProtectionConfiguration
         var owned = new List<System.Security.Cryptography.X509Certificates.X509Certificate2>();
         try
         {
-            var current = LoadCertificate(configuration[CertificateKey], configuration[CertificateKeyKey], "current", configuration[CertificatePasswordKey]);
+            var current = LoadCertificate(configuration[CertificateKey], configuration[CertificateKeyKey], "current", configuration[CertificatePasswordKey], configuration[CertificateKeyFormatKey]);
             owned.Add(current);
             var previous = new List<System.Security.Cryptography.X509Certificates.X509Certificate2>();
             foreach (var child in configuration.GetSection(PreviousCertificatesKey).GetChildren().OrderBy(c => int.TryParse(c.Key, out var i) ? i : int.MaxValue))
             {
                 // Strict: a previous entry with only one half, or neither, is an error and never silently ignored.
-                var cert = LoadCertificate(child["Pem"], child["KeyPem"], $"previous #{child.Key}", child["KeyPassword"]);
+                var cert = LoadCertificate(child["Pem"], child["KeyPem"], $"previous #{child.Key}", child["KeyPassword"], child["KeyFormat"]);
                 owned.Add(cert); previous.Add(cert);
             }
             var connection = configuration.GetConnectionString("MenuDatabase");
@@ -76,10 +79,21 @@ public static class DataProtectionConfiguration
     // Accepts real newlines or literal \n sequences (single-line environment values).
     static string NormalizePem(string value) => value.Trim().Replace("\\r", "").Replace("\\n", "\n");
 
-    internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? certPem, string? keyPem, string label, string? keyPassword)
+    internal static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(string? certPem, string? keyPem, string label, string? keyPassword, string? keyFormat = null)
     {
-        if (string.IsNullOrWhiteSpace(certPem) || string.IsNullOrWhiteSpace(keyPem) || string.IsNullOrEmpty(keyPassword))
-            throw new InvalidOperationException($"DataProtection {label} certificate, encrypted private key (PEM) and KeyPassword are all required for the Database provider.");
+        // Exact, case-sensitive match; unset means encrypted. No fallback between formats in either direction.
+        var plaintext = keyFormat switch
+        {
+            null or "" or "EncryptedPkcs8" => false,
+            "PlaintextPkcs8" => true,
+            _ => throw new InvalidOperationException($"DataProtection {label} KeyFormat must be EncryptedPkcs8 or PlaintextPkcs8."),
+        };
+        if (string.IsNullOrWhiteSpace(certPem) || string.IsNullOrWhiteSpace(keyPem))
+            throw new InvalidOperationException($"DataProtection {label} certificate and private key (PEM) are required for the Database provider.");
+        if (plaintext && !string.IsNullOrEmpty(keyPassword))
+            throw new InvalidOperationException($"DataProtection {label} KeyFormat PlaintextPkcs8 must not be combined with a KeyPassword.");
+        if (!plaintext && string.IsNullOrEmpty(keyPassword))
+            throw new InvalidOperationException($"DataProtection {label} encrypted private key requires KeyPassword.");
         System.Security.Cryptography.X509Certificates.X509Certificate2? pub = null;
         System.Security.Cryptography.RSA? priv = null;
         try
@@ -87,7 +101,14 @@ public static class DataProtectionConfiguration
             pub = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(NormalizePem(certPem));
             using var pubKey = pub.GetRSAPublicKey() ?? throw new InvalidOperationException($"DataProtection {label} certificate must contain an RSA key.");
             priv = System.Security.Cryptography.RSA.Create();
-            priv.ImportFromEncryptedPem(NormalizePem(keyPem), keyPassword); // encrypted PKCS#8 only: plaintext keys are rejected, never tried as a fallback
+            var keyText = NormalizePem(keyPem);
+            // Strict per mode, never a fallback: a PEM of the other kind fails to import.
+            if (plaintext)
+            {
+                if (!keyText.Contains("-----BEGIN PRIVATE KEY-----", StringComparison.Ordinal)) throw new FormatException("not a plaintext PKCS#8 PEM");
+                priv.ImportFromPem(keyText);
+            }
+            else priv.ImportFromEncryptedPem(keyText, keyPassword);
             if (!pubKey.ExportParameters(false).Modulus!.AsSpan().SequenceEqual(priv.ExportParameters(false).Modulus!))
                 throw new InvalidOperationException($"DataProtection {label} private key does not match the certificate.");
             var withKey = pub.CopyWithPrivateKey(priv);
