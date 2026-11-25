@@ -28,6 +28,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          node ../scripts/build-vercel.mjs # writes dist/digital-menu/build-manifest.json, same as F01
           npx playwright install --with-deps chromium
       - name: Run disposable SQL Server and required integrity suite
         shell: bash
